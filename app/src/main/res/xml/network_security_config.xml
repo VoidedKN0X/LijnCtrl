@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- LijnCtrl only talks to De Lijn's API over HTTPS. Plain HTTP is refused everywhere, and only the phone's
+     built-in certificate authorities are trusted (no user-installed ones), so nothing on the network can read
+     or change your API key or the departures. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Transit key: the front of a bus on a keycap face. 108dp adaptive canvas, art inside the 66dp safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Keycap body -->
+    <path
+        android:fillColor="#FF2B3038"
+        android:pathData="M37,31 H71 A13,13 0 0 1 84,44 V65 A13,13 0 0 1 71,78 H37 A13,13 0 0 1 24,65 V44 A13,13 0 0 1 37,31 Z" />
+    <!-- Key face -->
+    <path
+        android:fillColor="#FF1A1D23"
+        android:strokeColor="#FFF5C84A"
+        android:strokeWidth="3"
+        android:pathData="M37,32 H71 A9,9 0 0 1 80,41 V57 A9,9 0 0 1 71,66 H37 A9,9 0 0 1 28,57 V41 A9,9 0 0 1 37,32 Z" />
+    <!-- Bus body -->
+    <path
+        android:fillColor="#FFF5C84A"
+        android:pathData="M45,37 H63 A4,4 0 0 1 67,41 V58 A2,2 0 0 1 65,60 H43 A2,2 0 0 1 41,58 V41 A4,4 0 0 1 45,37 Z" />
+    <!-- Windscreen -->
+    <path
+        android:fillColor="#FF1A1D23"
+        android:pathData="M45,40.5 H63 A1.5,1.5 0 0 1 64.5,42 V49 A1.5,1.5 0 0 1 63,50.5 H45 A1.5,1.5 0 0 1 43.5,49 V42 A1.5,1.5 0 0 1 45,40.5 Z" />
+    <!-- Headlights -->
+    <path
+        android:fillColor="#FF1A1D23"
+        android:pathData="M47,55 m-1.8,0 a1.8,1.8 0 1 0 3.6,0 a1.8,1.8 0 1 0 -3.6,0 Z M61,55 m-1.8,0 a1.8,1.8 0 1 0 3.6,0 a1.8,1.8 0 1 0 -3.6,0 Z" />
+    <!-- Wheels -->
+    <path
+        android:fillColor="#FFF5C84A"
+        android:pathData="M44,60 H48 V62.5 A1,1 0 0 1 47,63.5 H45 A1,1 0 0 1 44,62.5 Z M60,60 H64 V62.5 A1,1 0 0 1 63,63.5 H61 A1,1 0 0 1 60,62.5 Z" />
+    <!-- Bar on the front of the key -->
+    <path
+        android:strokeColor="#FF5A616C"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M47,72.5 H61" />
+</vector>
