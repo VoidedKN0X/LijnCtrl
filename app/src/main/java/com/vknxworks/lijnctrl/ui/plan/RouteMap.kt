@@ -23,6 +23,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Directions
 import androidx.compose.material.icons.outlined.OpenInFull
+import androidx.compose.material.icons.outlined.MyLocation
+import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -34,6 +36,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -132,18 +135,53 @@ fun RouteMap(journey: Journey, modifier: Modifier = Modifier, interactive: Boole
         map.invalidate()
     }
 
-    DisposableEffect(map) {
-        val overlay = if (interactive && Locator.hasPermission(context)) {
+    // Your position as a dot that moves with you (Android's own location service), when location is allowed.
+    var hasLocation by remember { mutableStateOf(Locator.hasPermission(context)) }
+    var myLocation by remember { mutableStateOf<MyLocationNewOverlay?>(null) }
+    var following by remember { mutableStateOf(false) }
+    DisposableEffect(map, hasLocation) {
+        val overlay = if (interactive && hasLocation) {
             MyLocationNewOverlay(GpsMyLocationProvider(context), map).also {
                 it.enableMyLocation()
                 map.overlays.add(it)
             }
         } else null
+        myLocation = overlay
         onDispose {
+            overlay?.disableFollowLocation()
             overlay?.disableMyLocation()
-            map.onDetach()
+            overlay?.let { map.overlays.remove(it) }
         }
     }
+    DisposableEffect(map) { onDispose { map.onDetach() } }
+    // Moving the map yourself stops following, as in other map apps.
+    DisposableEffect(map) {
+        val listener = object : org.osmdroid.events.MapListener {
+            override fun onScroll(event: org.osmdroid.events.ScrollEvent?): Boolean {
+                if (following && myLocation?.isFollowLocationEnabled == false) following = false
+                return false
+            }
+            override fun onZoom(event: org.osmdroid.events.ZoomEvent?): Boolean = false
+        }
+        map.addMapListener(listener)
+        onDispose { map.removeMapListener(listener) }
+    }
+    fun follow() {
+        val o = myLocation ?: return
+        if (following) {
+            o.disableFollowLocation()
+            following = false
+        } else {
+            o.enableFollowLocation()
+            if (map.zoomLevelDouble < 16.0) map.controller.zoomTo(17.0)
+            following = true
+        }
+    }
+    val permission = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions(),
+    ) { granted -> if (granted.values.any { it }) hasLocation = true }
+    var followAfterGrant by remember { mutableStateOf(false) }
+    LaunchedEffect(myLocation) { if (followAfterGrant && myLocation != null) { followAfterGrant = false; follow() } }
 
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     DisposableEffect(lifecycle) {
@@ -260,7 +298,8 @@ fun RouteMap(journey: Journey, modifier: Modifier = Modifier, interactive: Boole
         map.invalidate()
 
         // Fits the whole route on screen, once the map knows its size.
-        if (all.isNotEmpty()) {
+        // (Not while following you: the map stays on your position.)
+        if (all.isNotEmpty() && !following) {
             val fit = {
                 if (all.size == 1) {
                     map.controller.setZoom(16.0)
@@ -276,6 +315,27 @@ fun RouteMap(journey: Journey, modifier: Modifier = Modifier, interactive: Boole
 
     Box(modifier) {
         AndroidView(factory = { map }, modifier = Modifier.fillMaxSize())
+        if (interactive) {
+            androidx.compose.material3.SmallFloatingActionButton(
+                onClick = {
+                    if (hasLocation) follow()
+                    else {
+                        followAfterGrant = true
+                        com.vknxworks.lijnctrl.ui.lock.AppLock.expectReturn()
+                        permission.launch(arrayOf(android.Manifest.permission.ACCESS_COARSE_LOCATION, android.Manifest.permission.ACCESS_FINE_LOCATION))
+                    }
+                },
+                shape = CircleShape,
+                containerColor = if (following) cs.primary else cs.surfaceContainerHigh,
+                contentColor = if (following) cs.onPrimary else cs.onSurface,
+                modifier = Modifier.align(Alignment.BottomEnd).padding(12.dp),
+            ) {
+                Icon(
+                    if (following) Icons.Filled.MyLocation else Icons.Outlined.MyLocation,
+                    stringResource(R.string.follow_my_location),
+                )
+            }
+        }
         // OpenStreetMap's licence asks for this credit on the map.
         Text(
             stringResource(R.string.osm_credit),

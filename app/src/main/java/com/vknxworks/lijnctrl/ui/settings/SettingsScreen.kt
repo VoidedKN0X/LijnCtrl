@@ -10,6 +10,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Directions
 import androidx.compose.material.icons.outlined.Fingerprint
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Layers
 import androidx.compose.material.icons.outlined.Lock
@@ -111,6 +112,16 @@ fun SettingsScreen() {
                     s.transitousRoutes,
                     icon = Icons.Outlined.Directions,
                 ) { v -> update { it.copy(transitousRoutes = v) } }
+                GroupSwitch(
+                    stringResource(R.string.route_history),
+                    stringResource(R.string.route_history_subtitle),
+                    s.planHistory,
+                    icon = Icons.Outlined.History,
+                ) { v ->
+                    update { it.copy(planHistory = v) }
+                    // Turning it off also forgets what was kept.
+                    if (!v) scope.launch { c.planHistory.clear() }
+                }
                 if (s.transitousRoutes) {
                     GroupRow(
                         stringResource(R.string.transitous_sources),

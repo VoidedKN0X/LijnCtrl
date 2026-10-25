@@ -64,6 +64,7 @@ class AppContainer(val context: Context) {
     val transitous = TransitousPlanner()
     val planner = PlanRepository(BuiltInPlanner(api, departures, lines), transitous)
     val favourites = FavouritesRepository(context, appScope)
+    val planHistory = com.vknxworks.lijnctrl.data.plan.PlanHistoryRepository(context, appScope)
 
     /** The app lock is on. */
     val lockEnabled: Boolean get() = vault.enabled

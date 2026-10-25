@@ -60,6 +60,8 @@ data class AppSettings(
     val transitousRoutes: Boolean = false,
     /** Search addresses, streets, shops and landmarks with Transitous's geocoder. Off by default. */
     val addressSearch: Boolean = false,
+    /** Remember the routes you plan (from and to only), on this phone. On by default. */
+    val planHistory: Boolean = true,
     val lockTimeout: LockTimeout = LockTimeout.IMMEDIATELY,
     /** Hide in screenshots: FLAG_SECURE on the app's windows (which also blanks the recent-apps preview). */
     val hideScreenshots: Boolean = false,
@@ -76,6 +78,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val radius = stringPreferencesKey("nearby_radius")
         val transitous = booleanPreferencesKey("transitous_routes")
         val addressSearch = booleanPreferencesKey("address_search")
+        val planHistory = booleanPreferencesKey("plan_history_on")
         val lockTimeout = stringPreferencesKey("lock_timeout")
         val hideScreenshots = booleanPreferencesKey("hide_screenshots")
         val hideRecents = booleanPreferencesKey("hide_recents")
@@ -93,6 +96,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         nearbyRadius = enumOr(this[K.radius], NearbyRadius.M1000),
         transitousRoutes = this[K.transitous] ?: false,
         addressSearch = this[K.addressSearch] ?: false,
+        planHistory = this[K.planHistory] ?: true,
         lockTimeout = enumOr(this[K.lockTimeout], LockTimeout.IMMEDIATELY),
         hideScreenshots = this[K.hideScreenshots] ?: false,
         hideRecents = this[K.hideRecents] ?: false,
@@ -108,6 +112,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
             p[K.radius] = s.nearbyRadius.name
             p[K.transitous] = s.transitousRoutes
             p[K.addressSearch] = s.addressSearch
+            p[K.planHistory] = s.planHistory
             p[K.lockTimeout] = s.lockTimeout.name
             p[K.hideScreenshots] = s.hideScreenshots
             p[K.hideRecents] = s.hideRecents

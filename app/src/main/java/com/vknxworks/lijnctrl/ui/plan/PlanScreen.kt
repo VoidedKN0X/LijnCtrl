@@ -26,6 +26,8 @@ import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Directions
 import androidx.compose.material.icons.outlined.Flag
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.SwapVert
@@ -101,6 +103,7 @@ fun PlanScreen() {
     val s = PlanState
     var pickDate by remember { mutableStateOf(false) }
     var pickTime by remember { mutableStateOf(false) }
+    val history by c.planHistory.entries.collectAsStateWithLifecycle()
 
     fun plan() {
         val from = s.from ?: return
@@ -124,6 +127,8 @@ fun PlanScreen() {
                 }
                 val time = if (s.mode == TimeMode.NOW) Instant.now() else s.time ?: Instant.now()
                 s.results = c.planner.plan(a, b, time, s.mode == TimeMode.ARRIVE_BY, settings.transitousRoutes)
+                // Remembers from and to as you chose them ("my location" stays "my location", not where you were).
+                if (settings.planHistory) runCatching { c.planHistory.add(from, to) }
             } catch (e: kotlin.coroutines.cancellation.CancellationException) {
                 throw e
             } catch (e: Throwable) {
@@ -231,7 +236,38 @@ fun PlanScreen() {
             val err = s.error
             when {
                 err != null -> item { Text(err, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium) }
-                results == null -> Unit
+                results == null -> if (!s.planning && settings.planHistory && history.isNotEmpty()) {
+                    item {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                stringResource(R.string.recent_routes),
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.weight(1f),
+                            )
+                            TextButton(onClick = { scope.launch { c.planHistory.clear() } }) { Text(stringResource(R.string.clear_history)) }
+                        }
+                    }
+                    item {
+                        Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.fillMaxWidth()) {
+                            Column(Modifier.padding(vertical = 4.dp)) {
+                                history.forEachIndexed { i, h ->
+                                    if (i > 0) HorizontalDivider(Modifier.padding(start = 52.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                                    HistoryRow(
+                                        h,
+                                        onClick = {
+                                            s.from = h.from.toPoint()
+                                            s.to = h.to.toPoint()
+                                            s.results = null
+                                            planChecked()
+                                        },
+                                        onRemove = { scope.launch { c.planHistory.remove(h) } },
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
                 results.isEmpty() -> item {
                     MessageView(
                         Icons.Outlined.Directions,
@@ -301,6 +337,37 @@ fun PlanScreen() {
             dismissButton = { TextButton(onClick = { pickTime = false }) { Text(stringResource(R.string.cancel)) } },
             text = { TimePicker(state) },
         )
+    }
+}
+
+/** A route from the history: from and to, and when you last planned it. Tap to plan it again. */
+@Composable
+private fun HistoryRow(h: com.vknxworks.lijnctrl.data.plan.PlanHistoryEntry, onClick: () -> Unit, onRemove: () -> Unit) {
+    val myLocation = stringResource(R.string.my_location)
+    fun label(p: com.vknxworks.lijnctrl.data.plan.SavedPoint) = if (p.isMyLocation) myLocation else p.name
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(start = 16.dp, top = 6.dp, bottom = 6.dp, end = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(Icons.Outlined.History, null, tint = MaterialTheme.colorScheme.primary)
+        Spacer(Modifier.width(16.dp))
+        Column(Modifier.weight(1f)) {
+            Text(label(h.from), style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                "→ ${label(h.to)}",
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                dayTime(Instant.ofEpochMilli(h.plannedAt)),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        IconButton(onClick = onRemove) {
+            Icon(Icons.Filled.Close, stringResource(R.string.remove_from_history), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
     }
 }
 

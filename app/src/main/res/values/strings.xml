@@ -330,4 +330,10 @@
         <item quantity="one">%1$d route</item>
         <item quantity="other">%1$d routes</item>
     </plurals>
+    <string name="recent_routes">Recent routes</string>
+    <string name="clear_history">Clear</string>
+    <string name="remove_from_history">Remove from history</string>
+    <string name="route_history">Remember recent routes</string>
+    <string name="route_history_subtitle">The last 15 from and to places you planned, kept on this phone only. Turning this off forgets them.</string>
+    <string name="follow_my_location">Follow my location</string>
 </resources>

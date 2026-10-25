@@ -4,6 +4,17 @@ What changed in each LijnCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## v0.5.0 (2026-10-25)
+
+Recent routes in the planner, and a route map that follows you.
+
+### New
+
+- **Recent routes on the Plan tab.** The places you plan between are remembered and listed under **Recent routes** until you plan again, newest first (up to 15). Each one shows where from, where to, and when you last planned it. Tap one to plan that route again straight away, from now; tap **×** to remove one, or **Clear** to remove them all. Planning the same route again moves it back to the top instead of adding it twice.
+- **"My location" stays "my location".** A route planned from or to your location is remembered as just that, never as where you were at the time, so planning it again uses where you are then.
+- **Remember recent routes**: a new switch under **Settings > Route planner**, on by default. Only from and to are kept, on this phone only. Turning it off forgets every route that was kept and stops remembering new ones.
+- **Follow my location on the route map.** The new button in the corner of the full-screen route map centres the map on you and keeps following as you move (it turns amber while it's following). Move the map yourself or tap the button again to stop. If location isn't allowed yet, the button asks for it first.
+
 ## v0.4.0 (2026-10-25)
 
 Routes on a map.
