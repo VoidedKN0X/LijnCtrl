@@ -6,6 +6,8 @@ To publish a new version: bump `versionCode` and `versionName` in `app/build.gra
 
 ## v0.10.0 (2026-10-25)
 
+This release also brings everything in 0.9.0 below, which wasn't published on its own.
+
 Trip guidance: LijnCtrl walks you through a planned route.
 
 ### New
