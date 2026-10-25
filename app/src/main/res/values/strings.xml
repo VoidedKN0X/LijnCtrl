@@ -317,4 +317,10 @@
     <string name="transitous_sources_subtitle">transitous.org/sources</string>
     <string name="transitous_busy">Transitous is busy right now. Try again in a moment.</string>
     <string name="transitous_error_x">Transitous answered with error %1$d</string>
+    <string name="address_search">Search addresses and places</string>
+    <string name="address_search_subtitle">Shops, landmarks, streets and house numbers, via Transitous</string>
+    <string name="address_search_footer">De Lijn\'s open data can only search stops. With this on, what you type in Search (and in From and To on the Plan tab) is also sent to Transitous (transitous.org), a free, open-source community service, to find addresses and places in Belgium. Stops are always searched with De Lijn only.</string>
+    <string name="address_search_prompt_title">Looking for an address or a place?</string>
+    <string name="address_search_prompt_body">De Lijn can only search stops. Turn on address search to also find shops, landmarks and addresses. What you type is then sent to Transitous (transitous.org).</string>
+    <string name="turn_on_address_search">Turn on</string>
 </resources>

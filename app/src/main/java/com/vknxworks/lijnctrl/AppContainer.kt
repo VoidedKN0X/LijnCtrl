@@ -60,7 +60,9 @@ class AppContainer(val context: Context) {
     val lines = LineRepository(context, api)
     val departures = DepartureRepository(api)
     val towns = TownRepository(api)
-    val planner = PlanRepository(BuiltInPlanner(api, departures, lines), TransitousPlanner())
+    /** Only contacted when the user turns on Transitous routes or address search. */
+    val transitous = TransitousPlanner()
+    val planner = PlanRepository(BuiltInPlanner(api, departures, lines), transitous)
     val favourites = FavouritesRepository(context, appScope)
 
     /** The app lock is on. */

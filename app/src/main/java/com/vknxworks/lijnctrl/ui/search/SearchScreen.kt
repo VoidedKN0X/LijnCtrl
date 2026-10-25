@@ -48,7 +48,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vknxworks.lijnctrl.R
 import com.vknxworks.lijnctrl.container
-import com.vknxworks.lijnctrl.data.api.ApiLocation
+import com.vknxworks.lijnctrl.data.places.PlaceKind
+import com.vknxworks.lijnctrl.data.places.PlaceResult
 import com.vknxworks.lijnctrl.data.api.ApiSearchLineDirection
 import com.vknxworks.lijnctrl.data.api.StopSearchResponse
 import com.vknxworks.lijnctrl.data.towns.TownRepository
@@ -84,7 +85,7 @@ private data class Results(
     val lines: List<List<ApiSearchLineDirection>> = emptyList(),
     val stops: List<ApiStop> = emptyList(),
     val totalStops: Int = 0,
-    val places: List<ApiLocation> = emptyList(),
+    val places: List<PlaceResult> = emptyList(),
     /** Why the place search failed, shown so a problem with it doesn't look like "nothing found". */
     val placesError: String? = null,
     val stopsError: String? = null,
@@ -101,8 +102,9 @@ fun SearchScreen() {
     var results by remember { mutableStateOf<Results?>(null) }
     var loading by remember { mutableStateOf(false) }
     var loadingMore by remember { mutableStateOf(false) }
+    val settings by c.settings.settings.collectAsStateWithLifecycle()
 
-    LaunchedEffect(query) {
+    LaunchedEffect(query, settings.addressSearch) {
         val q = query.trim()
         if (q.isEmpty() || (q.length < 2 && !q.all(Char::isDigit))) {
             results = null
@@ -121,7 +123,11 @@ fun SearchScreen() {
                 }
             }
             val stops = async { runCatching { searchStopsAnyOrder(c.api, q) } }
-            val places = async { runCatching { c.api.searchLocations(q, max = 8).locations } }
+            // Addresses and places only when you've switched it on: the text then goes to Transitous.
+            val places = async {
+                if (settings.addressSearch && q.length >= 3 && q.any(Char::isLetter)) runCatching { c.transitous.geocode(q, max = 6) }
+                else Result.success(emptyList())
+            }
             val st = stops.await()
             Results(
                 numberMatch = number.await(),
@@ -130,8 +136,10 @@ fun SearchScreen() {
                 stops = st.getOrNull()?.stops.orEmpty(),
                 totalStops = st.getOrNull()?.total ?: 0,
                 stopsError = st.exceptionOrNull()?.friendlyMessage(),
-                // Stops already listed above aren't repeated as places; places without a position can't be used.
-                places = places.await().getOrDefault(emptyList()).filter { it.coordinate != null || it.isStop }.take(6),
+                // De Lijn stops the stop search already listed aren't repeated as places.
+                places = places.await().getOrDefault(emptyList()).filter { p ->
+                    p.stop == null || (st.getOrNull()?.stops.orEmpty().none { it.number == p.stop.number })
+                },
                 placesError = places.await().exceptionOrNull()?.friendlyMessage(),
             )
         }
@@ -174,8 +182,14 @@ fun SearchScreen() {
         when {
             r == null -> MessageView(Icons.Outlined.Signpost, stringResource(R.string.search_intro_title), stringResource(R.string.search_intro_body), bottom)
             r.numberMatch == null && r.towns.isEmpty() && r.lines.isEmpty() && r.stops.isEmpty() && r.places.isEmpty() && r.placesError == null -> {
-                if (r.stopsError != null) MessageView(Icons.Outlined.SearchOff, stringResource(R.string.search_failed), r.stopsError, bottom)
-                else MessageView(Icons.Outlined.SearchOff, stringResource(R.string.nothing_found), stringResource(R.string.try_fewer_or_different_words), bottom)
+                Column(bottom) {
+                    // Nothing among the stops: often an address or a shop, which address search can find.
+                    if (!settings.addressSearch && query.trim().length >= 3) {
+                        AddressSearchPrompt { scope.launch { c.settings.update { it.copy(addressSearch = true) } } }
+                    }
+                    if (r.stopsError != null) MessageView(Icons.Outlined.SearchOff, stringResource(R.string.search_failed), r.stopsError)
+                    else MessageView(Icons.Outlined.SearchOff, stringResource(R.string.nothing_found), stringResource(R.string.try_fewer_or_different_words))
+                }
             }
             else -> LazyColumn(
                 Modifier.fillMaxSize(),
@@ -198,17 +212,16 @@ fun SearchScreen() {
                 }
                 if (r.places.isNotEmpty()) {
                     item { SectionTitle(stringResource(R.string.places)) }
-                    items(r.places, key = { "place-${it.coordinate?.latitude}_${it.coordinate?.longitude}_${it.name}_${it.street}_${it.houseNumber}" }) { p ->
+                    items(r.places, key = { "place-${it.kind}_${it.latitude}_${it.longitude}_${it.name}" }) { p ->
                         PlaceRow(p) {
-                            val number = p.stopNumber
-                            if (p.isStop && number != null) {
-                                nav.stop(number.take(1), number, placeTitle(p))
-                                return@PlaceRow
-                            }
-                            val coord = p.coordinate ?: return@PlaceRow
-                            nav.place(coord.latitude, coord.longitude, placeTitle(p), placeDetail(p))
+                            val stop = p.stop
+                            if (stop != null) nav.stop(stop.entity, stop.number, p.name)
+                            else nav.place(p.latitude, p.longitude, p.name, p.detail)
                         }
                     }
+                }
+                if (!settings.addressSearch && query.trim().length >= 3) {
+                    item { AddressSearchPrompt { scope.launch { c.settings.update { it.copy(addressSearch = true) } } } }
                 }
                 if (r.towns.isNotEmpty()) {
                     item { SectionTitle(stringResource(R.string.towns)) }
@@ -260,43 +273,58 @@ internal suspend fun searchStopsAnyOrder(api: DeLijnApi, q: String): StopSearchR
     return StopSearchResponse(total = matching.size, stops = matching)
 }
 
-/** What a place is called: its name, or its street and number. */
-fun placeTitle(p: ApiLocation): String =
-    p.name?.takeIf { it.isNotBlank() } ?: p.altName?.takeIf { it.isNotBlank() }
-        ?: listOfNotNull(p.street, p.houseNumber).joinToString(" ").ifBlank { p.town.orEmpty() }
-
-/** Where it is: street (when the name isn't the street) and town. */
-fun placeDetail(p: ApiLocation): String? {
-    val street = listOfNotNull(p.street, p.houseNumber).joinToString(" ").takeIf { it.isNotBlank() && it != placeTitle(p) }
-    val town = (p.districts.firstOrNull() ?: p.town)?.let { TownRepository.titleCase(it) }
-    return listOfNotNull(street, town).joinToString(", ").ifBlank { null }
-}
-
 @Composable
-private fun PlaceRow(p: ApiLocation, onClick: () -> Unit) {
+private fun PlaceRow(p: PlaceResult, onClick: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = Gutter, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(
-            when {
-                p.isStop -> Icons.Outlined.DirectionsBus
-                p.houseNumber.isNullOrBlank() && !p.name.isNullOrBlank() -> Icons.Outlined.Place
-                else -> Icons.Outlined.Home
-            },
-            null,
-            tint = MaterialTheme.colorScheme.primary,
-        )
+        Icon(placeIcon(p.kind), null, tint = MaterialTheme.colorScheme.primary)
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
-            Text(placeTitle(p), style = MaterialTheme.typography.bodyLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(p.name, style = MaterialTheme.typography.bodyLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Text(
-                listOfNotNull(placeDetail(p), if (p.isStop) null else stringResource(R.string.stops_nearby_short)).joinToString(" · "),
+                listOfNotNull(p.detail, if (p.kind == PlaceKind.STOP) null else stringResource(R.string.stops_nearby_short)).joinToString(" · "),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+        }
+    }
+}
+
+fun placeIcon(kind: PlaceKind): androidx.compose.ui.graphics.vector.ImageVector = when (kind) {
+    PlaceKind.STOP -> Icons.Outlined.DirectionsBus
+    PlaceKind.PLACE -> Icons.Outlined.Place
+    PlaceKind.ADDRESS -> Icons.Outlined.Home
+    PlaceKind.STREET -> Icons.Outlined.Signpost
+}
+
+/**
+ * Shown under the results while address search is off: one tap turns it on, and it says plainly that what you
+ * type then goes to Transitous.
+ */
+@Composable
+fun AddressSearchPrompt(onTurnOn: () -> Unit) {
+    androidx.compose.material3.Surface(
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = Gutter, vertical = 8.dp),
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Outlined.Place, null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.width(12.dp))
+                Text(stringResource(R.string.address_search_prompt_title), style = MaterialTheme.typography.titleSmall)
+            }
+            Spacer(Modifier.height(6.dp))
+            Text(
+                stringResource(R.string.address_search_prompt_body),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            TextButton(onClick = onTurnOn) { Text(stringResource(R.string.turn_on_address_search)) }
         }
     }
 }

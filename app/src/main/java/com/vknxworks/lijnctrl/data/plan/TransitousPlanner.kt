@@ -5,6 +5,8 @@ import com.vknxworks.lijnctrl.R
 import com.vknxworks.lijnctrl.data.api.ApiException
 import com.vknxworks.lijnctrl.data.api.DeLijnApi
 import com.vknxworks.lijnctrl.data.api.StopKey
+import com.vknxworks.lijnctrl.data.places.PlaceKind
+import com.vknxworks.lijnctrl.data.places.PlaceResult
 import com.vknxworks.lijnctrl.str
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -52,6 +54,29 @@ private data class TLeg(
     val displayName: String? = null,
     val cancelled: Boolean? = null,
     val intermediateStops: List<TPlace> = emptyList(),
+)
+
+@Serializable
+private data class TArea(
+    val name: String = "",
+    val adminLevel: Double = 0.0,
+    val matched: Boolean = false,
+    val default: Boolean = false,
+)
+
+/** A geocoder match: a place (shop, landmark), an address or street, or a stop. */
+@Serializable
+private data class TMatch(
+    val type: String = "",
+    val name: String = "",
+    val id: String? = null,
+    val lat: Double = 0.0,
+    val lon: Double = 0.0,
+    val street: String? = null,
+    val houseNumber: String? = null,
+    val zip: String? = null,
+    val country: String? = null,
+    val areas: List<TArea> = emptyList(),
 )
 
 @Serializable
@@ -110,6 +135,57 @@ class TransitousPlanner {
         }
         val plan = DeLijnApi.JSON.decodeFromString(TPlan.serializer(), body)
         (plan.itineraries + plan.direct).mapNotNull { it.toJourney() }.distinctBy { it.signature }
+    }
+
+    /**
+     * Addresses, streets, shops and landmarks matching [text], from Transitous's OpenStreetMap-based geocoder, limited
+     * to results in Belgium. Only used when "Search addresses and places" is on: the text you type is then sent to Transitous.
+     */
+    suspend fun geocode(text: String, max: Int = 8): List<PlaceResult> = withContext(Dispatchers.IO) {
+        val url = "https://$HOST/api/v1/geocode".toHttpUrl().newBuilder()
+            .addQueryParameter("text", text.trim())
+            // A few extra, because results outside Belgium are left out below.
+            .addQueryParameter("numResults", (max + 4).toString())
+            .build()
+        val body = http.newCall(Request.Builder().url(url).build()).execute().use { r ->
+            val t = r.body?.string().orEmpty()
+            when {
+                r.code == 429 -> throw ApiException(429, str(R.string.transitous_busy))
+                !r.isSuccessful -> throw ApiException(r.code, str(R.string.transitous_error_x, r.code))
+            }
+            t
+        }
+        DeLijnApi.JSON.decodeFromString(kotlinx.serialization.builtins.ListSerializer(TMatch.serializer()), body)
+            .filter { it.lat != 0.0 && it.lon != 0.0 && (it.country == null || it.country.equals("BE", true)) }
+            .mapNotNull { m -> m.toPlace() }
+            .take(max)
+    }
+
+    private fun TMatch.toPlace(): PlaceResult? {
+        // The town: the area marked as the default, or else the most local one.
+        val town = areas.firstOrNull { it.default }?.name ?: areas.maxByOrNull { it.adminLevel }?.name
+        val streetLine = listOfNotNull(street, houseNumber).joinToString(" ").takeIf { it.isNotBlank() }
+        return when (type.uppercase()) {
+            "STOP" -> {
+                // Only De Lijn stops can show departures here; their ids end in the stop number.
+                val stop = if (id?.contains("delijn", ignoreCase = true) == true) deLijnStop(id) else null
+                stop?.let { PlaceResult(name, listOfNotNull(zip, town).joinToString(" ").ifBlank { null }, lat, lon, PlaceKind.STOP, it) }
+            }
+            "ADDRESS" -> PlaceResult(
+                name = streetLine ?: name,
+                detail = listOfNotNull(zip, town).joinToString(" ").ifBlank { null },
+                latitude = lat,
+                longitude = lon,
+                kind = if (houseNumber.isNullOrBlank()) PlaceKind.STREET else PlaceKind.ADDRESS,
+            )
+            else -> PlaceResult(
+                name = name.ifBlank { streetLine ?: return null },
+                detail = listOfNotNull(streetLine?.takeIf { it != name }, town).joinToString(", ").ifBlank { null },
+                latitude = lat,
+                longitude = lon,
+                kind = PlaceKind.PLACE,
+            )
+        }
     }
 
     private fun TItinerary.toJourney(): Journey? {

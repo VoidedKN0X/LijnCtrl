@@ -49,7 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vknxworks.lijnctrl.R
 import com.vknxworks.lijnctrl.container
-import com.vknxworks.lijnctrl.data.api.ApiLocation
+import com.vknxworks.lijnctrl.data.places.PlaceResult
 import com.vknxworks.lijnctrl.data.api.ApiStop
 import com.vknxworks.lijnctrl.data.api.StopKey
 import com.vknxworks.lijnctrl.data.plan.PlanPoint
@@ -57,8 +57,6 @@ import com.vknxworks.lijnctrl.str
 import com.vknxworks.lijnctrl.ui.components.ScreenTopBar
 import com.vknxworks.lijnctrl.ui.components.friendlyMessage
 import com.vknxworks.lijnctrl.ui.nav.LocalNavigator
-import com.vknxworks.lijnctrl.ui.search.placeDetail
-import com.vknxworks.lijnctrl.ui.search.placeTitle
 import com.vknxworks.lijnctrl.ui.search.searchStopsAnyOrder
 import com.vknxworks.lijnctrl.ui.theme.Gutter
 import kotlinx.coroutines.async
@@ -76,7 +74,8 @@ fun PickPlaceScreen(forFrom: Boolean) {
     val saved by c.favourites.stops.collectAsStateWithLifecycle()
     var query by rememberSaveable { mutableStateOf("") }
     var stops by remember { mutableStateOf<List<ApiStop>>(emptyList()) }
-    var places by remember { mutableStateOf<List<ApiLocation>>(emptyList()) }
+    var places by remember { mutableStateOf<List<PlaceResult>>(emptyList()) }
+    val settings by c.settings.settings.collectAsStateWithLifecycle()
     var loading by remember { mutableStateOf(false) }
     val focus = remember { FocusRequester() }
 
@@ -100,7 +99,7 @@ fun PickPlaceScreen(forFrom: Boolean) {
         }
     }
 
-    LaunchedEffect(query) {
+    LaunchedEffect(query, settings.addressSearch) {
         val q = query.trim()
         if (q.length < 2) {
             stops = emptyList()
@@ -111,9 +110,12 @@ fun PickPlaceScreen(forFrom: Boolean) {
         loading = true
         coroutineScope {
             val st = async { runCatching { searchStopsAnyOrder(c.api, q).stops }.getOrDefault(emptyList()) }
-            val pl = async { runCatching { c.api.searchLocations(q, max = 8).locations }.getOrDefault(emptyList()) }
+            val pl = async {
+                if (settings.addressSearch && q.length >= 3) runCatching { c.transitous.geocode(q, max = 8) }.getOrDefault(emptyList())
+                else emptyList()
+            }
             stops = st.await().take(25)
-            places = pl.await().filter { it.coordinate != null || it.isStop }.take(8)
+            places = pl.await()
         }
         loading = false
     }
@@ -149,16 +151,16 @@ fun PickPlaceScreen(forFrom: Boolean) {
                         }
                     }
                 } else {
-                    items(places, key = { "place-${it.coordinate?.latitude}_${it.coordinate?.longitude}_${it.name}_${it.street}_${it.houseNumber}" }) { p ->
-                        PickRow(if (p.houseNumber.isNullOrBlank() && !p.name.isNullOrBlank()) Icons.Outlined.Place else Icons.Outlined.Home, placeTitle(p), placeDetail(p)) {
-                            val coord = p.coordinate
-                            val number = p.stopNumber
-                            when {
-                                coord != null -> choose(
-                                    PlanPoint(placeTitle(p), coord.latitude, coord.longitude, stop = if (p.isStop && number != null) StopKey(number.take(1), number) else null, detail = placeDetail(p)),
-                                )
-                                p.isStop && number != null -> chooseStop(StopKey(number.take(1), number), placeTitle(p), p.town)
+                    if (!settings.addressSearch && query.trim().length >= 3) {
+                        item {
+                            com.vknxworks.lijnctrl.ui.search.AddressSearchPrompt {
+                                scope.launch { c.settings.update { it.copy(addressSearch = true) } }
                             }
+                        }
+                    }
+                    items(places, key = { "place-${it.kind}_${it.latitude}_${it.longitude}_${it.name}" }) { p ->
+                        PickRow(com.vknxworks.lijnctrl.ui.search.placeIcon(p.kind), p.name, p.detail) {
+                            choose(PlanPoint(p.name, p.latitude, p.longitude, stop = p.stop, detail = p.detail))
                         }
                     }
                     items(stops, key = { "stop-${it.entity}_${it.number}" }) { st ->

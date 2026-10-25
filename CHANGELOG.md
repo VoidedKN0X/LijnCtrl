@@ -4,6 +4,20 @@ What changed in each LijnCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## v0.3.2 (2026-10-25)
+
+Address and place search that actually works.
+
+### Fixed
+
+- **Addresses, shops and landmarks can be found again**, in Search and when picking **From** or **To** on the Plan tab, for example your own street and house number or "Vandenborre Roeselare". The place search LijnCtrl used turned out not to exist in De Lijn's open data (it always answered "not found"), so places never showed up. They now come from Transitous's free, open-source address search, which uses OpenStreetMap and is limited to results in Belgium.
+
+### New
+
+- **Search addresses and places**: a new switch under **Settings > Search**. It's off by default, because what you type is then also sent to Transitous (transitous.org). Stops are always searched with De Lijn only, whether it's on or not.
+- **One-tap prompt**: while the switch is off, typing in Search or in **From**/**To** shows a short card explaining why addresses aren't found, with a **Turn on** button.
+- **Results show what they are**: shops and landmarks, streets and exact addresses each get their own icon, with the street and town underneath. A result that is a De Lijn stop opens that stop's departures straight away (or is used as that stop in the route planner); anything else shows the De Lijn stops around it, closest first.
+
 ## v0.3.1 (2026-10-25)
 
 ### Fixed

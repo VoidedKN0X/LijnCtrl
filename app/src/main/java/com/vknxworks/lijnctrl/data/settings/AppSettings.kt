@@ -58,6 +58,8 @@ data class AppSettings(
     val nearbyRadius: NearbyRadius = NearbyRadius.M1000,
     /** Plan routes with Transitous (every operator, live) instead of on the phone (De Lijn only). Off by default. */
     val transitousRoutes: Boolean = false,
+    /** Search addresses, streets, shops and landmarks with Transitous's geocoder. Off by default. */
+    val addressSearch: Boolean = false,
     val lockTimeout: LockTimeout = LockTimeout.IMMEDIATELY,
     /** Hide in screenshots: FLAG_SECURE on the app's windows (which also blanks the recent-apps preview). */
     val hideScreenshots: Boolean = false,
@@ -73,6 +75,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val language = stringPreferencesKey("message_language")
         val radius = stringPreferencesKey("nearby_radius")
         val transitous = booleanPreferencesKey("transitous_routes")
+        val addressSearch = booleanPreferencesKey("address_search")
         val lockTimeout = stringPreferencesKey("lock_timeout")
         val hideScreenshots = booleanPreferencesKey("hide_screenshots")
         val hideRecents = booleanPreferencesKey("hide_recents")
@@ -89,6 +92,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         messageLanguage = enumOr(this[K.language], MessageLanguage.ENGLISH),
         nearbyRadius = enumOr(this[K.radius], NearbyRadius.M1000),
         transitousRoutes = this[K.transitous] ?: false,
+        addressSearch = this[K.addressSearch] ?: false,
         lockTimeout = enumOr(this[K.lockTimeout], LockTimeout.IMMEDIATELY),
         hideScreenshots = this[K.hideScreenshots] ?: false,
         hideRecents = this[K.hideRecents] ?: false,
@@ -103,6 +107,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
             p[K.language] = s.messageLanguage.name
             p[K.radius] = s.nearbyRadius.name
             p[K.transitous] = s.transitousRoutes
+            p[K.addressSearch] = s.addressSearch
             p[K.lockTimeout] = s.lockTimeout.name
             p[K.hideScreenshots] = s.hideScreenshots
             p[K.hideRecents] = s.hideRecents
