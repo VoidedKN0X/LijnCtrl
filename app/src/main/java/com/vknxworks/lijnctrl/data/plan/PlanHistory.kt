@@ -93,3 +93,26 @@ class PlanHistoryRepository(private val context: Context, scope: CoroutineScope)
         const val MAX = 15
     }
 }
+
+/** Home and Work, for one-tap routes on the Plan tab. Kept only on this phone. */
+class SavedPlacesRepository(private val context: Context, scope: CoroutineScope) {
+    enum class Slot(val key: String) { HOME("place_home"), WORK("place_work") }
+
+    private fun decode(raw: String?): SavedPoint? = raw?.let { runCatching { DeLijnApi.JSON.decodeFromString(SavedPoint.serializer(), it) }.getOrNull() }
+
+    val home: StateFlow<SavedPoint?> = context.appDataStore.data
+        .map { decode(it[stringPreferencesKey(Slot.HOME.key)]) }
+        .stateIn(scope, SharingStarted.Eagerly, null)
+
+    val work: StateFlow<SavedPoint?> = context.appDataStore.data
+        .map { decode(it[stringPreferencesKey(Slot.WORK.key)]) }
+        .stateIn(scope, SharingStarted.Eagerly, null)
+
+    suspend fun set(slot: Slot, point: PlanPoint?) {
+        context.appDataStore.edit { p ->
+            val k = stringPreferencesKey(slot.key)
+            if (point == null || point.isMyLocation) p.remove(k)
+            else p[k] = DeLijnApi.JSON.encodeToString(SavedPoint.serializer(), SavedPoint.of(point))
+        }
+    }
+}

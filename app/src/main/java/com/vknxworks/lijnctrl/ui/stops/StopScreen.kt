@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -136,6 +138,10 @@ fun StopScreen(entity: String, number: String, initialName: String?) {
         (departures.orEmpty().mapNotNull { it.line } + servedLines + disruptions.flatMap { d -> d.lineDirections.map { LineKey(it.entity, it.line) } }).toSet()
     }
     val lines = rememberLineInfo(lineKeys)
+    // Lines you chose to see at this stop (empty: all of them).
+    val filters by c.favourites.filters.collectAsStateWithLifecycle()
+    val filter = filters[key.toString()].orEmpty()
+    var editFilter by remember { mutableStateOf(false) }
     val name = info?.name ?: saved.firstOrNull { it.key == key }?.name ?: initialName ?: number
     val title = saved.firstOrNull { it.key == key }?.title ?: name
 
@@ -144,6 +150,15 @@ fun StopScreen(entity: String, number: String, initialName: String?) {
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             ScreenTopBar(title) {
+                if (servedLines.size > 1) {
+                    IconButton(onClick = { editFilter = true }) {
+                        Icon(
+                            Icons.Outlined.FilterList,
+                            stringResource(R.string.filter_lines),
+                            tint = if (filter.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
                 IconButton(onClick = {
                     val coord = info?.coordinate
                     if (coord != null && coord.latitude != 0.0) {
@@ -202,7 +217,28 @@ fun StopScreen(entity: String, number: String, initialName: String?) {
                     items(localized) { d -> DisruptionCard(d, lines, Modifier.padding(horizontal = Gutter, vertical = 6.dp)) }
                 }
                 item { Spacer(Modifier.height(8.dp)) }
-                val list = departures
+                val list = departures?.let { all -> if (filter.isEmpty()) all else all.filter { it.line?.toString() in filter } }
+                if (filter.isNotEmpty()) {
+                    item {
+                        Row(
+                            Modifier.fillMaxWidth().padding(horizontal = Gutter, vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                stringResource(
+                                    R.string.only_lines_x,
+                                    filter.mapNotNull { f -> lines[f]?.publicNumber ?: f.substringAfter('_') }.sorted().joinToString(", "),
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.weight(1f),
+                            )
+                            androidx.compose.material3.TextButton(onClick = { scope.launch { c.favourites.setFilter(key, emptySet()) } }) {
+                                Text(stringResource(R.string.show_all_lines))
+                            }
+                        }
+                    }
+                }
                 when {
                     list == null && error == null -> item { LoadingView(Modifier.height(240.dp)) }
                     list == null -> item { ErrorView(error.orEmpty(), Modifier.height(320.dp)) { scope.launch { loadDepartures() } } }
@@ -260,6 +296,49 @@ fun StopScreen(entity: String, number: String, initialName: String?) {
                 }
             }
         }
+    }
+    if (editFilter) {
+        var picked by remember { mutableStateOf(filter.ifEmpty { servedLines.map { it.toString() }.toSet() }) }
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { editFilter = false },
+            title = { Text(stringResource(R.string.filter_lines)) },
+            text = {
+                Column {
+                    Text(stringResource(R.string.filter_lines_body), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(bottom = 8.dp))
+                    LazyColumn(Modifier.heightIn(max = 360.dp)) {
+                        items(servedLines.sortedWith(compareBy<LineKey>({ lines[it.toString()]?.publicNumber?.length ?: 9 }, { lines[it.toString()]?.publicNumber ?: it.line })), key = { it.toString() }) { k ->
+                            val id = k.toString()
+                            Row(
+                                Modifier.fillMaxWidth().clickable { picked = if (id in picked) picked - id else picked + id }.padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                androidx.compose.material3.Checkbox(checked = id in picked, onCheckedChange = { picked = if (it) picked + id else picked - id })
+                                LineBadge(lines[id], k.line, minWidth = 40.dp)
+                                Spacer(Modifier.padding(start = 10.dp))
+                                Text(
+                                    lines[id]?.description.orEmpty(),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 2,
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(
+                    onClick = {
+                        editFilter = false
+                        // All lines ticked (or none) means no filter.
+                        val all = servedLines.map { it.toString() }.toSet()
+                        val save = if (picked.isEmpty() || picked.containsAll(all)) emptySet() else picked
+                        scope.launch { c.favourites.setFilter(key, save) }
+                    },
+                ) { Text(stringResource(R.string.save)) }
+            },
+            dismissButton = { androidx.compose.material3.TextButton(onClick = { editFilter = false }) { Text(stringResource(R.string.cancel)) } },
+        )
     }
 }
 

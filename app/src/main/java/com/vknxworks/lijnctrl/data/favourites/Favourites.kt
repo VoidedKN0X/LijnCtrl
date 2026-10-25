@@ -63,6 +63,30 @@ class FavouritesRepository(private val context: Context, scope: CoroutineScope) 
         }
     }
 
+    // Line filters: per stop, the lines you want to see there (none saved = every line).
+    private val filtersKey = stringPreferencesKey("line_filters")
+    private val filterSerializer = kotlinx.serialization.builtins.MapSerializer(
+        kotlinx.serialization.serializer<String>(),
+        ListSerializer(kotlinx.serialization.serializer<String>()),
+    )
+    private fun decodeFilters(raw: String?): Map<String, Set<String>> =
+        raw?.let { runCatching { DeLijnApi.JSON.decodeFromString(filterSerializer, it) }.getOrNull() }?.mapValues { it.value.toSet() } ?: emptyMap()
+
+    /** Stop (as "entity_number") to the lines shown there (as "entity_line"). */
+    val filters: StateFlow<Map<String, Set<String>>> = context.appDataStore.data
+        .map { decodeFilters(it[filtersKey]) }
+        .stateIn(scope, SharingStarted.Eagerly, emptyMap())
+
+    /** Shows only [lines] at [stop]; an empty set shows every line again. */
+    suspend fun setFilter(stop: StopKey, lines: Set<String>) {
+        context.appDataStore.edit { p ->
+            val next = decodeFilters(p[filtersKey]).toMutableMap()
+            if (lines.isEmpty()) next.remove(stop.toString()) else next[stop.toString()] = lines
+            if (next.isEmpty()) p.remove(filtersKey)
+            else p[filtersKey] = DeLijnApi.JSON.encodeToString(filterSerializer, next.mapValues { it.value.sorted() })
+        }
+    }
+
     fun isSaved(stop: StopKey, list: List<SavedStop> = stops.value) = list.any { it.key == stop }
 
     private suspend fun edit(transform: (List<SavedStop>) -> List<SavedStop>) {

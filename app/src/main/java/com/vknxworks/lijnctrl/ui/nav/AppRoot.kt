@@ -200,7 +200,7 @@ private fun AppNavHost(navController: NavHostController) {
         composable<NearbyRoute> { NearbyScreen() }
         composable<SearchRoute> { SearchScreen() }
         composable<PlanRoute> { PlanScreen() }
-        composable<PickPlaceRoute> { PickPlaceScreen(it.toRoute<PickPlaceRoute>().forFrom) }
+        composable<PickPlaceRoute> { it.toRoute<PickPlaceRoute>().let { r -> PickPlaceScreen(r.forFrom, r.saveAs) } }
         composable<JourneyRoute> { JourneyScreen(it.toRoute<JourneyRoute>().index) }
         composable<GtfsKeyRoute> { com.vknxworks.lijnctrl.ui.live.GtfsKeyScreen() }
         composable<RouteMapRoute> { com.vknxworks.lijnctrl.ui.plan.RouteMapScreen(it.toRoute<RouteMapRoute>().index) }

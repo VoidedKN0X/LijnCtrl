@@ -26,6 +26,9 @@ import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Directions
 import androidx.compose.material.icons.outlined.Flag
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Work
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.Map
@@ -104,6 +107,8 @@ fun PlanScreen() {
     var pickDate by remember { mutableStateOf(false) }
     var pickTime by remember { mutableStateOf(false) }
     val history by c.planHistory.entries.collectAsStateWithLifecycle()
+    val home by c.places.home.collectAsStateWithLifecycle()
+    val work by c.places.work.collectAsStateWithLifecycle()
 
     fun plan() {
         val from = s.from ?: return
@@ -173,6 +178,35 @@ fun PlanScreen() {
                             s.to = f
                             s.results = null
                         }) { Icon(Icons.Outlined.SwapVert, stringResource(R.string.swap)) }
+                    }
+                }
+            }
+            // One tap: from where you are to Home or Work, leaving now.
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(
+                        Triple(com.vknxworks.lijnctrl.data.plan.SavedPlacesRepository.Slot.HOME, home, Icons.Outlined.Home),
+                        Triple(com.vknxworks.lijnctrl.data.plan.SavedPlacesRepository.Slot.WORK, work, Icons.Outlined.Work),
+                    ).forEach { (slot, place, icon) ->
+                        QuickPlace(
+                            label = stringResource(if (slot == com.vknxworks.lijnctrl.data.plan.SavedPlacesRepository.Slot.HOME) R.string.go_home else R.string.go_to_work),
+                            place = place?.name,
+                            icon = icon,
+                            modifier = Modifier.weight(1f),
+                            onGo = {
+                                if (place == null) {
+                                    nav.navigate(PickPlaceRoute(forFrom = false, saveAs = slot.name))
+                                } else {
+                                    s.from = PlanPoint(str(R.string.my_location), 0.0, 0.0, isMyLocation = true)
+                                    s.to = place.toPoint()
+                                    s.mode = TimeMode.NOW
+                                    s.results = null
+                                    if (settings.useTransitous) planChecked()
+                                }
+                            },
+                            onChange = { nav.navigate(PickPlaceRoute(forFrom = false, saveAs = slot.name)) },
+                            onRemove = { scope.launch { c.places.set(slot, null) } },
+                        )
                     }
                 }
             }
@@ -355,6 +389,52 @@ fun PlanScreen() {
             dismissButton = { TextButton(onClick = { pickTime = false }) { Text(stringResource(R.string.cancel)) } },
             text = { TimePicker(state) },
         )
+    }
+}
+
+/**
+ * A Home or Work button: tap to plan from where you are to there, now (or to pick the place, the first time).
+ * Long-press to change or remove it.
+ */
+@Composable
+private fun QuickPlace(
+    label: String,
+    place: String?,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    modifier: Modifier,
+    onGo: () -> Unit,
+    onChange: () -> Unit,
+    onRemove: () -> Unit,
+) {
+    var menu by remember { mutableStateOf(false) }
+    Box(modifier) {
+        Surface(
+            shape = MaterialTheme.shapes.large,
+            color = MaterialTheme.colorScheme.surfaceContainer,
+            modifier = Modifier.fillMaxWidth().combinedClickable(onClick = onGo, onLongClick = { if (place != null) menu = true }),
+        ) {
+            Row(Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(icon, null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.width(10.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(label, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(
+                        place ?: stringResource(R.string.tap_to_set),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+        androidx.compose.material3.DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+            androidx.compose.material3.DropdownMenuItem(text = { Text(stringResource(R.string.change_place)) }, onClick = { menu = false; onChange() })
+            androidx.compose.material3.DropdownMenuItem(
+                text = { Text(stringResource(R.string.remove), color = MaterialTheme.colorScheme.error) },
+                onClick = { menu = false; onRemove() },
+            )
+        }
     }
 }
 

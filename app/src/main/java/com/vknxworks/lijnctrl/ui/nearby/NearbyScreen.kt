@@ -38,6 +38,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.vknxworks.lijnctrl.R
+import com.vknxworks.lijnctrl.data.api.departuresByStop
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.async
 import com.vknxworks.lijnctrl.container
 import com.vknxworks.lijnctrl.data.api.ApiNearbyStop
 import com.vknxworks.lijnctrl.data.api.DeLijnApi
@@ -197,7 +202,20 @@ private fun NearbyList(state: NearbyState, radius: Int, findMe: () -> Unit, retr
         )
         is NearbyState.Found -> if (state.stops.isEmpty()) {
             MessageView(Icons.Outlined.LocationOff, stringResource(R.string.no_stops_nearby), stringResource(R.string.no_stops_nearby_body_x, radius), Modifier.height(260.dp))
-        } else {
+        } else Column {
+            // Two views of the same stops: the stops themselves, or every departure from them, soonest first.
+            var board by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+            androidx.compose.foundation.layout.Row(
+                Modifier.padding(horizontal = Gutter, vertical = 4.dp),
+                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+            ) {
+                androidx.compose.material3.FilterChip(selected = !board, onClick = { board = false }, label = { Text(stringResource(R.string.stops)) })
+                androidx.compose.material3.FilterChip(selected = board, onClick = { board = true }, label = { Text(stringResource(R.string.departures)) })
+            }
+            if (board) {
+                DeparturesBoard(state.stops)
+                return@Column
+            }
             LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
                 items(state.stops, key = { it.id }) { stop ->
                     val entity = DeLijnApi.entityFromLinks(stop) ?: stop.id.take(1)
@@ -216,6 +234,86 @@ private fun NearbyList(state: NearbyState, radius: Int, findMe: () -> Unit, retr
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.fillMaxWidth().padding(horizontal = Gutter, vertical = 12.dp),
                     )
+                }
+            }
+        }
+    }
+}
+
+/** How many of the closest stops the departures board looks at. */
+private const val BOARD_STOPS = 8
+
+/**
+ * Every departure from the stops around you in one list, soonest first, with the stop each one leaves from and
+ * how far away it is. Live where De Lijn has live times, topped up with the timetable; refreshed every 30 seconds.
+ */
+@Composable
+private fun DeparturesBoard(stops: List<ApiNearbyStop>) {
+    val c = LocalContext.current.container
+    val nav = com.vknxworks.lijnctrl.ui.nav.LocalNavigator.current
+    val settings by c.settings.settings.collectAsStateWithLifecycle()
+    val now by com.vknxworks.lijnctrl.ui.components.rememberNow()
+    val closest = remember(stops) { stops.take(BOARD_STOPS) }
+    val keys = remember(closest) {
+        closest.map { com.vknxworks.lijnctrl.data.api.StopKey(DeLijnApi.entityFromLinks(it) ?: it.id.take(1), it.id) }
+    }
+    var rows by remember { mutableStateOf<List<com.vknxworks.lijnctrl.data.api.Departure>?>(null) }
+    var failed by remember { mutableStateOf<String?>(null) }
+
+    val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(keys) {
+        lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
+            while (true) {
+                val live = runCatching { c.api.realtime(keys, max = 5) }
+                    .map { list -> list.flatMap { it.departuresByStop().entries }.associate { it.key to it.value } }
+                val merged = kotlinx.coroutines.coroutineScope {
+                    keys.map { k ->
+                        async {
+                            val l = live.getOrNull()?.get(k.number).orEmpty()
+                            runCatching { c.departures.topUp(k, l, 5) }.getOrDefault(l).map { it.copy(stop = it.stop ?: k.number) }
+                        }
+                    }.awaitAll().flatten()
+                }
+                val nowI = java.time.Instant.now()
+                rows = merged.filter { !it.time.isBefore(nowI.minusSeconds(30)) }.distinctBy { it.matchKey }.sortedBy { it.time }.take(40)
+                failed = if (merged.isEmpty()) live.exceptionOrNull()?.friendlyMessage() else null
+                delay(30_000)
+            }
+        }
+    }
+
+    val list = rows
+    val lines = com.vknxworks.lijnctrl.ui.components.rememberLineInfo(list.orEmpty().mapNotNull { it.line }.toSet())
+    val byNumber = remember(closest) { closest.associateBy { it.id } }
+    when {
+        list == null && failed == null -> LoadingView(Modifier.height(160.dp))
+        list.isNullOrEmpty() -> Text(
+            failed ?: stringResource(R.string.no_departures_soon),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = Gutter, vertical = 16.dp),
+        )
+        else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
+            items(list, key = { it.matchKey }) { d ->
+                val stop = d.stop?.let { byNumber[it] }
+                Column {
+                    com.vknxworks.lijnctrl.ui.components.DepartureRow(
+                        d,
+                        d.line?.let { lines[it.toString()] },
+                        now,
+                        settings.timeStyle,
+                        compact = true,
+                        onClick = if (d.trip != null) ({ nav.trip(d) }) else null,
+                    )
+                    if (stop != null) {
+                        Text(
+                            listOfNotNull(stop.name, stop.distance?.let { stringResource(R.string.x_m_away, it) }).joinToString(" · "),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = Gutter + 60.dp, bottom = 6.dp),
+                            maxLines = 1,
+                        )
+                    }
                 }
             }
         }

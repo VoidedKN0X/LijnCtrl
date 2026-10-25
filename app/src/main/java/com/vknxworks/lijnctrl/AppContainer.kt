@@ -66,6 +66,7 @@ class AppContainer(val context: Context) {
     val transitous = TransitousPlanner()
     val favourites = FavouritesRepository(context, appScope)
     val planHistory = com.vknxworks.lijnctrl.data.plan.PlanHistoryRepository(context, appScope)
+    val places = com.vknxworks.lijnctrl.data.plan.SavedPlacesRepository(context, appScope)
 
     /** The app lock is on. */
     val lockEnabled: Boolean get() = vault.enabled

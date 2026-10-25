@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.DirectionsBus
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Work
 import androidx.compose.material.icons.outlined.MyLocation
 import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material.icons.outlined.Search
@@ -66,7 +67,7 @@ import kotlinx.coroutines.launch
 
 /** Picks the start or end of a route: where you are, a saved stop, or any stop, address or place. */
 @Composable
-fun PickPlaceScreen(forFrom: Boolean) {
+fun PickPlaceScreen(forFrom: Boolean, saveAs: String? = null) {
     val context = LocalContext.current
     val c = context.container
     val nav = LocalNavigator.current
@@ -79,7 +80,17 @@ fun PickPlaceScreen(forFrom: Boolean) {
     var loading by remember { mutableStateOf(false) }
     val focus = remember { FocusRequester() }
 
+    val slot = saveAs?.let { s -> com.vknxworks.lijnctrl.data.plan.SavedPlacesRepository.Slot.entries.firstOrNull { it.name == s } }
+    val home by c.places.home.collectAsStateWithLifecycle()
+    val work by c.places.work.collectAsStateWithLifecycle()
+
     fun choose(p: PlanPoint) {
+        if (slot != null) {
+            // Saving Home or Work: stored, nothing changes on the Plan tab itself.
+            scope.launch { c.places.set(slot, p) }
+            nav.back()
+            return
+        }
         if (forFrom) PlanState.from = p else PlanState.to = p
         PlanState.results = null
         PlanState.error = null
@@ -124,7 +135,17 @@ fun PickPlaceScreen(forFrom: Boolean) {
     Scaffold(
         contentWindowInsets = WindowInsets(0),
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = { ScreenTopBar(stringResource(if (forFrom) R.string.from else R.string.to)) },
+        topBar = {
+            ScreenTopBar(
+                stringResource(
+                    when (slot) {
+                        com.vknxworks.lijnctrl.data.plan.SavedPlacesRepository.Slot.HOME -> R.string.set_home
+                        com.vknxworks.lijnctrl.data.plan.SavedPlacesRepository.Slot.WORK -> R.string.set_work
+                        null -> if (forFrom) R.string.from else R.string.to
+                    },
+                ),
+            )
+        },
     ) { padding ->
         Column(Modifier.padding(padding).fillMaxSize()) {
             OutlinedTextField(
@@ -140,10 +161,15 @@ fun PickPlaceScreen(forFrom: Boolean) {
             if (loading) LinearProgressIndicator(Modifier.fillMaxWidth().padding(horizontal = Gutter))
             LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 32.dp)) {
                 if (query.trim().length < 2) {
-                    item {
+                    // "My location" can't be Home or Work: those need a fixed place.
+                    if (slot == null) item {
                         PickRow(Icons.Outlined.MyLocation, stringResource(R.string.my_location), stringResource(R.string.my_location_detail)) {
                             choose(PlanPoint(str(R.string.my_location), 0.0, 0.0, isMyLocation = true))
                         }
+                    }
+                    if (slot == null) {
+                        home?.let { h -> item { PickRow(Icons.Outlined.Home, stringResource(R.string.home), h.name) { choose(h.toPoint()) } } }
+                        work?.let { w -> item { PickRow(Icons.Outlined.Work, stringResource(R.string.work), w.name) { choose(w.toPoint()) } } }
                     }
                     items(saved, key = { "saved-${it.key}" }) { st ->
                         PickRow(Icons.Outlined.Star, st.title, listOfNotNull(st.name.takeIf { st.nickname != null }, st.municipality).joinToString(" · ").ifBlank { null }) {

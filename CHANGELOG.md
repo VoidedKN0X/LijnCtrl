@@ -4,6 +4,16 @@ What changed in each LijnCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## v0.9.0 (2026-10-25)
+
+Quicker everyday trips: Home and Work, a departures board, and only the lines you take.
+
+### New
+
+- **Go home / Go to work.** The Plan tab has two new buttons under From and To. The first time you tap one, pick the place (any stop, address or place); after that, one tap plans a route from where you are to there, leaving now. Long-press a button to change or remove the place. Home and Work also show at the top of the From/To picker, and they're kept only on this phone.
+- **Departures board in Nearby.** The stops sheet in Nearby now has **Stops** and **Departures** at the top. **Departures** lists every bus and tram leaving from the 8 closest stops in one list, soonest first, with the stop each one leaves from and how far away it is. Times are live where De Lijn has them, filled in from the timetable otherwise, and refresh every 30 seconds. Tap one to open its trip.
+- **Choose lines per stop.** A stop served by several lines has a new filter button at the top: tick the lines you care about, and only those are shown at that stop, both on its page and on the Stops tab. The stop page says which lines it's showing, with a **Show all** button to undo it. The filter button turns amber while a filter is on.
+
 ## v0.8.0 (2026-10-25)
 
 Alerts, and every bus on a line live.

@@ -114,10 +114,18 @@ fun StopsScreen() {
         }.forEach { (k, r) ->
             r.onSuccess { result[k] = it }.onFailure { failed[k] = it.friendlyMessage() }
         }
-        // Topped up with the timetable, so stops without live data (or quiet right now) aren't empty.
+        // Topped up with the timetable, so stops without live data (or quiet right now) aren't empty. Stops with a
+        // line filter look further ahead, so there's still a handful left after filtering.
+        val filters = c.favourites.filters.value
         coroutineScope {
             stops.map { k ->
-                async { k to runCatching { c.departures.topUp(k, result[k].orEmpty(), PER_STOP) }.getOrNull() }
+                async {
+                    val filter = filters[k.toString()].orEmpty()
+                    k to runCatching {
+                        if (filter.isEmpty()) c.departures.topUp(k, result[k].orEmpty(), PER_STOP)
+                        else c.departures.topUp(k, result[k].orEmpty(), 30).filter { it.line?.toString() in filter }.take(PER_STOP)
+                    }.getOrNull()
+                }
             }.awaitAll()
         }.forEach { (k, merged) ->
             if (merged != null && (merged.isNotEmpty() || result.containsKey(k))) {
@@ -131,7 +139,8 @@ fun StopsScreen() {
     }
 
     val lifecycle = LocalLifecycleOwner.current.lifecycle
-    LaunchedEffect(saved.map { it.key }) {
+    val lineFilters by c.favourites.filters.collectAsStateWithLifecycle()
+    LaunchedEffect(saved.map { it.key }, lineFilters) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             while (true) {
                 load()

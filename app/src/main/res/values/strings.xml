@@ -388,4 +388,17 @@
     <string name="bus_alert_cancelled_x">%1$s to %2$s is cancelled.</string>
     <string name="bus_alert_timeout">Stopped watching after three hours.</string>
     <string name="stop_watching">Stop</string>
+    <string name="go_home">Go home</string>
+    <string name="go_to_work">Go to work</string>
+    <string name="tap_to_set">Tap to set</string>
+    <string name="change_place">Change</string>
+    <string name="set_home">Set Home</string>
+    <string name="set_work">Set Work</string>
+    <string name="home">Home</string>
+    <string name="work">Work</string>
+    <string name="stops">Stops</string>
+    <string name="filter_lines">Choose lines</string>
+    <string name="filter_lines_body">Only the lines you tick are shown at this stop, here and on the Stops tab.</string>
+    <string name="only_lines_x">Only lines %1$s</string>
+    <string name="show_all_lines">Show all</string>
 </resources>
