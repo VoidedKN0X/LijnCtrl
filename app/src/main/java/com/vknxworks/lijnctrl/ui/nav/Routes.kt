@@ -29,7 +29,7 @@ import kotlinx.serialization.Serializable
 @Serializable data object SettingsRoute
 @Serializable data object ApiKeyRoute
 /** Picks the start or end of a route; with [saveAs] ("HOME" or "WORK") it saves that place instead. */
-@Serializable data class PickPlaceRoute(val forFrom: Boolean, val saveAs: String? = null)
+@Serializable data class PickPlaceRoute(val forFrom: Boolean, val saveAs: String? = null, val thenPlan: Boolean = false)
 @Serializable data class JourneyRoute(val index: Int)
 @Serializable data class RouteMapRoute(val index: Int)
 @Serializable data object GtfsKeyRoute

@@ -22,6 +22,20 @@ object PlanState {
     var error by mutableStateOf<String?>(null)
     var planning by mutableStateOf(false)
 
+    /** Set by a "Go home" / "Go to work" shortcut: the Plan tab plans as soon as it's shown. */
+    var autoPlan by mutableStateOf(false)
+
+    /** From where you are to [place], leaving now; with [plan], the Plan tab plans it straight away. */
+    fun goTo(place: PlanPoint, plan: Boolean) {
+        from = PlanPoint(com.vknxworks.lijnctrl.str(com.vknxworks.lijnctrl.R.string.my_location), 0.0, 0.0, isMyLocation = true)
+        to = place
+        mode = TimeMode.NOW
+        time = null
+        results = null
+        error = null
+        autoPlan = plan
+    }
+
     /** Sets the destination (from a stop or place page) and clears old results. */
     fun routeTo(point: PlanPoint) {
         to = point

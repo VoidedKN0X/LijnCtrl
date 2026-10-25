@@ -4,6 +4,25 @@ What changed in each LijnCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## v0.14.0 (2026-10-25)
+
+Go home and Go to work from the app icon: two launcher shortcuts that plan the route from where you are, straight away.
+
+### New
+
+- **"Go home" and "Go to work" shortcuts.** Long-press the LijnCtrl icon on your home screen to see them. Tapping one opens the Plan tab with From set to your location and To set to your saved Home or Work, leaving now, and plans the route at once. Your location is read once from Android's own location service (no Google services); LijnCtrl asks for the location permission the first time if it doesn't have it yet.
+- **Not set yet?** If you haven't saved Home or Work, the shortcut opens the place picker first; once you pick a stop, address or place it's saved and the route is planned right away. The same now happens with the **Go home** / **Go to work** buttons on the Plan tab.
+- **Shortcuts on the home screen.** Long-press the **Go home** or **Go to work** button on the Plan tab and choose **Add to home screen** to put that shortcut on your home screen as its own icon (your launcher asks you to confirm). The long-press menu now also works before a place is set.
+- **App lock and setup come first.** With the app lock on, a shortcut asks for your PIN or fingerprint first and then plans the route; without an API key yet, setup comes first.
+
+### Security
+
+- **Only LijnCtrl's own shortcuts work.** Each shortcut carries a random secret that only this copy of LijnCtrl knows, so other apps can't make LijnCtrl read your location or plan a route by pretending to be a shortcut.
+
+### Changed
+
+- Route planning still needs **Use Transitous** to be on, as before; with it off, a shortcut opens the Plan tab with From and To filled in and the "Turn on Transitous" card.
+
 ## v0.13.0 (2026-10-25)
 
 Disruptions right where you look: every departure that's hit by a De Lijn disruption or diversion now says so on the departure board, and the trip page lists them too.

@@ -157,6 +157,13 @@ fun PlanScreen() {
         } else plan()
     }
 
+    // A Go home / Go to work shortcut (or a place just saved for one): plan as soon as the tab is shown.
+    androidx.compose.runtime.LaunchedEffect(s.autoPlan, settings.useTransitous) {
+        if (!s.autoPlan) return@LaunchedEffect
+        s.autoPlan = false
+        if (settings.useTransitous && s.from != null && s.to != null) planChecked()
+    }
+
     Column(Modifier.fillMaxSize().statusBarsPadding()) {
         TabTitle(stringResource(R.string.tab_plan))
         LazyColumn(
@@ -195,17 +202,18 @@ fun PlanScreen() {
                             modifier = Modifier.weight(1f),
                             onGo = {
                                 if (place == null) {
-                                    nav.navigate(PickPlaceRoute(forFrom = false, saveAs = slot.name))
+                                    nav.navigate(PickPlaceRoute(forFrom = false, saveAs = slot.name, thenPlan = true))
                                 } else {
-                                    s.from = PlanPoint(str(R.string.my_location), 0.0, 0.0, isMyLocation = true)
-                                    s.to = place.toPoint()
-                                    s.mode = TimeMode.NOW
-                                    s.results = null
+                                    Shortcuts.reportUsed(context, slot)
+                                    s.goTo(place.toPoint(), plan = false)
                                     if (settings.useTransitous) planChecked()
                                 }
                             },
                             onChange = { nav.navigate(PickPlaceRoute(forFrom = false, saveAs = slot.name)) },
                             onRemove = { scope.launch { c.places.set(slot, null) } },
+                            onPin = if (Shortcuts.canPin(context)) ({
+                                if (!Shortcuts.pin(context, slot)) android.widget.Toast.makeText(context, str(R.string.shortcut_pin_failed), android.widget.Toast.LENGTH_SHORT).show()
+                            }) else null,
                         )
                     }
                 }
@@ -397,6 +405,7 @@ private fun QuickPlace(
     onGo: () -> Unit,
     onChange: () -> Unit,
     onRemove: () -> Unit,
+    onPin: (() -> Unit)?,
 ) {
     var menu by remember { mutableStateOf(false) }
     Box(modifier) {
@@ -404,7 +413,7 @@ private fun QuickPlace(
             shape = com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Card,
             color = MaterialTheme.colorScheme.surface,
             border = com.vknxworks.lijnctrl.ui.theme.CardBorder,
-            modifier = Modifier.fillMaxWidth().combinedClickable(onClick = onGo, onLongClick = { if (place != null) menu = true }),
+            modifier = Modifier.fillMaxWidth().combinedClickable(onClick = onGo, onLongClick = { menu = true }),
         ) {
             Row(Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(icon, null, tint = MaterialTheme.colorScheme.primary)
@@ -423,10 +432,15 @@ private fun QuickPlace(
         }
         androidx.compose.material3.DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
             androidx.compose.material3.DropdownMenuItem(text = { Text(stringResource(R.string.change_place)) }, onClick = { menu = false; onChange() })
-            androidx.compose.material3.DropdownMenuItem(
-                text = { Text(stringResource(R.string.remove), color = MaterialTheme.colorScheme.error) },
-                onClick = { menu = false; onRemove() },
-            )
+            if (onPin != null) {
+                androidx.compose.material3.DropdownMenuItem(text = { Text(stringResource(R.string.add_to_home_screen)) }, onClick = { menu = false; onPin() })
+            }
+            if (place != null) {
+                androidx.compose.material3.DropdownMenuItem(
+                    text = { Text(stringResource(R.string.remove), color = MaterialTheme.colorScheme.error) },
+                    onClick = { menu = false; onRemove() },
+                )
+            }
         }
     }
 }

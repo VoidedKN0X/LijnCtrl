@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Launcher shortcut icon: the Ctrl lavender with a dark glyph, the same in light and dark mode. -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/shortcut_bg" />
+    <foreground android:drawable="@drawable/ic_shortcut_home_fg" />
+</adaptive-icon>

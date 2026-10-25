@@ -430,4 +430,10 @@
     <string name="show_disruption_details">Show disruption details</string>
     <string name="hide_disruption_details">Hide disruption details</string>
     <string name="plus_x">+%1$d</string>
+
+    <!-- Go home / Go to work shortcuts (0.14.0) -->
+    <string name="shortcut_go_home_long">Route home from here</string>
+    <string name="shortcut_go_to_work_long">Route to work from here</string>
+    <string name="add_to_home_screen">Add to home screen</string>
+    <string name="shortcut_pin_failed">Your launcher didn\'t accept the shortcut</string>
 </resources>

@@ -67,7 +67,7 @@ import kotlinx.coroutines.launch
 
 /** Picks the start or end of a route: where you are, a saved stop, or any stop, address or place. */
 @Composable
-fun PickPlaceScreen(forFrom: Boolean, saveAs: String? = null) {
+fun PickPlaceScreen(forFrom: Boolean, saveAs: String? = null, thenPlan: Boolean = false) {
     val context = LocalContext.current
     val c = context.container
     val nav = LocalNavigator.current
@@ -88,6 +88,8 @@ fun PickPlaceScreen(forFrom: Boolean, saveAs: String? = null) {
         if (slot != null) {
             // Saving Home or Work: stored, nothing changes on the Plan tab itself.
             scope.launch { c.places.set(slot, p) }
+            // From a Go home / Go to work button or shortcut: plan the route there right away.
+            if (thenPlan && !p.isMyLocation) PlanState.goTo(p, plan = true)
             nav.back()
             return
         }

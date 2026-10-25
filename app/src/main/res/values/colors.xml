@@ -5,4 +5,6 @@
     <!-- Ctrl accent for notifications: the darker text accent on light, the lavender on dark. -->
     <color name="notification_accent">#FF6A3BDB</color>
     <color name="ic_bg">#FF121418</color>
+    <!-- Launcher shortcut icons (Go home / Go to work): the Ctrl accent fill. -->
+    <color name="shortcut_bg">#FFB48CFF</color>
 </resources>

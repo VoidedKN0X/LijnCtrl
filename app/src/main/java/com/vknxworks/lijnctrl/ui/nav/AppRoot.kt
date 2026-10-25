@@ -52,6 +52,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import kotlinx.coroutines.flow.first
 import com.vknxworks.lijnctrl.R
 import com.vknxworks.lijnctrl.container
 import com.vknxworks.lijnctrl.ui.components.LocalBottomClearance
@@ -107,6 +108,35 @@ private fun MainScaffold() {
             popUpTo(navController.graph.findStartDestination().id) { saveState = true }
             launchSingleTop = true
             restoreState = true
+        }
+    }
+
+    // Shortcuts and the widget: handled here, once the app is unlocked and has its key.
+    val launch = LaunchRequests.pending
+    val context = LocalContext.current
+    androidx.compose.runtime.LaunchedEffect(launch) {
+        val target = launch ?: return@LaunchedEffect
+        LaunchRequests.pending = null
+        // The screens' graph has to be set up before anything can be opened.
+        navController.currentBackStackEntryFlow.first()
+        when (target) {
+            is LaunchTarget.Stop -> {
+                navController.popBackStack(navController.graph.findStartDestination().id, inclusive = false)
+                navController.navigate(StopRoute(target.entity, target.number, target.name)) { launchSingleTop = true }
+            }
+            is LaunchTarget.Go -> {
+                com.vknxworks.lijnctrl.ui.plan.Shortcuts.reportUsed(context, target.slot)
+                val place = context.container.places.get(target.slot)
+                navController.popBackStack(navController.graph.findStartDestination().id, inclusive = false)
+                if (place == null) {
+                    // Not saved yet: pick the place first (it's then saved for next time).
+                    navController.navigate(PlanRoute) { launchSingleTop = true }
+                    navController.navigate(PickPlaceRoute(forFrom = false, saveAs = target.slot.name, thenPlan = true)) { launchSingleTop = true }
+                } else {
+                    com.vknxworks.lijnctrl.ui.plan.PlanState.goTo(place.toPoint(), plan = true)
+                    navController.navigate(PlanRoute) { launchSingleTop = true }
+                }
+            }
         }
     }
 
@@ -197,7 +227,7 @@ private fun AppNavHost(navController: NavHostController) {
         composable<NearbyRoute> { NearbyScreen() }
         composable<SearchRoute> { SearchScreen() }
         composable<PlanRoute> { PlanScreen() }
-        composable<PickPlaceRoute> { it.toRoute<PickPlaceRoute>().let { r -> PickPlaceScreen(r.forFrom, r.saveAs) } }
+        composable<PickPlaceRoute> { it.toRoute<PickPlaceRoute>().let { r -> PickPlaceScreen(r.forFrom, r.saveAs, r.thenPlan) } }
         composable<JourneyRoute> { JourneyScreen(it.toRoute<JourneyRoute>().index) }
         composable<GtfsKeyRoute> { com.vknxworks.lijnctrl.ui.live.GtfsKeyScreen() }
         composable<RouteMapRoute> { com.vknxworks.lijnctrl.ui.plan.RouteMapScreen(it.toRoute<RouteMapRoute>().index) }

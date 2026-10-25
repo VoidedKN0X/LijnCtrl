@@ -9,6 +9,7 @@ import com.vknxworks.lijnctrl.data.appDataStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.serialization.Serializable
@@ -107,6 +108,9 @@ class SavedPlacesRepository(private val context: Context, scope: CoroutineScope)
     val work: StateFlow<SavedPoint?> = context.appDataStore.data
         .map { decode(it[stringPreferencesKey(Slot.WORK.key)]) }
         .stateIn(scope, SharingStarted.Eagerly, null)
+
+    /** Home or Work as saved right now, read from disk (the flows above may not have loaded yet in a fresh start). */
+    suspend fun get(slot: Slot): SavedPoint? = decode(context.appDataStore.data.first()[stringPreferencesKey(slot.key)])
 
     suspend fun set(slot: Slot, point: PlanPoint?) {
         context.appDataStore.edit { p ->
