@@ -44,11 +44,18 @@ enum class MessageLanguage(val key: String, val label: String) {
     GERMAN("duits", "Deutsch"),
 }
 
+/** How far the Nearby tab looks for stops. */
+enum class NearbyRadius(val metres: Int) {
+    M500(500), M750(750), M1000(1000), M1500(1500), M2000(2000),
+}
+
 data class AppSettings(
     val theme: ThemeChoice = ThemeChoice.SYSTEM,
     val dynamicColor: Boolean = false,
     val timeStyle: TimeStyle = TimeStyle.MINUTES,
     val messageLanguage: MessageLanguage = MessageLanguage.ENGLISH,
+    /** Distance for Nearby, the list and the map's "Search this area". */
+    val nearbyRadius: NearbyRadius = NearbyRadius.M1000,
     val lockTimeout: LockTimeout = LockTimeout.IMMEDIATELY,
     /** Hide in screenshots: FLAG_SECURE on the app's windows (which also blanks the recent-apps preview). */
     val hideScreenshots: Boolean = false,
@@ -62,6 +69,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val dynamic = booleanPreferencesKey("dynamic_color")
         val timeStyle = stringPreferencesKey("time_style")
         val language = stringPreferencesKey("message_language")
+        val radius = stringPreferencesKey("nearby_radius")
         val lockTimeout = stringPreferencesKey("lock_timeout")
         val hideScreenshots = booleanPreferencesKey("hide_screenshots")
         val hideRecents = booleanPreferencesKey("hide_recents")
@@ -76,6 +84,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         dynamicColor = this[K.dynamic] ?: false,
         timeStyle = enumOr(this[K.timeStyle], TimeStyle.MINUTES),
         messageLanguage = enumOr(this[K.language], MessageLanguage.ENGLISH),
+        nearbyRadius = enumOr(this[K.radius], NearbyRadius.M1000),
         lockTimeout = enumOr(this[K.lockTimeout], LockTimeout.IMMEDIATELY),
         hideScreenshots = this[K.hideScreenshots] ?: false,
         hideRecents = this[K.hideRecents] ?: false,
@@ -88,6 +97,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
             p[K.dynamic] = s.dynamicColor
             p[K.timeStyle] = s.timeStyle.name
             p[K.language] = s.messageLanguage.name
+            p[K.radius] = s.nearbyRadius.name
             p[K.lockTimeout] = s.lockTimeout.name
             p[K.hideScreenshots] = s.hideScreenshots
             p[K.hideRecents] = s.hideRecents

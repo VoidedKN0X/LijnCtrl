@@ -14,7 +14,9 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material.icons.outlined.LocationOff
+import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.MyLocation
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.WrongLocation
@@ -30,7 +32,10 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import org.osmdroid.util.GeoPoint
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -71,6 +76,8 @@ fun NearbyScreen() {
     var state by remember { mutableStateOf<NearbyState>(NearbyState.Idle) }
     var refreshing by remember { mutableStateOf(false) }
     var trigger by remember { mutableIntStateOf(0) }
+    var showMap by rememberSaveable { mutableStateOf(false) }
+    val settings by c.settings.settings.collectAsStateWithLifecycle()
 
     suspend fun locate() {
         if (Locator.isOff(context)) {
@@ -83,9 +90,14 @@ fun NearbyScreen() {
             state = NearbyState.NoFix
             return
         }
-        val found = runCatching { c.api.stopsNearby(loc.latitude, loc.longitude, max = 30, radius = 750) }
-        state = found.getOrNull()?.let { NearbyState.Found(it.stops) }
-            ?: NearbyState.Failed(found.exceptionOrNull()?.friendlyMessage().orEmpty())
+        MapMemory.center = GeoPoint(loc.latitude, loc.longitude)
+        // De Lijn caps the list at 50 stops; the distance is your choice in Settings (1 km by default).
+        val radius = c.settings.settings.value.nearbyRadius.metres
+        val found = runCatching { c.api.stopsNearby(loc.latitude, loc.longitude, max = 50, radius = radius) }
+        state = found.getOrNull()?.let { r ->
+            // Only De Lijn's own stops: others (train stations and the like) can't show De Lijn departures.
+            NearbyState.Found(r.stops.filter { it.type == null || it.type.equals("DELIJN", true) }.sortedBy { it.distance ?: Int.MAX_VALUE })
+        } ?: NearbyState.Failed(found.exceptionOrNull()?.friendlyMessage().orEmpty())
     }
 
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { granted ->
@@ -109,11 +121,21 @@ fun NearbyScreen() {
 
     Column(Modifier.fillMaxSize().statusBarsPadding()) {
         TabTitle(stringResource(R.string.tab_nearby)) {
-            if (state is NearbyState.Found) {
+            if (!showMap && state is NearbyState.Found) {
                 IconButton(onClick = { trigger++ }) { Icon(Icons.Outlined.Refresh, stringResource(R.string.refresh)) }
+            }
+            IconButton(onClick = { showMap = !showMap }) {
+                Icon(
+                    if (showMap) Icons.AutoMirrored.Outlined.List else Icons.Outlined.Map,
+                    stringResource(if (showMap) R.string.show_list else R.string.show_map),
+                )
             }
         }
         val bottom = Modifier.padding(bottom = LocalBottomClearance.current)
+        if (showMap) {
+            StopMap(start = MapMemory.center)
+            return@Column
+        }
         when (val s = state) {
             NearbyState.Idle -> MessageView(
                 Icons.Outlined.MyLocation,
@@ -167,7 +189,7 @@ fun NearbyScreen() {
                 modifier = Modifier.fillMaxSize(),
             ) {
                 if (s.stops.isEmpty()) {
-                    MessageView(Icons.Outlined.LocationOff, stringResource(R.string.no_stops_nearby), stringResource(R.string.no_stops_nearby_body), bottom)
+                    MessageView(Icons.Outlined.LocationOff, stringResource(R.string.no_stops_nearby), stringResource(R.string.no_stops_nearby_body_x, settings.nearbyRadius.metres), bottom)
                 } else {
                     LazyColumn(
                         Modifier.fillMaxSize(),
@@ -185,7 +207,7 @@ fun NearbyScreen() {
                         }
                         item {
                             Text(
-                                stringResource(R.string.nearby_footer),
+                                stringResource(R.string.nearby_footer_x, settings.nearbyRadius.metres),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.fillMaxWidth().padding(horizontal = Gutter, vertical = 12.dp),

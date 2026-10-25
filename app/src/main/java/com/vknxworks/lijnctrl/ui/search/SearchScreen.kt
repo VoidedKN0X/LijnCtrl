@@ -48,7 +48,19 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vknxworks.lijnctrl.R
 import com.vknxworks.lijnctrl.container
+import com.vknxworks.lijnctrl.data.api.ApiSearchLineDirection
 import com.vknxworks.lijnctrl.data.api.ApiStop
+import com.vknxworks.lijnctrl.data.api.DeLijnApi
+import com.vknxworks.lijnctrl.data.api.LineKey
+import com.vknxworks.lijnctrl.data.api.StopKey
+import com.vknxworks.lijnctrl.data.towns.Town
+import com.vknxworks.lijnctrl.ui.components.LineBadge
+import com.vknxworks.lijnctrl.ui.components.rememberLineInfo
+import com.vknxworks.lijnctrl.ui.lines.directionEnd
+import androidx.compose.material.icons.outlined.LocationCity
+import androidx.compose.material3.TextButton
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import com.vknxworks.lijnctrl.data.favourites.SavedStop
 import com.vknxworks.lijnctrl.ui.components.LocalBottomClearance
 import com.vknxworks.lijnctrl.ui.components.MessageView
@@ -59,32 +71,70 @@ import com.vknxworks.lijnctrl.ui.theme.Gutter
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-/** The Search tab: find any De Lijn stop by name (or by the number on its sign). */
+/** Results for one query: each part loads on its own, so one failing doesn't hide the rest. */
+private data class Results(
+    val numberMatch: ApiStop? = null,
+    val towns: List<Town> = emptyList(),
+    val lines: List<List<ApiSearchLineDirection>> = emptyList(),
+    val stops: List<ApiStop> = emptyList(),
+    val totalStops: Int = 0,
+    val stopsError: String? = null,
+)
+
+/** The Search tab: stops by name or the number on their sign, lines by number, and every stop in a town. */
 @Composable
 fun SearchScreen() {
     val c = LocalContext.current.container
+    val nav = LocalNavigator.current
     val focus = LocalFocusManager.current
+    val scope = rememberCoroutineScope()
     var query by rememberSaveable { mutableStateOf("") }
-    var results by remember { mutableStateOf<List<ApiStop>?>(null) }
-    var total by remember { mutableStateOf(0) }
+    var results by remember { mutableStateOf<Results?>(null) }
     var loading by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
+    var loadingMore by remember { mutableStateOf(false) }
 
     LaunchedEffect(query) {
         val q = query.trim()
-        if (q.length < 2) {
+        if (q.isEmpty() || (q.length < 2 && !q.all(Char::isDigit))) {
             results = null
-            error = null
             loading = false
             return@LaunchedEffect
         }
         // Waits until you stop typing for a moment, so every keystroke isn't a request.
         delay(350)
         loading = true
-        runCatching { c.api.searchStops(q, max = 40) }
-            .onSuccess { results = it.stops; total = it.total; error = null }
-            .onFailure { error = it.friendlyMessage() }
+        results = coroutineScope {
+            val number = async { if (q.all(Char::isDigit) && q.length in 5..6) findByNumber(c.api, q) else null }
+            val towns = async { if (q.any(Char::isLetter)) c.towns.matching(q, max = 4) else emptyList() }
+            val lines = async {
+                runCatching { c.api.searchLines(q, max = 30).directions }.getOrDefault(emptyList()).also { found ->
+                    runCatching { c.lines.remember(found) }
+                }
+            }
+            val stops = async { runCatching { c.api.searchStops(q, max = PAGE) } }
+            val st = stops.await()
+            Results(
+                numberMatch = number.await(),
+                towns = towns.await(),
+                lines = lines.await().groupBy { LineKey(it.entity, it.line) }.values.toList().take(8),
+                stops = st.getOrNull()?.stops.orEmpty(),
+                totalStops = st.getOrNull()?.total ?: 0,
+                stopsError = st.exceptionOrNull()?.friendlyMessage(),
+            )
+        }
         loading = false
+    }
+
+    fun loadMore() {
+        val r = results ?: return
+        if (loadingMore) return
+        loadingMore = true
+        scope.launch {
+            runCatching { c.api.searchStops(query.trim(), max = PAGE, start = r.stops.size) }.onSuccess { more ->
+                results = r.copy(stops = (r.stops + more.stops).distinctBy { it.entity to it.number }, totalStops = more.total)
+            }
+            loadingMore = false
+        }
     }
 
     Column(Modifier.fillMaxSize().statusBarsPadding()) {
@@ -92,7 +142,7 @@ fun SearchScreen() {
         OutlinedTextField(
             value = query,
             onValueChange = { query = it.take(80) },
-            placeholder = { Text(stringResource(R.string.search_stops_hint)) },
+            placeholder = { Text(stringResource(R.string.search_hint)) },
             leadingIcon = { Icon(Icons.Outlined.Search, null) },
             trailingIcon = {
                 if (query.isNotEmpty()) IconButton(onClick = { query = "" }) { Icon(Icons.Filled.Close, stringResource(R.string.clear)) }
@@ -106,37 +156,117 @@ fun SearchScreen() {
         Spacer(Modifier.height(8.dp))
         if (loading) LinearProgressIndicator(Modifier.fillMaxWidth().padding(horizontal = Gutter)) else Spacer(Modifier.height(4.dp))
 
-        val list = results
-        val err = error
+        val r = results
+        val bottom = Modifier.padding(bottom = LocalBottomClearance.current)
         when {
-            err != null && list == null -> MessageView(Icons.Outlined.SearchOff, stringResource(R.string.search_failed), err, Modifier.padding(bottom = LocalBottomClearance.current))
-            list == null -> MessageView(
-                Icons.Outlined.Signpost,
-                stringResource(R.string.search_intro_title),
-                stringResource(R.string.search_intro_body),
-                Modifier.padding(bottom = LocalBottomClearance.current),
-            )
-            list.isEmpty() -> MessageView(
-                Icons.Outlined.SearchOff,
-                stringResource(R.string.nothing_found),
-                stringResource(R.string.try_fewer_or_different_words),
-                Modifier.padding(bottom = LocalBottomClearance.current),
-            )
+            r == null -> MessageView(Icons.Outlined.Signpost, stringResource(R.string.search_intro_title), stringResource(R.string.search_intro_body), bottom)
+            r.numberMatch == null && r.towns.isEmpty() && r.lines.isEmpty() && r.stops.isEmpty() -> {
+                if (r.stopsError != null) MessageView(Icons.Outlined.SearchOff, stringResource(R.string.search_failed), r.stopsError, bottom)
+                else MessageView(Icons.Outlined.SearchOff, stringResource(R.string.nothing_found), stringResource(R.string.try_fewer_or_different_words), bottom)
+            }
             else -> LazyColumn(
                 Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(top = 4.dp, bottom = 24.dp + LocalBottomClearance.current),
             ) {
-                items(list, key = { "${it.entity}_${it.number}" }) { stop -> StopResultRow(stop.entity, stop.number, stop.name ?: stop.number, stop.municipality, null) }
-                if (total > list.size) {
-                    item {
-                        Text(
-                            stringResource(R.string.showing_x_of_y, list.size, total),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = Gutter, vertical = 12.dp),
-                        )
+                r.numberMatch?.let { s ->
+                    item { SectionTitle(stringResource(R.string.stop_number_match)) }
+                    item(key = "number") { StopResultRow(s.entity, s.number, s.name ?: s.number, s.municipality, null) }
+                }
+                if (r.towns.isNotEmpty()) {
+                    item { SectionTitle(stringResource(R.string.towns)) }
+                    items(r.towns, key = { "town-${it.number}" }) { t -> TownRow(t) { nav.town(t.number, t.name) } }
+                }
+                if (r.lines.isNotEmpty()) {
+                    item { SectionTitle(stringResource(R.string.lines)) }
+                    items(r.lines, key = { "line-${it.first().entity}_${it.first().line}" }) { dirs ->
+                        LineResultRow(dirs) { nav.line(dirs.first().entity, dirs.first().line) }
                     }
                 }
+                if (r.stops.isNotEmpty() || r.stopsError != null) item { SectionTitle(stringResource(R.string.tab_stops)) }
+                if (r.stopsError != null && r.stops.isEmpty()) {
+                    item {
+                        Text(r.stopsError, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(horizontal = Gutter, vertical = 8.dp))
+                    }
+                }
+                items(r.stops, key = { "${it.entity}_${it.number}" }) { stop -> StopResultRow(stop.entity, stop.number, stop.name ?: stop.number, stop.municipality, null) }
+                if (r.totalStops > r.stops.size) {
+                    item {
+                        TextButton(
+                            onClick = ::loadMore,
+                            enabled = !loadingMore,
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = Gutter, vertical = 4.dp),
+                        ) { Text(if (loadingMore) stringResource(R.string.loading) else stringResource(R.string.show_more_x_of_y, r.stops.size, r.totalStops)) }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private const val PAGE = 40
+
+/** The number on a stop sign: tried in its own region first (the first digit), then in the others. */
+private suspend fun findByNumber(api: DeLijnApi, number: String): ApiStop? {
+    val first = number.take(1)
+    val entities = (listOf(first) + listOf("1", "2", "3", "4", "5")).distinct()
+    for (e in entities) {
+        val s = runCatching { api.stop(StopKey(e, number)) }.getOrNull()
+        if (s != null) return s
+    }
+    return null
+}
+
+@Composable
+private fun SectionTitle(text: String) {
+    Text(
+        text,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(start = Gutter, end = Gutter, top = 14.dp, bottom = 4.dp),
+    )
+}
+
+@Composable
+private fun TownRow(t: Town, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = Gutter, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(Icons.Outlined.LocationCity, null, tint = MaterialTheme.colorScheme.primary)
+        Spacer(Modifier.width(14.dp))
+        Column(Modifier.weight(1f)) {
+            Text(t.name, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                if (t.partOf != null) stringResource(R.string.all_stops_in_x_part_of_y, t.name, t.partOf) else stringResource(R.string.all_stops_in_x, t.name),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/** A line with its directions ("to Moscou · to Flanders Expo"). */
+@Composable
+private fun LineResultRow(dirs: List<ApiSearchLineDirection>, onClick: () -> Unit) {
+    val first = dirs.first()
+    val info = rememberLineInfo(listOf(LineKey(first.entity, first.line)))[LineKey(first.entity, first.line).toString()]
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = Gutter, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        LineBadge(info, first.publicNumber ?: first.line, minWidth = 48.dp)
+        Spacer(Modifier.width(14.dp))
+        Column(Modifier.weight(1f)) {
+            val ends = dirs.mapNotNull { directionEnd(it.description) }.distinct()
+            val context = LocalContext.current
+            Text(
+                if (ends.isNotEmpty()) ends.joinToString("  ·  ") { context.getString(R.string.to_x, it) } else first.description.orEmpty(),
+                style = MaterialTheme.typography.bodyLarge,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            first.description?.let {
+                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
     }

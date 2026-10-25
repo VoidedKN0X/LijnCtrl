@@ -40,6 +40,27 @@ class Navigator(val nav: NavHostController) {
     fun stop(entity: String, number: String, name: String? = null) {
         navigate(StopRoute(entity, number, name))
     }
+
+    fun timetable(entity: String, number: String, name: String?) {
+        navigate(TimetableRoute(entity, number, name))
+    }
+
+    fun line(entity: String, line: String, direction: String? = null) {
+        navigate(LineRoute(entity, line, direction))
+    }
+
+    fun town(number: String, name: String) {
+        navigate(TownRoute(number, name))
+    }
+
+    /** Opens the trip a departure belongs to, when De Lijn said which trip it is. */
+    fun trip(d: com.vknxworks.lijnctrl.data.api.Departure) {
+        val line = d.line ?: return
+        val trip = d.trip ?: return
+        val direction = d.direction ?: return
+        val date = d.serviceDate ?: return
+        navigate(TripRoute(line.entity, line.line, direction, trip, date.toString(), d.stop))
+    }
 }
 
 val LocalNavigator = staticCompositionLocalOf<Navigator> { error("No navigator") }

@@ -11,3 +11,7 @@
 -dontwarn org.conscrypt.**
 -dontwarn org.bouncycastle.**
 -dontwarn org.openjsse.**
+
+# osmdroid (OpenStreetMap map in Nearby)
+-keep class org.osmdroid.** { *; }
+-dontwarn org.osmdroid.**

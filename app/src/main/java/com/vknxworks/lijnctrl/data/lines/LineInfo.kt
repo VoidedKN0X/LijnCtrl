@@ -127,6 +127,31 @@ class LineRepository(context: Context, private val api: DeLijnApi) {
         }
     }
 
+    /**
+     * Lines found by the search API already come with their public number and colours, so they're kept
+     * straight away (the transport type is filled in later, when the line is looked up fully).
+     */
+    suspend fun remember(found: List<com.vknxworks.lijnctrl.data.api.ApiSearchLineDirection>) = mutex.withLock {
+        loadFromDisk()
+        val now = System.currentTimeMillis()
+        val added = found.distinctBy { LineKey(it.entity, it.line).toString() }.mapNotNull { d ->
+            val key = LineKey(d.entity, d.line).toString()
+            if (_lines.value.containsKey(key)) return@mapNotNull null
+            key to LineInfo(
+                entity = d.entity,
+                line = d.line,
+                publicNumber = d.publicNumber?.takeIf { it.isNotBlank() } ?: d.line,
+                description = d.description,
+                foreground = d.foreground?.removePrefix("#"),
+                background = d.background?.removePrefix("#"),
+                backgroundBorder = d.backgroundBorder?.removePrefix("#"),
+                // Old enough that a full lookup still adds the transport type, new enough to show right away.
+                fetchedAt = 0L,
+            )
+        }.toMap()
+        if (added.isNotEmpty()) _lines.update { it + added }
+    }
+
     /** Forgets every line (used when the app is reset). */
     suspend fun clear() = mutex.withLock {
         _lines.value = emptyMap()

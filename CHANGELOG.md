@@ -4,6 +4,35 @@ What changed in each LijnCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## v0.2.0 (2026-10-25)
+
+More ways to find a stop, departures that no longer go missing, and the features from De Lijn's own app that were missing: lines, full timetables, trip pages and a map.
+
+### Fixed
+
+- **Stops no longer show "No departures coming up" while buses are timetabled.** De Lijn's live feed only covers the next stretch of time and the trips it's tracking, so quieter stops, and lines without live data (such as Flex and night buses), looked empty. Stop pages and the Stops tab now add the timetable's departures that the live feed doesn't mention. These are marked **Timetable**; live ones keep their coloured time and delay. If the live feed is down but the timetable works, you still get departures.
+- **Search finds more stops.** Results now come in pages: **Show more** at the bottom loads the next 40, instead of stopping at the first 40.
+- **Nearby finds more stops.** It now asks De Lijn for the full 50 stops it allows (it asked for 30) and looks within 1 km by default instead of 750 m. Only De Lijn's own stops are listed, closest first.
+
+### New
+
+- **Lines.** Search for the number on a bus or tram ("71", "T1") to find its line. A line page shows both directions with every stop in order, a badge at the stops where the next bus or tram is heading and when it's due, how many are on the road, and the line's disruptions and diversions. Tap the line badges on a stop page to open them too.
+- **Saved lines.** The star on a line page adds it to the top of your Stops tab as a coloured badge.
+- **Trip page.** Tap any departure to see every stop that bus or tram calls at, with times: live predictions while it's on the road (refreshing every 30 seconds), the timetable otherwise. Stops it has passed are dimmed, cancelled stops are crossed out, and the stop you came from is highlighted. Tap a stop to open it, or the line at the top to open the line.
+- **Full timetable.** **Full timetable** on a stop page lists every departure for today or any of the next six days, grouped by hour, with a filter per line. Today opens at the current hour, and departures that already left are dimmed. Stops with nothing coming up offer it straight away.
+- **Search by stop number.** Type the five- or six-digit number from the stop sign to open that stop directly.
+- **Search by town.** Type a town or village to get **All stops in …**, which lists every stop there from A to Z with a filter. This finds stops whose own name doesn't mention the town.
+- **Map in Nearby.** The map button on the Nearby tab shows De Lijn stops on an OpenStreetMap map. Zoom in and the stops for the area on screen appear; tap one to open it. Your position shows as a dot (when location is allowed), the location button flies to it, and the map is darkened in dark themes. The map opens where you last looked.
+- **Distance for nearby stops** under **Settings > Nearby**: 500 m, 750 m, 1 km (the default), 1.5 km or 2 km.
+
+### Changed
+
+- Search now looks for stops, lines and towns at once, in separate sections, with the hint "Stop, line or town".
+
+### Privacy
+
+- The map's tiles come from OpenStreetMap (tile.openstreetmap.org), which sees the area you're looking at. They're only loaded while the map is open, and the app identifies itself as LijnCtrl as OpenStreetMap asks. Stops and departures still only come from De Lijn, and LijnCtrl's own connection to De Lijn still refuses every other address.
+
 ## v0.1.0 (2026-10-25)
 
 The first release of LijnCtrl: live De Lijn departures for your stops, without De Lijn's own app.

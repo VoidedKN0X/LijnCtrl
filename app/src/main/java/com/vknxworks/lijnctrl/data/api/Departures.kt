@@ -22,6 +22,10 @@ data class Departure(
     val stop: String?,
     val line: LineKey?,
     val direction: String?,
+    /** The trip (rit) number, to open the trip page. */
+    val trip: String?,
+    /** The day the trip belongs to (a trip after midnight still belongs to the day before). */
+    val serviceDate: LocalDate?,
     val destination: String,
     val vias: List<String>,
     val scheduled: Instant,
@@ -33,6 +37,9 @@ data class Departure(
 ) {
     /** When it actually leaves: the prediction if there is one, otherwise the timetable. */
     val time: Instant get() = predicted ?: scheduled
+
+    /** Matches the same passage in the live feed and the timetable. */
+    val matchKey: String get() = if (line != null && trip != null) "${line}_${direction}_${trip}_$stop" else id
 
     /** Minutes late (positive) or early (negative), rounded; null without a prediction. */
     val delayMinutes: Long?
@@ -51,6 +58,8 @@ fun ApiPassage.toDeparture(): Departure? {
         stop = null,
         line = if (entity != null && line != null) LineKey(entity, line) else null,
         direction = direction,
+        trip = trip,
+        serviceDate = serviceDateOf(id) ?: runCatching { java.time.LocalDateTime.parse(scheduled!!.take(19)).toLocalDate() }.getOrNull(),
         destination = destination?.takeIf { it.isNotBlank() } ?: placeDestination?.takeIf { it.isNotBlank() } ?: destinationShort.orEmpty(),
         vias = vias.filter { it.isNotBlank() },
         scheduled = sched,
@@ -58,6 +67,22 @@ fun ApiPassage.toDeparture(): Departure? {
         cancelled = cancelled,
         live = "REALTIME" in statuses && pred != null,
     )
+}
+
+/** doorkomstId starts with the service day: "2026-10-11_2004_234_16_204911". */
+fun serviceDateOf(id: String?): LocalDate? =
+    id?.take(10)?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+
+/**
+ * The live feed only covers the next stretch of time and only trips De Lijn is tracking, so on its own it can
+ * look empty at quieter stops. This adds the timetable's departures that the live feed doesn't mention,
+ * leaving out ones that already left, and keeps the soonest [max].
+ */
+fun mergeDepartures(live: List<Departure>, timetable: List<Departure>, now: java.time.Instant, max: Int): List<Departure> {
+    val liveKeys = live.flatMap { listOf(it.id, it.matchKey) }.toSet()
+    val cutoff = now.minusSeconds(60)
+    val extra = timetable.filter { it.id !in liveKeys && it.matchKey !in liveKeys && it.scheduled.isAfter(cutoff) }
+    return (live.filter { it.cancelled || it.time.isAfter(cutoff) } + extra).sortedBy { it.time }.take(max)
 }
 
 /** Departures of one schedule, keyed by stop number, soonest first. */

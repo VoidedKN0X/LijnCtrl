@@ -29,6 +29,9 @@ data class ApiStop(
 )
 
 @Serializable
+data class StopList(@SerialName("haltes") val stops: List<ApiStop> = emptyList())
+
+@Serializable
 data class StopSearchResponse(
     @SerialName("aantalHits") val total: Int = 0,
     @SerialName("haltes") val stops: List<ApiStop> = emptyList(),
@@ -37,6 +40,8 @@ data class StopSearchResponse(
 /** A stop near a coordinate. Its entity number is only in its links. */
 @Serializable
 data class ApiNearbyStop(
+    /** Operator of the stop; De Lijn's own stops are "DELIJN". */
+    val type: String? = null,
     val id: String,
     @SerialName("naam") val name: String? = null,
     @SerialName("afstand") val distance: Int? = null,
@@ -51,6 +56,8 @@ data class NearbyResponse(@SerialName("haltes") val stops: List<ApiNearbyStop> =
 @Serializable
 data class ApiPassage(
     @SerialName("doorkomstId") val id: String? = null,
+    /** Only filled in for passages of a trip or line direction (stop-based responses group by stop instead). */
+    @SerialName("haltenummer") val stopNumber: String? = null,
     @SerialName("entiteitnummer") val entity: String? = null,
     @SerialName("lijnnummer") val line: String? = null,
     @SerialName("richting") val direction: String? = null,
@@ -174,3 +181,57 @@ data class ApiEntity(
 
 @Serializable
 data class EntityList(@SerialName("entiteiten") val entities: List<ApiEntity> = emptyList())
+
+// ------------------------------------------------------------- lines, trips and towns (0.2.0)
+
+/** A line direction found by the search API, with the number on the bus and its colours ("#RRGGBB"). */
+@Serializable
+data class ApiSearchLineDirection(
+    @SerialName("entiteitnummer") val entity: String,
+    @SerialName("lijnnummer") val line: String,
+    @SerialName("lijnNummerPubliek") val publicNumber: String? = null,
+    @SerialName("richting") val direction: String? = null,
+    @SerialName("omschrijving") val description: String? = null,
+    @SerialName("kleurVoorGrond") val foreground: String? = null,
+    @SerialName("kleurAchterGrond") val background: String? = null,
+    @SerialName("kleurAchterGrondRand") val backgroundBorder: String? = null,
+)
+
+@Serializable
+data class LineSearchResponse(
+    @SerialName("aantalHits") val total: Int = 0,
+    @SerialName("lijnrichtingen") val directions: List<ApiSearchLineDirection> = emptyList(),
+)
+
+/** One trip (rit) with its passages, as returned for a line direction or a single trip. */
+@Serializable
+data class ApiTrip(
+    @SerialName("ritnummer") val trip: String? = null,
+    @SerialName("bestemming") val destination: String? = null,
+    @SerialName("plaatsBestemming") val placeDestination: String? = null,
+    val vias: List<String> = emptyList(),
+    @SerialName("doorkomsten") val passages: List<ApiPassage> = emptyList(),
+)
+
+@Serializable
+data class ApiLineDirectionSchedule(
+    @SerialName("ritDoorkomsten") val trips: List<ApiTrip> = emptyList(),
+    @SerialName("omleidingen") val diversions: List<ApiDisruption> = emptyList(),
+)
+
+@Serializable
+data class ApiMunicipalityRef(
+    @SerialName("gemeentenummer") val number: String,
+    @SerialName("omschrijving") val name: String? = null,
+)
+
+/** A town or village (gemeente). De Lijn uses its own numbers, and sub-municipalities have a main one. */
+@Serializable
+data class ApiMunicipality(
+    @SerialName("gemeentenummer") val number: String,
+    @SerialName("omschrijving") val name: String? = null,
+    @SerialName("hoofdGemeente") val main: ApiMunicipalityRef? = null,
+)
+
+@Serializable
+data class MunicipalityList(@SerialName("gemeenten") val municipalities: List<ApiMunicipality> = emptyList())

@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Fingerprint
 import androidx.compose.material.icons.outlined.Layers
 import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.NearMe
 import androidx.compose.material.icons.outlined.Password
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Timer
@@ -33,6 +34,7 @@ import com.vknxworks.lijnctrl.data.lock.LockVault
 import com.vknxworks.lijnctrl.data.settings.AppSettings
 import com.vknxworks.lijnctrl.data.settings.LockTimeout
 import com.vknxworks.lijnctrl.data.settings.MessageLanguage
+import com.vknxworks.lijnctrl.data.settings.NearbyRadius
 import com.vknxworks.lijnctrl.data.settings.ThemeChoice
 import com.vknxworks.lijnctrl.data.settings.TimeStyle
 import com.vknxworks.lijnctrl.ui.components.Group
@@ -79,6 +81,15 @@ fun SettingsScreen() {
                     s.messageLanguage,
                     icon = Icons.Outlined.Translate,
                 ) { v -> update { it.copy(messageLanguage = v) } }
+            }
+
+            Group(stringResource(R.string.tab_nearby), footer = stringResource(R.string.nearby_settings_footer)) {
+                GroupChoice(
+                    stringResource(R.string.nearby_distance),
+                    NearbyRadius.entries.map { it to stringResource(R.string.within_x_m, it.metres) },
+                    s.nearbyRadius,
+                    icon = Icons.Outlined.NearMe,
+                ) { v -> update { it.copy(nearbyRadius = v) } }
             }
 
             PrivacyGroup(s) { t -> update(t) }

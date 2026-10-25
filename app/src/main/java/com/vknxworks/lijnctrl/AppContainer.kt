@@ -3,7 +3,9 @@ package com.vknxworks.lijnctrl
 import android.content.Context
 import com.vknxworks.lijnctrl.data.api.DeLijnApi
 import com.vknxworks.lijnctrl.data.auth.ApiKeyStore
+import com.vknxworks.lijnctrl.data.departures.DepartureRepository
 import com.vknxworks.lijnctrl.data.favourites.FavouritesRepository
+import com.vknxworks.lijnctrl.data.towns.TownRepository
 import com.vknxworks.lijnctrl.data.lines.LineRepository
 import com.vknxworks.lijnctrl.data.lock.LockVault
 import com.vknxworks.lijnctrl.data.settings.SettingsRepository
@@ -53,6 +55,8 @@ class AppContainer(val context: Context) {
     val apiKey = ApiKeyStore(context, vault)
     val api = DeLijnApi(http) { apiKey.key.value }
     val lines = LineRepository(context, api)
+    val departures = DepartureRepository(api)
+    val towns = TownRepository(api)
     val favourites = FavouritesRepository(context, appScope)
 
     /** The app lock is on. */

@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Accessible
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.DepartureBoard
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.HorizontalDivider
@@ -53,7 +54,6 @@ import com.vknxworks.lijnctrl.data.api.ApiStop
 import com.vknxworks.lijnctrl.data.api.Departure
 import com.vknxworks.lijnctrl.data.api.LineKey
 import com.vknxworks.lijnctrl.data.api.StopKey
-import com.vknxworks.lijnctrl.data.api.departures
 import com.vknxworks.lijnctrl.data.api.localized
 import com.vknxworks.lijnctrl.data.favourites.SavedStop
 import com.vknxworks.lijnctrl.ui.components.DepartureRow
@@ -67,6 +67,7 @@ import com.vknxworks.lijnctrl.ui.components.UpdatedLine
 import com.vknxworks.lijnctrl.ui.components.friendlyMessage
 import com.vknxworks.lijnctrl.ui.components.rememberLineInfo
 import com.vknxworks.lijnctrl.ui.components.rememberNow
+import com.vknxworks.lijnctrl.ui.nav.LocalNavigator
 import com.vknxworks.lijnctrl.ui.theme.Gutter
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -80,6 +81,7 @@ fun StopScreen(entity: String, number: String, initialName: String?) {
     val context = LocalContext.current
     val c = context.container
     val scope = rememberCoroutineScope()
+    val nav = LocalNavigator.current
     val key = remember(entity, number) { StopKey(entity, number) }
     val saved by c.favourites.stops.collectAsStateWithLifecycle()
     val settings by c.settings.settings.collectAsStateWithLifecycle()
@@ -94,12 +96,11 @@ fun StopScreen(entity: String, number: String, initialName: String?) {
     var updated by remember { mutableStateOf<Instant?>(null) }
     var refreshing by remember { mutableStateOf(false) }
 
+    // Live departures topped up with the timetable, so quiet stops and lines without live data still show.
     suspend fun loadDepartures() {
-        runCatching { c.api.realtime(key, max = 20) }
-            .onSuccess { s ->
-                departures = s.departures()
-                // Diversions that come with the departures count as disruptions too.
-                if (s.diversions.isNotEmpty()) disruptions = (disruptions + s.diversions).distinctBy { it.title to it.description }
+        runCatching { c.departures.upcoming(key, max = 30) }
+            .onSuccess {
+                departures = it
                 error = null
                 updated = Instant.now()
             }
@@ -176,7 +177,14 @@ fun StopScreen(entity: String, number: String, initialName: String?) {
                             verticalArrangement = Arrangement.spacedBy(6.dp),
                         ) {
                             servedLines.sortedWith(compareBy<LineKey>({ lines[it.toString()]?.publicNumber?.length ?: 9 }, { lines[it.toString()]?.publicNumber ?: it.line }))
-                                .forEach { k -> LineBadge(lines[k.toString()], k.line, minWidth = 36.dp) }
+                                .forEach { k ->
+                                    LineBadge(
+                                        lines[k.toString()],
+                                        k.line,
+                                        minWidth = 36.dp,
+                                        modifier = Modifier.clickable { nav.line(k.entity, k.line) },
+                                    )
+                                }
                         }
                     }
                 }
@@ -195,6 +203,8 @@ fun StopScreen(entity: String, number: String, initialName: String?) {
                             stringResource(R.string.no_departures_soon),
                             stringResource(R.string.no_departures_soon_body),
                             Modifier.height(320.dp),
+                            actionLabel = stringResource(R.string.full_timetable),
+                            onAction = { nav.timetable(entity, number, title) },
                         )
                     }
                     else -> {
@@ -207,13 +217,27 @@ fun StopScreen(entity: String, number: String, initialName: String?) {
                                 Column(Modifier.padding(vertical = 6.dp)) {
                                     list.forEachIndexed { i, d ->
                                         if (i > 0) HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                                        DepartureRow(d, d.line?.let { lines[it.toString()] }, now, settings.timeStyle)
+                                        DepartureRow(
+                                            d,
+                                            d.line?.let { lines[it.toString()] },
+                                            now,
+                                            settings.timeStyle,
+                                            onClick = if (d.trip != null) ({ nav.trip(d.copy(stop = d.stop ?: number)) }) else null,
+                                        )
                                     }
                                 }
                             }
                         }
                         item {
                             Column(Modifier.fillMaxWidth().padding(horizontal = Gutter + 4.dp, vertical = 10.dp)) {
+                                androidx.compose.material3.OutlinedButton(
+                                    onClick = { nav.timetable(entity, number, title) },
+                                    shape = androidx.compose.foundation.shape.CircleShape,
+                                    modifier = Modifier.padding(bottom = 10.dp),
+                                ) {
+                                    Icon(Icons.Outlined.CalendarMonth, null, Modifier.padding(end = 8.dp))
+                                    Text(stringResource(R.string.full_timetable))
+                                }
                                 UpdatedLine(updated)
                                 if (error != null) Text(error.orEmpty(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
                                 Text(

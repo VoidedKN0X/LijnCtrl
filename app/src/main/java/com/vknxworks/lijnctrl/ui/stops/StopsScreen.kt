@@ -113,6 +113,17 @@ fun StopsScreen() {
         }.forEach { (k, r) ->
             r.onSuccess { result[k] = it }.onFailure { failed[k] = it.friendlyMessage() }
         }
+        // Topped up with the timetable, so stops without live data (or quiet right now) aren't empty.
+        coroutineScope {
+            stops.map { k ->
+                async { k to runCatching { c.departures.topUp(k, result[k].orEmpty(), PER_STOP) }.getOrNull() }
+            }.awaitAll()
+        }.forEach { (k, merged) ->
+            if (merged != null && (merged.isNotEmpty() || result.containsKey(k))) {
+                result[k] = merged
+                if (merged.isNotEmpty()) failed.remove(k)
+            }
+        }
         departures = result
         errors = failed
         updated = Instant.now()
@@ -131,8 +142,11 @@ fun StopsScreen() {
     val lineKeys = remember(departures) { departures.values.flatten().mapNotNull { it.line }.toSet() }
     val lines = rememberLineInfo(lineKeys)
 
+    val savedLines by c.favourites.lines.collectAsStateWithLifecycle()
+
     Column(Modifier.fillMaxSize().statusBarsPadding()) {
         TabTitle(stringResource(R.string.tab_stops))
+        if (savedLines.isNotEmpty()) SavedLinesRow(savedLines)
         if (saved.isEmpty()) {
             MessageView(
                 Icons.Outlined.StarBorder,
@@ -182,6 +196,7 @@ private fun StopCard(
     onOpen: () -> Unit,
 ) {
     val c = LocalContext.current.container
+    val nav = LocalNavigator.current
     val scope = rememberCoroutineScope()
     val settings by c.settings.settings.collectAsStateWithLifecycle()
     var menu by remember { mutableStateOf(false) }
@@ -247,7 +262,14 @@ private fun StopCard(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 )
                 else -> departures.orEmpty().forEach { d ->
-                    DepartureRow(d, d.line?.let { lines[it.toString()] }, now, settings.timeStyle, compact = true)
+                    DepartureRow(
+                        d,
+                        d.line?.let { lines[it.toString()] },
+                        now,
+                        settings.timeStyle,
+                        compact = true,
+                        onClick = if (d.trip != null) ({ nav.trip(d.copy(stop = d.stop ?: stop.number)) }) else null,
+                    )
                 }
             }
         }
@@ -269,5 +291,26 @@ private fun StopCard(
             },
             dismissButton = { TextButton(onClick = { renaming = false }) { Text(stringResource(R.string.cancel)) } },
         )
+    }
+}
+
+/** Your saved lines, as badges that open the line's page. */
+@Composable
+private fun SavedLinesRow(saved: List<com.vknxworks.lijnctrl.data.favourites.SavedLine>) {
+    val nav = LocalNavigator.current
+    val info = rememberLineInfo(saved.map { it.key })
+    androidx.compose.foundation.lazy.LazyRow(
+        contentPadding = PaddingValues(horizontal = Gutter),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+    ) {
+        items(saved, key = { it.key.toString() }) { l ->
+            com.vknxworks.lijnctrl.ui.components.LineBadge(
+                info[l.key.toString()],
+                l.publicNumber,
+                large = true,
+                modifier = Modifier.clickable { nav.line(l.entity, l.line) },
+            )
+        }
     }
 }

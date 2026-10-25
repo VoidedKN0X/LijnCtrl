@@ -12,12 +12,16 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 
 ## Features
 
-- **Stops tab** with your saved stops and their next departures, refreshing live every 30 seconds
-- **Live times** from the bus or tram's position, with how late or early it is; timetable times are marked as such, and cancelled trips are crossed out
+- **Stops tab** with your saved stops and lines; each stop shows its next departures, refreshing live every 30 seconds
+- **Live times** from the bus or tram's position, with how late or early it is, topped up with the timetable so quiet stops and lines without live data never look empty; cancelled trips are crossed out
 - **Line badges in De Lijn's own colours**, with the number that's on the bus or tram
-- **Stop pages** with the next 20 departures, the lines that call there, and today's disruptions and diversions
+- **Stop pages** with the next 30 departures, the lines that call there, and today's disruptions and diversions
+- **Full timetable** for any stop, today or the next six days, per hour and per line
+- **Trip pages**: every stop of a bus or tram run, with live times while it's on the road
+- **Line pages**: both directions stop by stop, where the next vehicles are heading, and the line's disruptions
+- **Search** for stops by name or the number on their sign, lines by number, and every stop in a town
+- **Nearby** stops as a list or on an OpenStreetMap map
 - **Disruption messages** in English, Dutch, French or German
-- **Search** for any stop by name or number, and **Nearby** stops within 750 metres
 - **Rename** saved stops ("Home", "Work") and put them in your own order
 - **Minutes to go or clock times**, always in Belgian time
 - **App lock** with its own PIN and optional fingerprint unlock; your API key stays encrypted with the PIN while the app is locked
@@ -82,10 +86,14 @@ The API key screen and the lock and PIN screens are always kept out of screensho
 - **"De Lijn didn't accept your API key"**: check that your subscription to the Open Data product is active on data.delijn.be, then paste the key again under the profile picture › **Change API key**.
 - **Times without the live mark** are the timetable: De Lijn has no live position for that trip right now.
 - **Nearby can't find you**: check that location is on, and try outside or near a window. LijnCtrl only reads your location when you open Nearby or tap **Find stops near me**.
+- **A stop you know isn't in Search**: try the number on its sign, or search for the town and pick **All stops in …**. On the Nearby tab, a larger distance can be set under **Settings > Nearby**, or use the map.
+- **No departures soon**: **Full timetable** on the stop page shows when the next ones are, today or on another day.
 
 ## Privacy
 
-**Telemetry-free.** LijnCtrl has no analytics, crash reporting, usage stats or tracking of any kind, and no servers of its own. It only talks to De Lijn's API (api.delijn.be), over HTTPS; every other address is refused. Your API key is stored encrypted on the phone (and with your app PIN while the app lock is on) and is only sent to De Lijn. Your saved stops stay on the phone. Your location is read only when you ask for nearby stops, sent only to De Lijn to look them up, and never kept.
+**Telemetry-free.** LijnCtrl has no analytics, crash reporting, usage stats or tracking of any kind, and no servers of its own. It only talks to De Lijn's API (api.delijn.be), over HTTPS; every other address is refused. The one exception is the map, below. Your API key is stored encrypted on the phone (and with your app PIN while the app lock is on) and is only sent to De Lijn. Your saved stops stay on the phone. Your location is read only when you ask for nearby stops, sent only to De Lijn to look them up, and never kept.
+
+**The map** in Nearby loads its map tiles from OpenStreetMap (tile.openstreetmap.org), which sees the area you're looking at, the same as any website with a map. Tiles are only loaded while the map is open and are cached on the phone. Everything else still only comes from De Lijn.
 
 LijnCtrl isn't made or endorsed by De Lijn. Departures, stops and disruptions come from [De Lijn's open data](https://data.delijn.be/).
 
@@ -139,4 +147,4 @@ Native Android apps for self-hosted services and everyday tools, all with the sa
 
 LijnCtrl is licensed under the [GNU General Public License v3.0](LICENSE). © VKNXWorks
 
-The Manrope font is licensed under the SIL Open Font License; see `FONT-LICENSE-Manrope.txt`.
+The Manrope font is licensed under the SIL Open Font License; see `FONT-LICENSE-Manrope.txt`. The map uses [osmdroid](https://github.com/osmdroid/osmdroid) (Apache 2.0) and map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors.

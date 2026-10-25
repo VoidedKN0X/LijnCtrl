@@ -2,6 +2,7 @@ package com.vknxworks.lijnctrl.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -153,10 +154,13 @@ fun DepartureRow(
     style: TimeStyle,
     modifier: Modifier = Modifier,
     compact: Boolean = false,
+    onClick: (() -> Unit)? = null,
 ) {
     val cs = MaterialTheme.colorScheme
     Row(
-        modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = if (compact) 6.dp else 10.dp),
+        modifier.fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(horizontal = 16.dp, vertical = if (compact) 6.dp else 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         LineBadge(info, d.line?.line)

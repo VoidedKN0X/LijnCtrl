@@ -78,11 +78,23 @@ class DeLijnApi(private val http: OkHttpClient, private val apiKey: () -> String
 
     // ------------------------------------------------------------- search
 
-    /** Stops whose name matches [query]. Coordinates come back swapped from this API and are put right here. */
-    suspend fun searchStops(query: String, max: Int = 30, key: String? = null): StopSearchResponse {
-        val r: StopSearchResponse = get(SEARCH, "/zoek/haltes/${seg(query.trim())}", mapOf("maxAantalHits" to max), key)
+    /**
+     * Stops whose name matches [query], from [start] on (for "Show more"). Coordinates come back swapped from
+     * this API and are put right here.
+     */
+    suspend fun searchStops(query: String, max: Int = 30, start: Int = 0, key: String? = null): StopSearchResponse {
+        val r: StopSearchResponse = get(
+            SEARCH,
+            "/zoek/haltes/${seg(query.trim())}",
+            mapOf("maxAantalHits" to max, "startIndex" to start.takeIf { it > 0 }),
+            key,
+        )
         return r.copy(stops = r.stops.map { s -> s.copy(coordinate = s.coordinate?.let(::fixSwapped)) })
     }
+
+    /** Line directions matching [query]: a number on the bus ("71", "T1") or a place on the route. */
+    suspend fun searchLines(query: String, max: Int = 30): LineSearchResponse =
+        get(SEARCH, "/zoek/lijnrichtingen/${seg(query.trim())}", mapOf("maxAantalHits" to max))
 
     // ------------------------------------------------------------- core
 
@@ -106,6 +118,13 @@ class DeLijnApi(private val http: OkHttpClient, private val apiKey: () -> String
         return get<StopScheduleList>(CORE, "/haltes/lijst/$keys/real-time", mapOf("maxAantalDoorkomsten" to max)).schedules
     }
 
+    /** Several stops in one call (names and towns for a trip's stops). */
+    suspend fun stops(stops: List<StopKey>): List<ApiStop> {
+        if (stops.isEmpty()) return emptyList()
+        val keys = stops.joinToString("_") { "${seg(it.entity)}_${seg(it.number)}" }
+        return get<StopList>(CORE, "/haltes/lijst/$keys").stops
+    }
+
     /** Line directions that call at a stop. */
     suspend fun stopLines(stop: StopKey): List<ApiLineDirection> =
         get<LineDirectionList>(CORE, "/haltes/${seg(stop.entity)}/${seg(stop.number)}/lijnrichtingen").directions
@@ -117,6 +136,46 @@ class DeLijnApi(private val http: OkHttpClient, private val apiKey: () -> String
     /** Diversions (planned works) at a stop today. */
     suspend fun stopDiversions(stop: StopKey): List<ApiDisruption> =
         get<DisruptionList>(CORE, "/haltes/${seg(stop.entity)}/${seg(stop.number)}/omleidingen").all
+
+    /** Every stop a day: the full timetable at a stop for [date] (yyyy-MM-dd), not just the next few. */
+    suspend fun timetable(stop: StopKey, date: java.time.LocalDate): ApiStopSchedule =
+        get(CORE, "/haltes/${seg(stop.entity)}/${seg(stop.number)}/dienstregelingen", mapOf("datum" to date.toString()))
+
+    /** Every town and village De Lijn serves (sub-municipalities included). */
+    suspend fun municipalities(): List<ApiMunicipality> = get<MunicipalityList>(CORE, "/gemeenten").municipalities
+
+    /** Every stop in one town or village. */
+    suspend fun municipalityStops(number: String): List<ApiStop> =
+        get<StopList>(CORE, "/gemeenten/${seg(number)}/haltes").stops
+
+    suspend fun line(line: LineKey): ApiLine = get(CORE, "/lijnen/${seg(line.entity)}/${seg(line.line)}")
+
+    /** The directions of a line (usually HEEN and TERUG), each with a description of its route. */
+    suspend fun lineDirections(line: LineKey): List<ApiLineDirection> =
+        get<LineDirectionList>(CORE, "/lijnen/${seg(line.entity)}/${seg(line.line)}/lijnrichtingen").directions
+
+    private fun dirPath(line: LineKey, direction: String) =
+        "/lijnen/${seg(line.entity)}/${seg(line.line)}/lijnrichtingen/${seg(direction)}"
+
+    /** The stops of one direction of a line, in the order the bus or tram calls at them. */
+    suspend fun lineStops(line: LineKey, direction: String): List<ApiStop> =
+        get<StopList>(CORE, dirPath(line, direction) + "/haltes").stops
+
+    /** Trips of one direction that are on the road now, with live predictions per stop. */
+    suspend fun lineRealtime(line: LineKey, direction: String): ApiLineDirectionSchedule =
+        get(CORE, dirPath(line, direction) + "/real-time")
+
+    /** One trip, stop by stop, on its service day [date]. */
+    suspend fun trip(line: LineKey, direction: String, trip: String, date: java.time.LocalDate): ApiLineDirectionSchedule =
+        get(CORE, dirPath(line, direction) + "/rit/${seg(trip)}", mapOf("datum" to date.toString()))
+
+    /** Disruptions and diversions on one direction of a line today. */
+    suspend fun lineDisruptions(line: LineKey, direction: String): List<ApiDisruption> {
+        val dis = runCatching { get<DisruptionList>(CORE, dirPath(line, direction) + "/storingen").all }
+        val div = runCatching { get<DisruptionList>(CORE, dirPath(line, direction) + "/omleidingen").all }
+        if (dis.isFailure && div.isFailure) throw dis.exceptionOrNull()!!
+        return dis.getOrDefault(emptyList()) + div.getOrDefault(emptyList())
+    }
 
     suspend fun lines(lines: List<LineKey>): List<ApiLine> {
         if (lines.isEmpty()) return emptyList()

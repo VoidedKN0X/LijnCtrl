@@ -28,7 +28,18 @@ data class SavedStop(
     val title: String get() = nickname?.takeIf { it.isNotBlank() } ?: name
 }
 
-/** Saved stops, in the order you put them. Kept only on this phone. */
+/** A line saved on the Stops tab, with what's needed to draw its badge without a lookup. */
+@Serializable
+data class SavedLine(
+    val entity: String,
+    val line: String,
+    val publicNumber: String,
+    val description: String? = null,
+) {
+    val key: com.vknxworks.lijnctrl.data.api.LineKey get() = com.vknxworks.lijnctrl.data.api.LineKey(entity, line)
+}
+
+/** Saved stops and lines, in the order you put them. Kept only on this phone. */
 class FavouritesRepository(private val context: Context, scope: CoroutineScope) {
     private val key = stringPreferencesKey("saved_stops")
     private val serializer = ListSerializer(SavedStop.serializer())
@@ -36,6 +47,21 @@ class FavouritesRepository(private val context: Context, scope: CoroutineScope) 
     val stops: StateFlow<List<SavedStop>> = context.appDataStore.data
         .map { p -> p[key]?.let { runCatching { DeLijnApi.JSON.decodeFromString(serializer, it) }.getOrNull() } ?: emptyList() }
         .stateIn(scope, SharingStarted.Eagerly, emptyList())
+
+    private val linesKey = stringPreferencesKey("saved_lines")
+    private val lineSerializer = ListSerializer(SavedLine.serializer())
+
+    val lines: StateFlow<List<SavedLine>> = context.appDataStore.data
+        .map { p -> p[linesKey]?.let { runCatching { DeLijnApi.JSON.decodeFromString(lineSerializer, it) }.getOrNull() } ?: emptyList() }
+        .stateIn(scope, SharingStarted.Eagerly, emptyList())
+
+    suspend fun toggleLine(line: SavedLine) {
+        context.appDataStore.edit { p ->
+            val current = p[linesKey]?.let { runCatching { DeLijnApi.JSON.decodeFromString(lineSerializer, it) }.getOrNull() } ?: emptyList()
+            val next = if (current.any { it.key == line.key }) current.filterNot { it.key == line.key } else current + line
+            p[linesKey] = DeLijnApi.JSON.encodeToString(lineSerializer, next)
+        }
+    }
 
     fun isSaved(stop: StopKey, list: List<SavedStop> = stops.value) = list.any { it.key == stop }
 

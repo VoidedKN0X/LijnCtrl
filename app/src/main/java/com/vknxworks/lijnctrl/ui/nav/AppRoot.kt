@@ -56,7 +56,11 @@ import com.vknxworks.lijnctrl.R
 import com.vknxworks.lijnctrl.container
 import com.vknxworks.lijnctrl.ui.components.LocalBottomClearance
 import com.vknxworks.lijnctrl.ui.components.LocalHazeState
+import com.vknxworks.lijnctrl.ui.lines.LineScreen
+import com.vknxworks.lijnctrl.ui.lines.TripScreen
 import com.vknxworks.lijnctrl.ui.nearby.NearbyScreen
+import com.vknxworks.lijnctrl.ui.search.TownScreen
+import com.vknxworks.lijnctrl.ui.stops.TimetableScreen
 import com.vknxworks.lijnctrl.ui.search.SearchScreen
 import com.vknxworks.lijnctrl.ui.settings.SettingsScreen
 import com.vknxworks.lijnctrl.ui.settings.YouScreen
@@ -190,6 +194,10 @@ private fun AppNavHost(navController: NavHostController) {
         composable<SearchRoute> { SearchScreen() }
 
         composable<StopRoute> { val r = it.toRoute<StopRoute>(); StopScreen(r.entity, r.number, r.name) }
+        composable<TimetableRoute> { val r = it.toRoute<TimetableRoute>(); TimetableScreen(r.entity, r.number, r.name) }
+        composable<LineRoute> { val r = it.toRoute<LineRoute>(); LineScreen(r.entity, r.line, r.direction) }
+        composable<TripRoute> { val r = it.toRoute<TripRoute>(); TripScreen(r.entity, r.line, r.direction, r.trip, r.date, r.fromStop) }
+        composable<TownRoute> { val r = it.toRoute<TownRoute>(); TownScreen(r.number, r.name) }
         composable<YouRoute> { YouScreen() }
         composable<SettingsRoute> { SettingsScreen() }
         composable<ApiKeyRoute> {

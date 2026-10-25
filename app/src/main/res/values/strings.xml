@@ -90,14 +90,12 @@
     <string name="until_x">Until %1$s</string>
 
     <!-- Search tab -->
-    <string name="search_stops_hint">Stop name or number</string>
     <string name="clear">Clear</string>
     <string name="search_intro_title">Find a stop</string>
-    <string name="search_intro_body">Type a stop\'s name, like \"Gent Korenmarkt\", or the number on its sign.</string>
+    <string name="search_intro_body">Type a stop\'s name (\"Gent Korenmarkt\"), the number on its sign, a line number (\"T1\", \"71\") or a town to list all its stops.</string>
     <string name="search_failed">Search failed</string>
     <string name="nothing_found">Nothing found</string>
     <string name="try_fewer_or_different_words">Try fewer or different words.</string>
-    <string name="showing_x_of_y">Showing %1$d of %2$d stops. Add more words to narrow it down.</string>
 
     <!-- Nearby tab -->
     <string name="nearby_intro_title">Stops near you</string>
@@ -110,9 +108,7 @@
     <string name="no_location_fix">Couldn\'t find where you are</string>
     <string name="no_location_fix_body">Your phone didn\'t get a location in time. Try again outside or near a window.</string>
     <string name="no_stops_nearby">No stops nearby</string>
-    <string name="no_stops_nearby_body">There are no De Lijn stops within 750 metres of you.</string>
     <string name="x_m_away">%1$d m</string>
-    <string name="nearby_footer">Stops within 750 metres, closest first.</string>
     <string name="refresh">Refresh</string>
 
     <!-- You page -->
@@ -214,4 +210,53 @@
     <string name="lock_done">Done</string>
     <string name="lock_cancel">Cancel</string>
     <string name="lock_delete_digit">Delete</string>
+
+    <!-- 0.2.0: search, towns, lines, trips, timetable, map -->
+    <string name="search_hint">Stop, line or town</string>
+    <string name="stop_number_match">Stop with this number</string>
+    <string name="towns">Towns</string>
+    <string name="all_stops_in_x">All stops in %1$s</string>
+    <string name="all_stops_in_x_part_of_y">All stops in %1$s (part of %2$s)</string>
+    <string name="lines">Lines</string>
+    <string name="to_x">to %1$s</string>
+    <string name="show_more_x_of_y">Show more (%1$d of %2$d)</string>
+    <string name="loading">Loading…</string>
+    <string name="filter_stops">Filter stops</string>
+    <plurals name="stops_in_town">
+        <item quantity="one">%1$d stop</item>
+        <item quantity="other">%1$d stops</item>
+    </plurals>
+    <string name="full_timetable">Full timetable</string>
+    <string name="timetable_at_x">Timetable: %1$s</string>
+    <string name="today">Today</string>
+    <string name="tomorrow">Tomorrow</string>
+    <string name="all_lines">All lines</string>
+    <string name="no_departures_this_day">No departures this day</string>
+    <string name="no_departures_this_day_body">Nothing is timetabled at this stop on this day, or for this line.</string>
+    <string name="line_x">Line %1$s</string>
+    <string name="bus">Bus</string>
+    <string name="tram">Tram</string>
+    <plurals name="vehicles_on_the_road">
+        <item quantity="one">%1$d on the road now</item>
+        <item quantity="other">%1$d on the road now</item>
+    </plurals>
+    <string name="add_line_to_stops">Add line to Stops</string>
+    <string name="remove_line_from_stops">Remove line from Stops</string>
+    <string name="line_vehicle_note">The badge next to a stop shows the next bus or tram heading there and when it\'s due, live where De Lijn tracks it.</string>
+    <string name="trip">Trip</string>
+    <string name="trip_x">Trip %1$s</string>
+    <string name="on_the_road">On the road</string>
+    <string name="your_stop">Your stop</string>
+    <string name="trip_live_note">Times in colour are live predictions for this trip; the others are the timetable.</string>
+    <string name="trip_timetable_note">De Lijn has no live data for this trip right now, so these are the timetable\'s times.</string>
+    <string name="show_map">Show map</string>
+    <string name="show_list">Show list</string>
+    <string name="my_location">My location</string>
+    <string name="zoom_in_for_stops">Zoom in to see stops</string>
+    <string name="osm_credit">© OpenStreetMap contributors</string>
+    <string name="nearby_footer_x">Stops within %1$d metres, closest first.</string>
+    <string name="no_stops_nearby_body_x">There are no De Lijn stops within %1$d metres of you. A larger distance can be set in Settings.</string>
+    <string name="nearby_distance">Distance for nearby stops</string>
+    <string name="within_x_m">Within %1$d m</string>
+    <string name="nearby_settings_footer">The map shows map tiles from OpenStreetMap (tile.openstreetmap.org), which sees the area you\'re looking at. Stops and departures still only come from De Lijn.</string>
 </resources>
