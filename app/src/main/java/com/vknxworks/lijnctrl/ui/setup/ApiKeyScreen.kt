@@ -270,9 +270,9 @@ fun ApiKeyScreen(firstRun: Boolean, unreadable: Boolean, onDone: () -> Unit, onC
 private fun Step(n: Int, text: String) {
     Row(verticalAlignment = Alignment.Top) {
         Box(
-            Modifier.size(26.dp).clip(com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Badge).background(MaterialTheme.colorScheme.primary),
+            Modifier.size(26.dp).clip(com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Badge).background(com.vknxworks.lijnctrl.ui.theme.CtrlColors.Accent),
             contentAlignment = Alignment.Center,
-        ) { Text("$n", style = com.vknxworks.lijnctrl.ui.theme.CtrlType.Data, color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.SemiBold) }
+        ) { Text("$n", style = com.vknxworks.lijnctrl.ui.theme.CtrlType.Data, color = com.vknxworks.lijnctrl.ui.theme.CtrlColors.OnAccent, fontWeight = FontWeight.SemiBold) }
         Spacer(Modifier.size(12.dp))
         Text(text, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f).padding(top = 3.dp))
     }

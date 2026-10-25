@@ -129,7 +129,7 @@ private fun MainScaffold() {
                                 label = { Text(stringResource(top.item.label)) },
                                 colors = NavigationRailItemDefaults.colors(
                                     selectedIconColor = CtrlColors.OnAccent,
-                                    selectedTextColor = CtrlColors.Accent,
+                                    selectedTextColor = CtrlColors.AccentText,
                                     indicatorColor = CtrlColors.Accent,
                                     unselectedIconColor = CtrlColors.Muted,
                                     unselectedTextColor = CtrlColors.Muted,

@@ -249,8 +249,8 @@ fun StopMap(start: GeoPoint?, modifier: Modifier = Modifier, focus: GeoPoint? = 
                 }
             },
             shape = com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Control,
-            containerColor = cs.primary,
-            contentColor = cs.onPrimary,
+            containerColor = com.vknxworks.lijnctrl.ui.theme.CtrlColors.Accent,
+            contentColor = com.vknxworks.lijnctrl.ui.theme.CtrlColors.OnAccent,
             elevation = androidx.compose.material3.FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
             modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 16.dp + LocalBottomClearance.current),
         ) { Icon(Icons.Outlined.MyLocation, stringResource(R.string.my_location)) }

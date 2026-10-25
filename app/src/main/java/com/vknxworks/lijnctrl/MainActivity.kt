@@ -5,8 +5,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Modifier
@@ -20,21 +22,27 @@ import com.vknxworks.lijnctrl.ui.lock.lockLocked
 import com.vknxworks.lijnctrl.ui.nav.AppRoot
 import com.vknxworks.lijnctrl.ui.theme.LijnCtrlTheme
 
-/** The Ctrl background (#08080A), also behind the status and navigation bars. */
-private const val BAR_COLOR = 0xFF08080A.toInt()
+/** The Ctrl backgrounds (dark #08080A, light #F5F5F1), also behind the status and navigation bars. */
+private const val BAR_DARK = 0xFF08080A.toInt()
+private const val BAR_LIGHT = 0xFFF5F5F1.toInt()
 
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Ctrl / Signal is dark only: edge to edge, bars in the background colour, light icons.
-        val bars = SystemBarStyle.dark(BAR_COLOR)
-        enableEdgeToEdge(statusBarStyle = bars, navigationBarStyle = bars)
+        enableEdgeToEdge()
         // Recents shows a blank card until the settings are read (then "Hide in recent apps" decides).
         setRecentsScreenshotEnabled(false)
         val c = container
         setContent {
             val settings by c.settings.settings.collectAsStateWithLifecycle()
+            // Follows the phone's dark/light setting: bars in the background colour, icons light on dark and dark on light.
+            val dark = isSystemInDarkTheme()
+            DisposableEffect(dark) {
+                val bars = if (dark) SystemBarStyle.dark(BAR_DARK) else SystemBarStyle.light(BAR_LIGHT, BAR_DARK)
+                enableEdgeToEdge(statusBarStyle = bars, navigationBarStyle = bars)
+                onDispose { }
+            }
             val covered = lockCovering(c.vault)
             // "Hide in screenshots", screens where the API key is typed or shown and the lock and PIN screens keep the
             // window out of screenshots and recordings; "Hide in recent apps" blanks the recent-apps card.
@@ -45,7 +53,7 @@ class MainActivity : ComponentActivity() {
             // and sheets can't stay usable above the lock screen. Where you were comes back on unlock.
             val locked = lockLocked(c.vault)
             val savedRoot = rememberSaveableStateHolder()
-            LijnCtrlTheme {
+            LijnCtrlTheme(dark) {
                 Box(Modifier.fillMaxSize()) {
                     if (!locked) {
                         Box(if (covered) Modifier.fillMaxSize().clearAndSetSemantics { } else Modifier.fillMaxSize()) {

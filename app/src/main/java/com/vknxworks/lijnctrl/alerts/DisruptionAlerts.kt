@@ -90,6 +90,7 @@ object DisruptionAlerts {
             val (where, text) = v
             val n = NotificationCompat.Builder(context, Notifications.DISRUPTIONS)
                 .setSmallIcon(R.drawable.ic_notification)
+            .setColor(context.getColor(R.color.notification_accent))
                 .setContentTitle(str(R.string.disruption_at_x, where))
                 .setContentText(text.lineSequence().firstOrNull().orEmpty())
                 .setStyle(NotificationCompat.BigTextStyle().bigText(text))

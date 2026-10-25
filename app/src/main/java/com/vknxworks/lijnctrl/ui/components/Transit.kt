@@ -208,13 +208,13 @@ fun DepartureTime(d: Departure, now: Instant, style: TimeStyle, compact: Boolean
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (d.live) {
                 val liveLabel = stringResource(R.string.live)
-                StatusDot(CtrlColors.Accent, Modifier.semantics { contentDescription = liveLabel })
+                StatusDot(CtrlColors.AccentText, Modifier.semantics { contentDescription = liveLabel })
                 Spacer(Modifier.width(6.dp))
             }
             Text(
                 departureLabel(d, now, style),
                 style = if (compact) CtrlType.Readout.copy(fontSize = 17.sp) else CtrlType.Readout,
-                color = if (d.live) CtrlColors.Accent else cs.onSurface,
+                color = if (d.live) CtrlColors.AccentText else cs.onSurface,
             )
         }
         val delay = d.delayMinutes
@@ -260,6 +260,7 @@ fun NextDepartureHero(
     val inkSoft = if (accent) CtrlColors.OnAccent.copy(alpha = 0.62f) else CtrlColors.Muted
     val mark = if (accent) CtrlColors.OnAccent else CtrlColors.Accent
     val badgeText = if (accent) CtrlColors.Accent else CtrlColors.OnAccent
+    val liveText = if (accent) ink else CtrlColors.AccentText
     val body: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit = {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
@@ -290,7 +291,7 @@ fun NextDepartureHero(
             Text(
                 (if (d.live) "● " + stringResource(R.string.live) else stringResource(R.string.timetable)).uppercase(),
                 style = CtrlType.DataSmall.copy(letterSpacing = 0.12.em),
-                color = if (d.live) mark else inkSoft,
+                color = if (d.live) liveText else inkSoft,
             )
         }
         Row(verticalAlignment = Alignment.Bottom) {

@@ -68,7 +68,7 @@ fun CtrlWordmark(modifier: Modifier = Modifier, name: String = "LIJN") {
     Text(
         buildAnnotatedString {
             append(name)
-            withStyle(SpanStyle(color = CtrlColors.Accent)) { append("/") }
+            withStyle(SpanStyle(color = CtrlColors.AccentText)) { append("/") }
             append("CTRL")
         },
         style = CtrlType.Wordmark,
@@ -183,7 +183,7 @@ fun CtrlSwitch(checked: Boolean, onCheckedChange: ((Boolean) -> Unit)?, modifier
                 .offset(x = knobX)
                 .size(24.dp)
                 .clip(RoundedCornerShape(7.dp))
-                .background(if (checked) CtrlColors.OnAccent else CtrlColors.Inactive),
+                .background(if (checked) CtrlColors.OnAccent else CtrlColors.SwitchOffKnob),
         )
     }
 }
@@ -256,11 +256,11 @@ fun ctrlFieldColors(): TextFieldColors = OutlinedTextFieldDefaults.colors(
     unfocusedContainerColor = CtrlColors.Surface,
     disabledContainerColor = CtrlColors.Surface,
     errorContainerColor = CtrlColors.Surface,
-    focusedBorderColor = CtrlColors.Accent,
+    focusedBorderColor = CtrlColors.AccentText,
     unfocusedBorderColor = CtrlColors.ControlOutline,
     disabledBorderColor = CtrlColors.Outline,
-    cursorColor = CtrlColors.Accent,
-    focusedLabelColor = CtrlColors.Accent,
+    cursorColor = CtrlColors.AccentText,
+    focusedLabelColor = CtrlColors.AccentText,
     unfocusedLabelColor = CtrlColors.Muted,
     focusedLeadingIconColor = CtrlColors.OnBackground,
     unfocusedLeadingIconColor = CtrlColors.Muted,

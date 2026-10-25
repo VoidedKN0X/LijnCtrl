@@ -269,6 +269,7 @@ class TripGuideService : Service() {
     private fun ongoing(destination: String, status: String): Notification =
         NotificationCompat.Builder(this, Notifications.WATCH)
             .setSmallIcon(R.drawable.ic_notification)
+            .setColor(this.getColor(R.color.notification_accent))
             .setContentTitle(str(R.string.guide_title_x, destination))
             .setContentText(status)
             .setStyle(NotificationCompat.BigTextStyle().bigText(status))
@@ -283,6 +284,7 @@ class TripGuideService : Service() {
     private fun alert(title: String, text: String) {
         val n = NotificationCompat.Builder(this, Notifications.BUS)
             .setSmallIcon(R.drawable.ic_notification)
+            .setColor(this.getColor(R.color.notification_accent))
             .setContentTitle(title)
             .setContentText(text)
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
@@ -300,6 +302,7 @@ class TripGuideService : Service() {
                 ALERT_ID,
                 NotificationCompat.Builder(this, Notifications.WATCH)
                     .setSmallIcon(R.drawable.ic_notification)
+            .setColor(this.getColor(R.color.notification_accent))
                     .setContentTitle(str(R.string.guide_title_x, destination))
                     .setContentText(text)
                     .setAutoCancel(true)

@@ -559,8 +559,8 @@ fun RouteMap(
                 },
                 shape = com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Square,
                 elevation = androidx.compose.material3.FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
-                containerColor = if (following) cs.primary else cs.surface,
-                contentColor = if (following) cs.onPrimary else cs.onSurface,
+                containerColor = if (following) com.vknxworks.lijnctrl.ui.theme.CtrlColors.Accent else cs.surface,
+                contentColor = if (following) com.vknxworks.lijnctrl.ui.theme.CtrlColors.OnAccent else cs.onSurface,
                 modifier = Modifier.align(Alignment.BottomEnd).padding(12.dp),
             ) {
                 Icon(

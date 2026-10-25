@@ -345,7 +345,7 @@ private fun RouteStopRow(stop: ApiStop, first: Boolean, last: Boolean, arriving:
         }
         if (arriving != null) {
             val minutes = Math.floorDiv(arriving.toEpochMilli() - now.toEpochMilli(), 60_000L)
-            Surface(shape = com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Badge, color = cs.primary, contentColor = cs.onPrimary) {
+            Surface(shape = com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Badge, color = com.vknxworks.lijnctrl.ui.theme.CtrlColors.Accent, contentColor = com.vknxworks.lijnctrl.ui.theme.CtrlColors.OnAccent) {
                 Row(Modifier.padding(horizontal = 10.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(if (tram) Icons.Outlined.Tram else Icons.Outlined.DirectionsBus, null, Modifier.size(16.dp))
                     Spacer(Modifier.width(4.dp))

@@ -4,6 +4,26 @@ What changed in each LijnCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## v0.12.0 (2026-10-25)
+
+Light mode that follows the device theme: LijnCtrl is now light when your phone is set to light and dark when it's set to dark, switching by itself.
+
+### New
+
+- **Light mode that follows the device theme.** LijnCtrl now follows your phone's dark/light setting (including a dark-mode schedule) and switches straight away when it changes, even while the app is open. There's no setting or toggle for it in the app, on purpose: it simply follows the system. Wallpaper colours (Material You) are still not used.
+- **"Signal Light".** The light look matches the dark one: a warm off-white background (#F5F5F1), white cards with thin light-grey borders, near-black text and the same lavender accent.
+  - Accent-filled things look the same in both modes: the next-departure card, main buttons, the selected tab, switches that are on, PIN cells you've typed and selected chips are lavender (#B48CFF) with dark text.
+  - Accent text and icons use a deeper violet (#6A3BDB) in light mode, because lavender is too pale to read on white: the slash in LIJN/CTRL, LIVE, live departure times and their dot, links, focused text fields, the fingerprint key on the lock screen, selected items in lists and saved stars. In dark mode they stay lavender.
+  - Switches that are off are light grey with a grey knob; the empty PIN cells and keypad keys on the lock screen are white with thin grey borders; the floating tab bar is white with a thin border; errors are a deeper red (#D93636).
+- **Status bar and navigation bar** take the background colour of the current mode, with light icons in dark mode and dark icons in light mode. The window behind the app while it starts matches too.
+- **Notifications** (bus alerts, trip guidance and disruption alerts) now carry the Ctrl accent colour: violet in light mode, lavender in dark mode.
+
+### Changed
+
+- **Every screen works in both modes**: the tabs, stop, line, trip and timetable pages, the route planner and route pages, search, setup and key screens, the You page and settings, the lock screen and PIN screens, dialogs, menus and sheets.
+- **Maps** follow the mode as well: in light mode the OpenStreetMap tiles are shown in their normal colours, in dark mode they're darkened as before. The buttons, messages and credit on the maps use the current mode's colours, and the find-me / follow buttons are accent-filled in both.
+- **De Lijn's line colours** on line badges stay as they are in both modes.
+
 ## v0.11.0 (2026-10-25)
 
 A new look: Ctrl / Signal, the dark, high-contrast design now shared by every Ctrl app. Everything works as before; only how it looks has changed.

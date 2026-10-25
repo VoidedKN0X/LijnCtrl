@@ -121,6 +121,7 @@ class BusAlertService : Service() {
     private fun ongoing(req: BusAlertRequest, status: String): Notification =
         NotificationCompat.Builder(this, Notifications.WATCH)
             .setSmallIcon(R.drawable.ic_notification)
+            .setColor(this.getColor(R.color.notification_accent))
             .setContentTitle(str(R.string.bus_alert_title_x, req.lineLabel, req.destination))
             .setContentText(str(R.string.bus_alert_text_x, status, req.minutesBefore, req.stopName))
             .setOngoing(true)
@@ -136,6 +137,7 @@ class BusAlertService : Service() {
         if (Notifications.allowed(this)) {
             val n = NotificationCompat.Builder(this, if (loud) Notifications.BUS else Notifications.WATCH)
                 .setSmallIcon(R.drawable.ic_notification)
+            .setColor(this.getColor(R.color.notification_accent))
                 .setContentTitle(str(R.string.bus_alert_title_x, req.lineLabel, req.destination))
                 .setContentText(text)
                 .setStyle(NotificationCompat.BigTextStyle().bigText(text))
