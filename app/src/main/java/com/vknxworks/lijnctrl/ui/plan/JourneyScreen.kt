@@ -59,16 +59,19 @@ fun JourneyScreen(index: Int) {
             MessageView(Icons.Outlined.Directions, stringResource(R.string.route_gone), stringResource(R.string.route_gone_body), Modifier.padding(padding))
             return@Scaffold
         }
-        JourneyDetail(journey, Modifier.padding(padding))
+        JourneyDetail(journey, index, Modifier.padding(padding))
     }
 }
 
 @Composable
-private fun JourneyDetail(j: Journey, modifier: Modifier) {
+private fun JourneyDetail(j: Journey, index: Int, modifier: Modifier) {
     val nav = LocalNavigator.current
     val lines = rememberLineInfo(j.legs.mapNotNull { it.line })
     LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(start = Gutter, end = Gutter, bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         item { JourneyCard(j, onClick = null) }
+        if (j.legs.any { it.path.size >= 2 }) {
+            item { RouteMapPreview(j) { nav.navigate(com.vknxworks.lijnctrl.ui.nav.RouteMapRoute(index)) } }
+        }
         itemsIndexed(j.legs) { _, leg ->
             if (leg.isWalk) WalkLeg(leg)
             else RideLeg(

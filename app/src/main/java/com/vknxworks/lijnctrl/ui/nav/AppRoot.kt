@@ -202,6 +202,7 @@ private fun AppNavHost(navController: NavHostController) {
         composable<PlanRoute> { PlanScreen() }
         composable<PickPlaceRoute> { PickPlaceScreen(it.toRoute<PickPlaceRoute>().forFrom) }
         composable<JourneyRoute> { JourneyScreen(it.toRoute<JourneyRoute>().index) }
+        composable<RouteMapRoute> { com.vknxworks.lijnctrl.ui.plan.RouteMapScreen(it.toRoute<RouteMapRoute>().index) }
 
         composable<StopRoute> { val r = it.toRoute<StopRoute>(); StopScreen(r.entity, r.number, r.name) }
         composable<TimetableRoute> { val r = it.toRoute<TimetableRoute>(); TimetableScreen(r.entity, r.number, r.name) }

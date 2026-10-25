@@ -4,6 +4,17 @@ What changed in each LijnCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## v0.4.0 (2026-10-25)
+
+Routes on a map.
+
+### New
+
+- **Route map.** After you plan a route, tap **Map** above the results to see the routes on a full-screen OpenStreetMap map. The chips at the bottom switch between the routes found (shown by their departure and arrival time), and the card under them shows the chosen route and opens its details.
+- **Map preview on each route's page.** A small map of the whole route now sits at the top of a route's details; tap it to open the full map.
+- **What the map shows:** each bus, tram or train ride as a line in that line's own colour (with a thin edge so yellow lines stay visible), walks as a dotted grey line, the start as a ring and the destination as a filled dot, and a small dot where you get on and off. Tap one of those dots to open that stop's page with its live departures. Your own position shows as well when location is allowed. The map turns dark with the dark theme, like the Nearby map.
+- **Real route shapes with Transitous:** when **Plan with Transitous** is on, rides and walks follow the actual streets and tracks. The planner on the phone draws each ride along the stops it passes, and walks as a straight line.
+
 ## v0.3.2 (2026-10-25)
 
 Address and place search that actually works.

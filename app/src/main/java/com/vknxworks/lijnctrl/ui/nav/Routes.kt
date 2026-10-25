@@ -30,3 +30,4 @@ import kotlinx.serialization.Serializable
 @Serializable data object ApiKeyRoute
 @Serializable data class PickPlaceRoute(val forFrom: Boolean)
 @Serializable data class JourneyRoute(val index: Int)
+@Serializable data class RouteMapRoute(val index: Int)

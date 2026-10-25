@@ -78,7 +78,7 @@ internal object MapMemory {
 }
 
 /** Map tiles are cached in the app's own cache folder; requests say which app they're from, as OpenStreetMap asks. */
-private fun configureOsm(context: Context) {
+internal fun configureOsm(context: Context) {
     Configuration.getInstance().apply {
         userAgentValue = "LijnCtrl/${BuildConfig.VERSION_NAME} (${context.packageName})"
         osmdroidBasePath = File(context.cacheDir, "osmdroid")

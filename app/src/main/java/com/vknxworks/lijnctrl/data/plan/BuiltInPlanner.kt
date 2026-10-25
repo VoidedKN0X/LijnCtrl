@@ -132,7 +132,7 @@ class BuiltInPlanner(
                     val deps = timetableFrom(oa.stop, searchFrom.plusSeconds(oa.walk)).filter { it.matches(dir) }.take(perOption)
                     for (dep in deps) {
                         val arr = arrivalAt(da.stop, dep) ?: continue
-                        found += build(from, to, oa, da, listOf(ride(dep, arr, oa, da, id - io - 1)))
+                        found += build(from, to, oa, da, listOf(ride(dep, arr, oa, da, id - io - 1, stops.subList(io, id + 1).coords())))
                     }
                 }
                 found
@@ -145,7 +145,11 @@ class BuiltInPlanner(
             val firstLegs = oDirs.keys.filter { it !in direct }.take(10)
             val secondLegs = dDirs.keys.filter { it !in direct }.take(10)
             val routes = (firstLegs + secondLegs).distinct().map { dir -> async { dir to route(dir) } }.awaitAll().toMap()
-            data class Change(val a: Dir, val b: Dir, val oa: Access, val da: Access, val t1: ApiStop, val t2: ApiStop, val n1: Int, val n2: Int)
+            data class Change(
+                val a: Dir, val b: Dir, val oa: Access, val da: Access, val t1: ApiStop, val t2: ApiStop, val n1: Int, val n2: Int,
+                /** The shapes of both rides, as the stops each one passes. */
+                val path1: List<LatLon>, val path2: List<LatLon>,
+            )
             val changes = mutableListOf<Change>()
             for (a in firstLegs) for (b in secondLegs) {
                 if (a.line == b.line) continue
@@ -168,7 +172,7 @@ class BuiltInPlanner(
                         val close = c1 != null && c2 != null && c1.latitude != 0.0 && c2.latitude != 0.0 &&
                             distanceMetres(c1.latitude, c1.longitude, c2.latitude, c2.longitude) <= 250
                         if (same || close) {
-                            picked = Change(a, b, oa, da, t1, t2, i - io - 1, id - j - 1)
+                            picked = Change(a, b, oa, da, t1, t2, i - io - 1, id - j - 1, ra.subList(io, i + 1).coords(), rb.subList(j, id + 1).coords())
                             break@loop
                         }
                     }
@@ -195,11 +199,12 @@ class BuiltInPlanner(
                         val oa = ch.oa
                         val da = ch.da
                         val legs = buildList {
-                            add(ride(dep, arr1, oa, Access(t1Key, ch.t1.name ?: ch.t1.number, 0.0, 0.0, 0), ch.n1))
+                            add(ride(dep, arr1, oa, Access(t1Key, ch.t1.name ?: ch.t1.number, 0.0, 0.0, 0), ch.n1, ch.path1))
                             if (transferWalk > 0) {
-                                add(walk(ch.t1.name ?: ch.t1.number, ch.t2.name ?: ch.t2.number, arr1.scheduled, transferWalk))
+                                val p = listOfNotNull(ch.path1.lastOrNull(), ch.path2.firstOrNull())
+                                add(walk(ch.t1.name ?: ch.t1.number, ch.t2.name ?: ch.t2.number, arr1.scheduled, transferWalk, p))
                             }
-                            add(ride(dep2, arr2, Access(t2Key, ch.t2.name ?: ch.t2.number, 0.0, 0.0, 0), da, ch.n2))
+                            add(ride(dep2, arr2, Access(t2Key, ch.t2.name ?: ch.t2.number, 0.0, 0.0, 0), da, ch.n2, ch.path2))
                         }
                         found += build(from, to, oa, da, legs)
                     }
@@ -217,7 +222,7 @@ class BuiltInPlanner(
         else unique.sortedWith(compareBy<Journey>({ it.end }, { it.transfers })).take(6)
     }
 
-    private fun ride(dep: Departure, arr: Departure, from: Access, to: Access, between: Int): JourneyLeg {
+    private fun ride(dep: Departure, arr: Departure, from: Access, to: Access, between: Int, path: List<LatLon>): JourneyLeg {
         val info = dep.line?.let { lines.get(it) }
         return JourneyLeg(
             mode = if (info?.isTram == true) LegMode.TRAM else LegMode.BUS,
@@ -239,18 +244,30 @@ class BuiltInPlanner(
             serviceDate = dep.serviceDate,
             fromStop = from.stop,
             toStop = to.stop,
+            path = path,
         )
     }
 
-    private fun walk(fromName: String, toName: String, start: Instant, seconds: Long): JourneyLeg =
-        JourneyLeg(LegMode.WALK, fromName, toName, start, start.plusSeconds(seconds), distanceMetres = (seconds * 1.3 / 1.25).toInt())
+    /** The stops' positions, leaving out stops De Lijn has no position for. */
+    private fun List<ApiStop>.coords(): List<LatLon> = mapNotNull { s ->
+        s.coordinate?.takeIf { it.latitude != 0.0 && it.longitude != 0.0 }?.let { LatLon(it.latitude, it.longitude) }
+    }
+
+    private fun walk(fromName: String, toName: String, start: Instant, seconds: Long, path: List<LatLon>): JourneyLeg =
+        JourneyLeg(LegMode.WALK, fromName, toName, start, start.plusSeconds(seconds), distanceMetres = (seconds * 1.3 / 1.25).toInt(), path = path)
 
     /** Adds the walks at both ends (when there's anything to walk) around the rides. */
     private fun build(from: PlanPoint, to: PlanPoint, oa: Access, da: Access, rides: List<JourneyLeg>): Journey {
         val legs = buildList {
-            if (oa.walk >= 30) add(walk(from.name, oa.name, rides.first().start.minusSeconds(oa.walk), oa.walk))
+            if (oa.walk >= 30) {
+                val p = listOf(LatLon(from.latitude, from.longitude), rides.first().path.firstOrNull() ?: LatLon(oa.lat, oa.lon))
+                add(walk(from.name, oa.name, rides.first().start.minusSeconds(oa.walk), oa.walk, p))
+            }
             addAll(rides)
-            if (da.walk >= 30) add(walk(da.name, to.name, rides.last().end, da.walk))
+            if (da.walk >= 30) {
+                val p = listOf(rides.last().path.lastOrNull() ?: LatLon(da.lat, da.lon), LatLon(to.latitude, to.longitude))
+                add(walk(da.name, to.name, rides.last().end, da.walk, p))
+            }
         }
         return Journey(legs, SOURCE)
     }

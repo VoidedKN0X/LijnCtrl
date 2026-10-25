@@ -26,6 +26,7 @@ import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Directions
 import androidx.compose.material.icons.outlined.Flag
+import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.SwapVert
 import androidx.compose.material.icons.outlined.TripOrigin
@@ -239,8 +240,27 @@ fun PlanScreen() {
                         Modifier.height(300.dp),
                     )
                 }
-                else -> itemsIndexed(results, key = { i, j -> "$i-${j.signature}" }) { i, j ->
+                else -> {
+                    if (results.any { j -> j.legs.any { it.path.size >= 2 } }) {
+                        item {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    pluralStringResource(R.plurals.routes_found, results.size, results.size),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                OutlinedButton(onClick = { nav.navigate(com.vknxworks.lijnctrl.ui.nav.RouteMapRoute(0)) }, shape = CircleShape) {
+                                    Icon(Icons.Outlined.Map, null, Modifier.size(18.dp))
+                                    Spacer(Modifier.width(6.dp))
+                                    Text(stringResource(R.string.show_on_map))
+                                }
+                            }
+                        }
+                    }
+                    itemsIndexed(results, key = { i, j -> "$i-${j.signature}" }) { i, j ->
                     JourneyCard(j) { nav.navigate(JourneyRoute(i)) }
+                    }
                 }
             }
         }

@@ -323,4 +323,11 @@
     <string name="address_search_prompt_title">Looking for an address or a place?</string>
     <string name="address_search_prompt_body">De Lijn can only search stops. Turn on address search to also find shops, landmarks and addresses. What you type is then sent to Transitous (transitous.org).</string>
     <string name="turn_on_address_search">Turn on</string>
+    <string name="route_map">Route map</string>
+    <string name="show_on_map">Map</string>
+    <string name="open_map">Open the map</string>
+    <plurals name="routes_found">
+        <item quantity="one">%1$d route</item>
+        <item quantity="other">%1$d routes</item>
+    </plurals>
 </resources>

@@ -19,7 +19,7 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Full timetable** for any stop, today or the next six days, per hour and per line
 - **Trip pages**: every stop of a bus or tram run, with live times while it's on the road
 - **Line pages**: both directions stop by stop, where the next vehicles are heading, and the line's disruptions
-- **Route planner** from your location, a stop or an address to anywhere, leaving now, at a time or arriving by a time; planned on the phone with De Lijn's data, or with Transitous for trains and live delays (your choice in Settings)
+- **Route planner** from your location, a stop or an address to anywhere, leaving now, at a time or arriving by a time; planned on the phone with De Lijn's data, or with Transitous for trains and live delays (your choice in Settings), with each route shown on a map
 - **Search** for stops by name (in any word order) or the number on their sign, lines by number, every stop in a town, and (if you switch it on) shops, addresses and landmarks with the stops around them
 - **Nearby** stops as a list or on an OpenStreetMap map
 - **Disruption messages** in English, Dutch, French or German

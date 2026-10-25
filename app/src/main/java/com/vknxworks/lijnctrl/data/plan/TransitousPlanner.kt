@@ -54,7 +54,12 @@ private data class TLeg(
     val displayName: String? = null,
     val cancelled: Boolean? = null,
     val intermediateStops: List<TPlace> = emptyList(),
+    val legGeometry: TGeometry? = null,
 )
+
+/** A leg's shape as an encoded polyline, with the number of decimal places it was encoded with. */
+@Serializable
+private data class TGeometry(val points: String = "", val precision: Int? = null)
 
 @Serializable
 private data class TArea(
@@ -218,7 +223,28 @@ class TransitousPlanner {
             fromStop = if (isDeLijn) deLijnStop(from.stopId) else null,
             toStop = if (isDeLijn) deLijnStop(to.stopId) else null,
             track = from.track ?: from.scheduledTrack,
+            path = pathOf(this),
         )
+    }
+
+    /**
+     * The leg's shape from Transitous; if that's missing or doesn't start where the leg starts, the stops it
+     * passes, joined by straight lines.
+     */
+    private fun pathOf(leg: TLeg): List<LatLon> {
+        val start = LatLon(leg.from.lat, leg.from.lon)
+        val g = leg.legGeometry?.points.orEmpty()
+        if (g.isNotEmpty()) {
+            for (p in listOfNotNull(leg.legGeometry?.precision, 6, 7, 5).distinct()) {
+                val pts = decodePolyline(g, p)
+                if (pts.size >= 2 && (start.latitude == 0.0 ||
+                        distanceMetres(pts.first().latitude, pts.first().longitude, start.latitude, start.longitude) < 2_000)
+                ) return pts
+            }
+        }
+        return (listOf(leg.from) + leg.intermediateStops + listOf(leg.to))
+            .filter { it.lat != 0.0 && it.lon != 0.0 }
+            .map { LatLon(it.lat, it.lon) }
     }
 
     private fun parse(value: String?): Instant? = value?.let { runCatching { Instant.parse(it) }.getOrNull() }

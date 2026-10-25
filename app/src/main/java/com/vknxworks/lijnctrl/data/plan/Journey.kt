@@ -24,6 +24,9 @@ data class PlanPoint(
 
 enum class LegMode { WALK, BUS, TRAM, METRO, TRAIN, OTHER }
 
+/** A point on the map. */
+data class LatLon(val latitude: Double, val longitude: Double)
+
 /** One part of a journey: a walk, or a ride on one bus, tram or train. */
 data class JourneyLeg(
     val mode: LegMode,
@@ -55,6 +58,8 @@ data class JourneyLeg(
     val fromStop: StopKey? = null,
     val toStop: StopKey? = null,
     val track: String? = null,
+    /** The way the leg goes, for the map: from where it starts to where it ends. Empty when unknown. */
+    val path: List<LatLon> = emptyList(),
 ) {
     val isWalk: Boolean get() = mode == LegMode.WALK
     val minutes: Long get() = ((end.epochSecond - start.epochSecond + 59) / 60).coerceAtLeast(1)
@@ -88,3 +93,34 @@ fun distanceMetres(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Doub
 
 /** Walking time for a straight-line distance: streets add about a quarter, at an easy 4.7 km/h. */
 fun walkSeconds(metres: Double): Long = (metres * 1.25 / 1.3).toLong()
+
+/**
+ * Decodes a Google encoded polyline (as Transitous sends route shapes) with [precision] decimal places.
+ * Returns an empty list for anything that isn't a valid polyline.
+ */
+fun decodePolyline(encoded: String, precision: Int): List<LatLon> {
+    val factor = Math.pow(10.0, precision.toDouble())
+    val out = ArrayList<LatLon>(encoded.length / 4)
+    var index = 0
+    var lat = 0L
+    var lon = 0L
+    fun next(): Long? {
+        var result = 0L
+        var shift = 0
+        while (true) {
+            if (index >= encoded.length || shift > 60) return null
+            val b = encoded[index++].code - 63
+            if (b < 0) return null
+            result = result or ((b and 0x1f).toLong() shl shift)
+            shift += 5
+            if (b < 0x20) break
+        }
+        return if (result and 1L != 0L) (result shr 1).inv() else result shr 1
+    }
+    while (index < encoded.length) {
+        lat += next() ?: return emptyList()
+        lon += next() ?: return emptyList()
+        out += LatLon(lat / factor, lon / factor)
+    }
+    return out
+}
