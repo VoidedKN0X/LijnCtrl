@@ -18,6 +18,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Directions
+import androidx.compose.material.icons.outlined.Navigation
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -69,6 +72,9 @@ private fun JourneyDetail(j: Journey, index: Int, modifier: Modifier) {
     val lines = rememberLineInfo(j.legs.mapNotNull { it.line })
     LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(start = Gutter, end = Gutter, bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         item { JourneyCard(j, onClick = null) }
+        if (j.legs.any { !it.isWalk } && j.end.isAfter(java.time.Instant.now())) {
+            item { GuideButton(j) }
+        }
         if (j.legs.any { it.path.size >= 2 }) {
             item { RouteMapPreview(j) { nav.navigate(com.vknxworks.lijnctrl.ui.nav.RouteMapRoute(index)) } }
         }
@@ -188,5 +194,53 @@ private fun StopLine(time: String, scheduled: String?, text: String, extra: Stri
             if (extra != null) Text(extra, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         if (onClick != null) Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+/**
+ * Start (or stop) trip guidance for this route: one notification that says what's next and alerts you when to
+ * leave, when your bus is near and when to get off.
+ */
+@Composable
+private fun GuideButton(j: Journey) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val running by com.vknxworks.lijnctrl.alerts.TripGuideService.running.collectAsStateWithLifecycle()
+    fun start() {
+        com.vknxworks.lijnctrl.alerts.TripGuideService.start(context, j)
+        android.widget.Toast.makeText(context, context.getString(R.string.guide_started), android.widget.Toast.LENGTH_LONG).show()
+    }
+    val permission = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) start()
+        else android.widget.Toast.makeText(context, context.getString(R.string.notifications_needed), android.widget.Toast.LENGTH_LONG).show()
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        if (running) {
+            androidx.compose.material3.OutlinedButton(
+                onClick = { com.vknxworks.lijnctrl.alerts.TripGuideService.stop(context) },
+                shape = androidx.compose.foundation.shape.CircleShape,
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text(stringResource(R.string.guide_stop)) }
+        } else {
+            com.vknxworks.lijnctrl.ui.components.PillButton(
+                stringResource(R.string.guide_start),
+                onClick = {
+                    if (com.vknxworks.lijnctrl.alerts.Notifications.allowed(context)) start()
+                    else {
+                        com.vknxworks.lijnctrl.ui.lock.AppLock.expectReturn()
+                        permission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                },
+                icon = androidx.compose.material.icons.Icons.Outlined.Navigation,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        Text(
+            stringResource(R.string.guide_explain),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 4.dp),
+        )
     }
 }

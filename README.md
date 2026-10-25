@@ -22,6 +22,7 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Route planner** from your location, a stop or an address to anywhere, leaving now, at a time or arriving by a time; planned by Transitous with every Belgian operator, trains included, and live delays, with each route shown on a map (which can follow your location) and your recent routes one tap away
 - **Live buses and trams** on the trip map, the route map and the line map (every vehicle on the line), with their line number and heading (needs De Lijn's free GTFS Realtime key)
 - **Go home / Go to work** in one tap, a **departures board** of every bus leaving near you, and **line filters** so a stop only shows the lines you take
+- **Trip guidance**: follow a planned route with a notification that tells you when to leave, when your bus is coming and when to get off, with live times
 - **Alerts**: a notification when your bus is a few minutes from your stop, and (optionally) when De Lijn reports a new disruption on your saved stops or lines
 - **Search** for stops by name (in any word order) or the number on their sign, lines by number, every stop in a town, and (if you switch it on) shops, addresses and landmarks with the stops around them
 - **Nearby** stops as a list or on an OpenStreetMap map

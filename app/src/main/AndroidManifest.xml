@@ -53,6 +53,11 @@
             android:exported="false"
             android:foregroundServiceType="dataSync" />
 
+        <service
+            android:name=".alerts.TripGuideService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
         <!-- No downloadable emoji font: androidx.emoji2 would look one up from a font provider on start.
              Emoji use the phone's own font. -->
         <provider

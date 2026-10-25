@@ -4,6 +4,20 @@ What changed in each LijnCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## v0.10.0 (2026-10-25)
+
+Trip guidance: LijnCtrl walks you through a planned route.
+
+### New
+
+- **Trip guidance.** Open a planned route and tap **Start trip guidance**. One ongoing notification then always says what's next ("Next: Bus 71 is coming, in 4 min") and you get an alert, with sound and vibration, at each moment that matters:
+  - **Time to leave**, when you need to start walking to your first stop.
+  - **Your bus or tram is coming**, about 2 minutes before it arrives at your stop (with the platform for trains, when known).
+  - **Get off**, about 2 minutes before your stop, and again when the vehicle is seen close to your stop if you've added a GTFS Realtime key.
+  - **You've arrived**, at the end, after which guidance stops by itself.
+- **Live, not just planned.** For De Lijn rides, guidance follows the live time of your bus or tram at the stop where you get on and the stop where you get off, so the alerts move with delays. Other rides (trains, other operators) follow the planned times from the route.
+- **Works in the background.** Guidance keeps going with the app closed or locked, stops after four hours at most, and can be stopped any time with **Stop** in the notification or **Stop trip guidance** on the route page. LijnCtrl asks for permission to show notifications the first time.
+
 ## v0.9.0 (2026-10-25)
 
 Quicker everyday trips: Home and Work, a departures board, and only the lines you take.

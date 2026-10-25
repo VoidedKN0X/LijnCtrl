@@ -401,4 +401,25 @@
     <string name="filter_lines_body">Only the lines you tick are shown at this stop, here and on the Stops tab.</string>
     <string name="only_lines_x">Only lines %1$s</string>
     <string name="show_all_lines">Show all</string>
+    <string name="guide_start">Start trip guidance</string>
+    <string name="guide_stop">Stop trip guidance</string>
+    <string name="guide_started">Trip guidance is on: follow along in the notification.</string>
+    <string name="guide_explain">One notification tells you what\'s next and alerts you when to leave, when your bus or tram is about to arrive, and when to get off, using live times.</string>
+    <string name="guide_title_x">Trip to %1$s</string>
+    <string name="guide_starting">Getting live times…</string>
+    <string name="guide_next_x">Next: %1$s, in %2$d min</string>
+    <string name="guide_almost_there_x">Almost at %1$s</string>
+    <string name="guide_arrived_x">You\'ve arrived at %1$s. Trip guidance stopped.</string>
+    <string name="guide_leave_title">Time to leave</string>
+    <string name="guide_leave_x">Leave now to walk to %1$s (%2$d min).</string>
+    <string name="guide_board_title_x">%1$s is coming</string>
+    <string name="guide_board_x">%1$s arrives at %2$s in about 2 minutes.</string>
+    <string name="guide_get_off_title_x">Get off at %1$s</string>
+    <string name="guide_get_off_x">Get ready: you get off at %1$s in about 2 minutes.</string>
+    <string name="guide_get_off_next_x">Your stop is next: get off at %1$s.</string>
+    <string name="guide_your_ride">Your ride</string>
+    <string name="guide_bus_x">Bus %1$s</string>
+    <string name="guide_tram_x">Tram %1$s</string>
+    <string name="guide_train_x">Train %1$s</string>
+    <string name="guide_metro_x">Metro %1$s</string>
 </resources>
