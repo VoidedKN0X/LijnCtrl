@@ -71,8 +71,8 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/departure_widget_info" />
         </receiver>
-        <!-- Picks the widget's stop. Only the launcher can start it with a widget it's adding (Android checks that
-             the widget id belongs to the caller); it's behind the app lock like the app. -->
+        <!-- Picks the widget's stop. Exported because the launcher opens it; it closes at once unless the widget id
+             is one of LijnCtrl's own widgets, and it's behind the app lock like the app. -->
         <activity
             android:name=".widget.DepartureWidgetConfigActivity"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|keyboard|navigation|density|uiMode"
@@ -84,6 +84,15 @@
                 <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
             </intent-filter>
         </activity>
+
+        <!-- AndroidX adds two exported receivers for developer tooling (WorkManager diagnostics and the profile
+             installer, both reached over adb). LijnCtrl doesn't need them, so they're removed. -->
+        <receiver
+            android:name="androidx.work.impl.diagnostics.DiagnosticsReceiver"
+            tools:node="remove" />
+        <receiver
+            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+            tools:node="remove" />
 
         <!-- No downloadable emoji font: androidx.emoji2 would look one up from a font provider on start.
              Emoji use the phone's own font. -->

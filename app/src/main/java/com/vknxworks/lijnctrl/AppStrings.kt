@@ -1,7 +1,6 @@
 package com.vknxworks.lijnctrl
 
 import android.content.Context
-import androidx.annotation.PluralsRes
 import androidx.annotation.StringRes
 
 /**
@@ -14,6 +13,3 @@ object AppStrings {
 
 fun str(@StringRes id: Int, vararg args: Any?): String =
     if (args.isEmpty()) AppStrings.context.getString(id) else AppStrings.context.getString(id, *args)
-
-fun plural(@PluralsRes id: Int, count: Int, vararg args: Any?): String =
-    AppStrings.context.resources.getQuantityString(id, count, *(if (args.isEmpty()) arrayOf<Any?>(count) else args))

@@ -152,15 +152,6 @@ class LineRepository(context: Context, private val api: DeLijnApi) {
         if (added.isNotEmpty()) _lines.update { it + added }
     }
 
-    /** Forgets every line (used when the app is reset). */
-    suspend fun clear() = mutex.withLock {
-        _lines.value = emptyMap()
-        colors = emptyMap()
-        colorsAt = 0L
-        failedAt.clear()
-        withContext(Dispatchers.IO) { runCatching { file.delete() } }
-    }
-
     private companion object {
         const val MAX_AGE_MS = 7L * 24 * 60 * 60 * 1000
         const val RETRY_AFTER_MS = 5L * 60 * 1000

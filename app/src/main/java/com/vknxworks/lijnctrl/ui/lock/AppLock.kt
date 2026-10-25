@@ -360,6 +360,8 @@ private fun PinLockScreen() {
 
     fun askFingerprint() {
         val a = activity ?: return
+        // Never on a screen that's closing: Android refuses the prompt there.
+        if (a.isFinishing || a.isDestroyed) return
         val cipher = vault.biometricUnlockCipher() ?: run {
             message = if (!vault.biometricEnabled) context.getString(R.string.lock_fingerprint_changed) else null
             return

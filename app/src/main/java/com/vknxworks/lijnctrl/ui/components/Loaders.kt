@@ -13,7 +13,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -89,56 +88,6 @@ class Loader<T>(private val scope: CoroutineScope, private val block: suspend ()
     }
 }
 
-/** Incrementally loaded list for big libraries. */
-class PagedLoader<T>(
-    private val scope: CoroutineScope,
-    private val pageSize: Int = 100,
-    private val fetch: suspend (start: Int, limit: Int) -> Pair<List<T>, Int>,
-) {
-    val items = mutableStateListOf<T>()
-    var total by mutableStateOf(-1)
-        private set
-    var loading by mutableStateOf(false)
-        private set
-    var error by mutableStateOf<String?>(null)
-        private set
-    private var job: Job? = null
-
-    val endReached: Boolean get() = total >= 0 && items.size >= total
-
-    init {
-        loadMore()
-    }
-
-    fun loadMore() {
-        if (loading || endReached) return
-        loading = true
-        job = scope.launch {
-            try {
-                val (page, count) = fetch(items.size, pageSize)
-                items.addAll(page)
-                total = if (page.isEmpty()) items.size else count
-                error = null
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Throwable) {
-                error = e.friendlyMessage()
-            } finally {
-                loading = false
-            }
-        }
-    }
-
-    fun refresh() {
-        job?.cancel()
-        loading = false
-        items.clear()
-        total = -1
-        error = null
-        loadMore()
-    }
-}
-
 class LoaderStore : ViewModel() {
     val map = mutableMapOf<String, Any>()
 }
@@ -148,13 +97,6 @@ fun <T> rememberLoader(key: String, block: suspend () -> T): Loader<T> {
     val store: LoaderStore = viewModel()
     @Suppress("UNCHECKED_CAST")
     return remember(key) { store.map.getOrPut("L:$key") { Loader(store.viewModelScope, block) } as Loader<T> }
-}
-
-@Composable
-fun <T> rememberPagedLoader(key: String, pageSize: Int = 100, fetch: suspend (Int, Int) -> Pair<List<T>, Int>): PagedLoader<T> {
-    val store: LoaderStore = viewModel()
-    @Suppress("UNCHECKED_CAST")
-    return remember(key) { store.map.getOrPut("P:$key") { PagedLoader(store.viewModelScope, pageSize, fetch) } as PagedLoader<T> }
 }
 
 @Composable

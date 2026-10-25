@@ -33,6 +33,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -72,7 +73,8 @@ fun GtfsKeyScreen() {
     SecureScreen()
     val hasKey by c.gtfsKey.hasKey.collectAsStateWithLifecycle()
 
-    var key by rememberSaveable { mutableStateOf("") }
+    // The typed key stays in memory only, never in the saved screen state Android keeps outside the app.
+    var key by remember { mutableStateOf("") }
     var visible by rememberSaveable { mutableStateOf(false) }
     var checking by rememberSaveable { mutableStateOf(false) }
     var error by rememberSaveable { mutableStateOf<String?>(null) }

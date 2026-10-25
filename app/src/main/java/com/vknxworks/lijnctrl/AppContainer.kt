@@ -11,6 +11,7 @@ import com.vknxworks.lijnctrl.data.lines.LineRepository
 import com.vknxworks.lijnctrl.data.lock.LockVault
 import com.vknxworks.lijnctrl.data.settings.SettingsRepository
 import com.vknxworks.lijnctrl.ui.lock.AppLock
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -23,7 +24,11 @@ import java.util.concurrent.TimeUnit
 
 /** Manual dependency container; one per process. */
 class AppContainer(val context: Context) {
-    val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    /**
+     * Background work that outlives a screen. A failure in one job (a full disk, a broken settings file) must
+     * never take the whole app down, so it's dropped here instead of crashing.
+     */
+    val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, _ -> })
 
     /**
      * Only ever talks to De Lijn's API, over HTTPS: any other host, plain HTTP or a redirect elsewhere is

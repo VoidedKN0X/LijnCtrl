@@ -69,8 +69,4 @@ class DepartureRepository(private val api: DeLijnApi) {
         val now = Instant.now()
         return mergeDepartures(live, upcomingTimetable(stop, now, max), now, max)
     }
-
-    fun clear() {
-        timetables.clear()
-    }
 }

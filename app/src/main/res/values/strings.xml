@@ -141,14 +141,10 @@
     <string name="about_footer">LijnCtrl %1$s · VKNXWorks</string>
 
     <!-- Settings -->
-    <string name="appearance">Appearance</string>
-    <string name="theme">Theme</string>
     <string name="theme_system">Follow system</string>
     <string name="theme_dark">Dark</string>
     <string name="theme_light">Light</string>
     <string name="theme_black">Pure black</string>
-    <string name="use_wallpaper_colours">Use wallpaper colours</string>
-    <string name="replaces_the_default_colours_with_ones">Replaces the default colours with ones from your wallpaper</string>
     <string name="selected">Selected</string>
     <string name="back">Back</string>
     <string name="departures">Departures</string>
@@ -181,7 +177,6 @@
     <string name="hide_screenshots_subtitle">Screenshots and screen recordings show a blank screen</string>
     <string name="hide_recents">Hide in recent apps</string>
     <string name="hide_recents_subtitle">The recent apps view shows a blank card instead of the app</string>
-    <string name="lock_title">LijnCtrl is locked</string>
     <string name="lock_locked">Locked</string>
     <string name="lock_prompt_title">Unlock LijnCtrl</string>
     <string name="lock_prompt_subtitle">Your De Lijn departures</string>

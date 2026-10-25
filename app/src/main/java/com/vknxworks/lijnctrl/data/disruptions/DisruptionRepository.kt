@@ -80,10 +80,6 @@ class DisruptionRepository(private val api: DeLijnApi) {
         }.filterValues { it.isNotEmpty() }
     }
 
-    fun clear() {
-        cache.clear()
-    }
-
     private companion object {
         const val TTL_MS = 10L * 60 * 1000
         const val RETRY_MS = 2L * 60 * 1000

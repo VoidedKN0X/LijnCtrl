@@ -17,6 +17,7 @@ import com.vknxworks.lijnctrl.data.api.LineKey
 import com.vknxworks.lijnctrl.data.api.StopKey
 import com.vknxworks.lijnctrl.data.departures.DepartureRepository
 import com.vknxworks.lijnctrl.str
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -48,7 +49,8 @@ data class BusAlertRequest(
  * The copy only lives in this service's memory and is dropped when it stops.
  */
 class BusAlertService : Service() {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    // Anything unexpected while watching ends the alert quietly instead of crashing the app.
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, _ -> stopEverything() })
     private var job: Job? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -61,11 +63,13 @@ class BusAlertService : Service() {
         val req = intent?.let(::requestFrom)
         val key = applicationContext.container.apiKey.key.value
         Notifications.ensureChannels(this)
-        if (req == null || key.isNullOrBlank()) {
+        // Started with startForegroundService: Android requires the foreground notification first, even when the
+        // service stops straight away (otherwise it ends the app). If Android refuses, it just stops.
+        val first = if (req != null) ongoing(req, str(R.string.bus_alert_looking)) else placeholder()
+        if (!goForeground(first) || req == null || key.isNullOrBlank()) {
             stopEverything()
             return START_NOT_STICKY
         }
-        startForeground(ONGOING_ID, ongoing(req, str(R.string.bus_alert_looking)), ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
         job?.cancel()
         job = scope.launch { watch(req, key) }
         return START_NOT_STICKY
@@ -132,6 +136,25 @@ class BusAlertService : Service() {
             .addAction(0, str(R.string.stop_watching), stopIntent(this))
             .build()
 
+    private fun placeholder(): Notification =
+        NotificationCompat.Builder(this, Notifications.WATCH)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(str(R.string.bus_alert_looking))
+            .setSilent(true)
+            .build()
+
+    private fun goForeground(n: Notification): Boolean = try {
+        startForeground(ONGOING_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+        true
+    } catch (e: Exception) {
+        false
+    }
+
+    /** Android 15+: the daily time allowed for this kind of service is used up; stop before Android ends the app. */
+    override fun onTimeout(startId: Int, fgsType: Int) {
+        stopEverything()
+    }
+
     /** The final notification (the alert itself, or why watching stopped), then the service ends. */
     private fun finish(req: BusAlertRequest, text: String, loud: Boolean = false) {
         if (Notifications.allowed(this)) {
@@ -158,7 +181,7 @@ class BusAlertService : Service() {
 
     private fun stopEverything() {
         job?.cancel()
-        stopForeground(STOP_FOREGROUND_REMOVE)
+        runCatching { stopForeground(STOP_FOREGROUND_REMOVE) }
         stopSelf()
     }
 
@@ -184,7 +207,8 @@ class BusAlertService : Service() {
                 .putExtra("trip", req.trip)
                 .putExtra("destination", req.destination)
                 .putExtra("minutes", req.minutesBefore)
-            ContextCompat.startForegroundService(context, i)
+            // Only refused when the app isn't on screen, which a tap on "Alert me" rules out; never crash over it.
+            runCatching { ContextCompat.startForegroundService(context, i) }
         }
 
         private fun stopIntent(context: Context): PendingIntent = PendingIntent.getService(

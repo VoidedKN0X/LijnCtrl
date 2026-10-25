@@ -147,7 +147,7 @@ fun StopMap(start: GeoPoint?, modifier: Modifier = Modifier, focus: GeoPoint? = 
         }
         map.addMapListener(listener)
         onDispose {
-            overlay?.disableMyLocation()
+            runCatching { overlay?.disableMyLocation() }
             map.removeMapListener(listener)
             MapMemory.center = map.mapCenter as? GeoPoint ?: GeoPoint(map.mapCenter.latitude, map.mapCenter.longitude)
             MapMemory.zoom = map.zoomLevelDouble

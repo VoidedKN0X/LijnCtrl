@@ -211,6 +211,9 @@ fun RouteMap(
         map.invalidate()
     }
 
+    // Declared first so it's disposed last: the location dot below is switched off while the map still exists.
+    DisposableEffect(map) { onDispose { map.onDetach() } }
+
     // Your position as a dot that moves with you (Android's own location service), when location is allowed.
     var hasLocation by remember { mutableStateOf(Locator.hasPermission(context)) }
     var myLocation by remember { mutableStateOf<MyLocationNewOverlay?>(null) }
@@ -224,12 +227,13 @@ fun RouteMap(
         } else null
         myLocation = overlay
         onDispose {
-            overlay?.disableFollowLocation()
-            overlay?.disableMyLocation()
-            overlay?.let { map.overlays.remove(it) }
+            runCatching {
+                overlay?.disableFollowLocation()
+                overlay?.disableMyLocation()
+                overlay?.let { map.overlays.remove(it) }
+            }
         }
     }
-    DisposableEffect(map) { onDispose { map.onDetach() } }
     // Moving the map yourself stops following, as in other map apps.
     DisposableEffect(map) {
         val listener = object : org.osmdroid.events.MapListener {

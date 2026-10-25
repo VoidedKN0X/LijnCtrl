@@ -4,6 +4,28 @@ What changed in each LijnCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## v0.15.1 (2026-10-25)
+
+A clean-up and hardening release: fixes for crashes when closing the app, sturdier alerts and widget, and tighter privacy.
+
+### Fixed
+
+- **No more crash when closing the app with the app lock on.** With the lock set to lock as soon as you leave, pressing Back on the first screen or swiping LijnCtrl away from recent apps could crash it, because the lock screen (and its fingerprint prompt) tried to open on a window that was already closing. The app still locks as it goes, and opens locked next time.
+- **Bus alerts and trip guidance can't crash the app any more.** If Android refuses to start or keep running the "watching your bus" or trip guidance notification (for example when the phone limits background work, or when Android 15's daily limit for this kind of task is reached), the alert or guidance now just stops instead of taking LijnCtrl down with it. An unexpected error while watching also ends it quietly.
+- **The departures widget updates while it's on screen.** A widget that stayed visible could keep showing its old departures, the stop it showed before you changed it, or your stop after LijnCtrl had locked, until the launcher redrew it from scratch. It now reads its stop and departures again on every refresh, and switches to "LijnCtrl is locked" straight away when the app locks.
+- **Background tasks can't crash the app.** A failure while saving a widget's stop, removing a widget, or checking for disruptions in the background is now ignored (and tried again next time) instead of closing the app.
+- **Maps close more cleanly.** Leaving a route, trip or Nearby map now switches your location dot off before the map is taken down, so it can't keep running or fail afterwards.
+
+### Security
+
+- **The widget's stop picker only opens for LijnCtrl's own widgets.** Other apps can no longer open it with a made-up widget number; it closes straight away.
+- **Typed API keys are never saved outside the app.** A key you're typing on the setup or live-vehicles screen stays in memory only and is no longer kept in the screen state Android saves when the app is in the background.
+- **Two developer-only entry points removed.** AndroidX added two receivers that developer tools can reach over USB debugging (WorkManager diagnostics and the profile installer); LijnCtrl doesn't need them, so they're gone.
+
+### Changed
+
+- Internal cleanup: removed unused code and text.
+
 ## v0.15.0 (2026-10-25)
 
 A "Next departures" widget for your home screen.

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -27,6 +28,19 @@ private const val BAR_DARK = 0xFF08080A.toInt()
 private const val BAR_LIGHT = 0xFFF5F5F1.toInt()
 
 class MainActivity : ComponentActivity() {
+    /** The activity is finishing: nothing new (lock screen, dialogs) is drawn on its window any more. */
+    private var closing by androidx.compose.runtime.mutableStateOf(false)
+
+    override fun onPause() {
+        super.onPause()
+        if (isFinishing) closing = true
+    }
+
+    override fun onStop() {
+        if (isFinishing) closing = true
+        super.onStop()
+    }
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,7 +77,9 @@ class MainActivity : ComponentActivity() {
                             savedRoot.SaveableStateProvider("root") { AppRoot() }
                         }
                     }
-                    AppLockOverlay()
+                    // Closing (Back on the first screen, swiped away): the app may lock as it goes, but the lock
+                    // screen isn't drawn on a window that's being torn down; the next start opens locked.
+                    if (!closing) AppLockOverlay()
                 }
             }
         }

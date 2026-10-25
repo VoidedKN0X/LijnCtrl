@@ -47,7 +47,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vknxworks.lijnctrl.R
 import com.vknxworks.lijnctrl.container
@@ -77,6 +76,19 @@ import kotlinx.coroutines.launch
  * and it follows Hide in screenshots and Hide in recent apps.
  */
 class DepartureWidgetConfigActivity : ComponentActivity() {
+    /** The activity is finishing: nothing new (lock screen, dialogs) is drawn on its window any more. */
+    private var closing by androidx.compose.runtime.mutableStateOf(false)
+
+    override fun onPause() {
+        super.onPause()
+        if (isFinishing) closing = true
+    }
+
+    override fun onStop() {
+        if (isFinishing) closing = true
+        super.onStop()
+    }
+
     private var appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -85,7 +97,13 @@ class DepartureWidgetConfigActivity : ComponentActivity() {
             ?: AppWidgetManager.INVALID_APPWIDGET_ID
         // Backing out leaves the widget unconfigured, so the launcher doesn't add it.
         setResult(Activity.RESULT_CANCELED, Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId))
-        if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) {
+        // Only for one of LijnCtrl's own widgets: the screen is exported (launchers must be able to open it), so
+        // any other id, from any other app, just closes it.
+        val ours = appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID && runCatching {
+            AppWidgetManager.getInstance(this).getAppWidgetInfo(appWidgetId)?.provider ==
+                android.content.ComponentName(this, DepartureWidgetReceiver::class.java)
+        }.getOrDefault(false)
+        if (!ours) {
             finish()
             return
         }
@@ -110,7 +128,9 @@ class DepartureWidgetConfigActivity : ComponentActivity() {
                             Picker(appWidgetId, onDone = ::done, onCancel = ::finish)
                         }
                     }
-                    AppLockOverlay()
+                    // Closing (Back on the first screen, swiped away): the app may lock as it goes, but the lock
+                    // screen isn't drawn on a window that's being torn down; the next start opens locked.
+                    if (!closing) AppLockOverlay()
                 }
             }
         }
@@ -120,9 +140,9 @@ class DepartureWidgetConfigActivity : ComponentActivity() {
         val app = applicationContext
         val id = appWidgetId
         container.appScope.launch {
-            WidgetStore.setConfig(app, id, config)
-            runCatching { DepartureWidget().update(app, GlanceAppWidgetManager(app).getGlanceIdBy(id)) }
-            Widgets.schedule(app)
+            runCatching { WidgetStore.setConfig(app, id, config) }
+            runCatching { Widgets.redraw(app) }
+            runCatching { Widgets.schedule(app) }
             runCatching { Widgets.update(app) }
         }
         setResult(Activity.RESULT_OK, Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id))

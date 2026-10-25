@@ -105,7 +105,12 @@ object DisruptionAlerts {
 
 class DisruptionWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
-        runCatching { DisruptionAlerts.check(applicationContext, quiet = false) }
+        try {
+            DisruptionAlerts.check(applicationContext, quiet = false)
+        } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+            throw e
+        } catch (_: Throwable) {
+        }
         return Result.success()
     }
 }

@@ -38,6 +38,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -81,12 +82,13 @@ fun ApiKeyScreen(firstRun: Boolean, unreadable: Boolean, onDone: () -> Unit, onC
     // The key is a secret: keep it out of screenshots, recordings and the recent-apps preview while it's typed.
     SecureScreen()
 
-    var key by rememberSaveable { mutableStateOf("") }
+    // Typed keys stay in memory only, never in the saved screen state Android keeps outside the app.
+    var key by remember { mutableStateOf("") }
     var visible by rememberSaveable { mutableStateOf(false) }
     var checking by rememberSaveable { mutableStateOf(false) }
     var error by rememberSaveable { mutableStateOf<String?>(null) }
     // First start only: the optional live-bus key and whether to use Transitous, so setup is one screen.
-    var gtfs by rememberSaveable { mutableStateOf("") }
+    var gtfs by remember { mutableStateOf("") }
     var gtfsError by rememberSaveable { mutableStateOf<String?>(null) }
     var useTransitous by rememberSaveable { mutableStateOf(true) }
 

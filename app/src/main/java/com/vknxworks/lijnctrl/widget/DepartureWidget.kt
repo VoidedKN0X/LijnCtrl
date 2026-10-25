@@ -5,6 +5,12 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.datastore.preferences.core.Preferences
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -14,6 +20,7 @@ import androidx.glance.GlanceModifier
 import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
+import androidx.glance.currentState
 import androidx.glance.action.ActionParameters
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
@@ -111,21 +118,38 @@ class RefreshDeparturesAction : ActionCallback {
 
 private enum class WidgetState { READY, LOCKED, NO_KEY }
 
+/** Everything one widget draws. */
+private data class WidgetView(val state: WidgetState, val cfg: WidgetConfig?, val snapshot: WidgetSnapshot?)
+
+/**
+ * Reads what the widget should show right now. With the app lock on and LijnCtrl locked, the key is sealed:
+ * nothing about your stop is shown, not even the last departures, until you unlock the app.
+ */
+private suspend fun loadView(context: Context, appWidgetId: Int): WidgetView {
+    val c = context.container
+    val state = when {
+        !c.apiKey.hasKey.value -> WidgetState.NO_KEY
+        c.apiKey.key.value == null -> WidgetState.LOCKED
+        else -> WidgetState.READY
+    }
+    val cfg = if (state == WidgetState.READY) runCatching { WidgetStore.config(context, appWidgetId) }.getOrNull() else null
+    val snapshot = if (cfg != null) runCatching { WidgetStore.snapshot(context, appWidgetId) }.getOrNull() else null
+    return WidgetView(state, cfg, snapshot)
+}
+
 /** "Next departures" home-screen widget for one of your saved stops. */
 class DepartureWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val c = context.container
         val appWidgetId = runCatching { GlanceAppWidgetManager(context).getAppWidgetId(id) }.getOrDefault(AppWidgetManager.INVALID_APPWIDGET_ID)
-        // With the app lock on and LijnCtrl locked, the key is sealed: nothing about your stop is shown, not even
-        // the last departures, until you unlock the app.
-        val state = when {
-            !c.apiKey.hasKey.value -> WidgetState.NO_KEY
-            c.apiKey.key.value == null -> WidgetState.LOCKED
-            else -> WidgetState.READY
+        val initial = loadView(context, appWidgetId)
+        provideContent {
+            // A widget that's still showing keeps this composition, so new departures, a new stop or the app
+            // locking only appear when they're read again: every redraw bumps this number to make that happen.
+            val version = currentState<Preferences>()[Widgets.REDRAW] ?: 0L
+            var view by remember { mutableStateOf(initial) }
+            LaunchedEffect(version) { view = loadView(context, appWidgetId) }
+            Content(appWidgetId, view.state, view.cfg, view.snapshot)
         }
-        val cfg = if (state == WidgetState.READY) WidgetStore.config(context, appWidgetId) else null
-        val snapshot = if (cfg != null) WidgetStore.snapshot(context, appWidgetId) else null
-        provideContent { Content(appWidgetId, state, cfg, snapshot) }
     }
 }
 
@@ -291,7 +315,7 @@ class DepartureWidgetReceiver : GlanceAppWidgetReceiver() {
     override fun onDeleted(context: Context, appWidgetIds: IntArray) {
         super.onDeleted(context, appWidgetIds)
         val app = context.applicationContext
-        scope.launch { WidgetStore.remove(app, appWidgetIds) }
+        scope.launch { runCatching { WidgetStore.remove(app, appWidgetIds) } }
     }
 
     override fun onDisabled(context: Context) {

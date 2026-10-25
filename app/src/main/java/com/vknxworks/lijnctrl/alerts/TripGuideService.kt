@@ -22,6 +22,7 @@ import com.vknxworks.lijnctrl.data.plan.Journey
 import com.vknxworks.lijnctrl.data.plan.LegMode
 import com.vknxworks.lijnctrl.data.plan.distanceMetres
 import com.vknxworks.lijnctrl.str
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -97,7 +98,8 @@ fun Journey.toGuide(): List<GuideLeg> = legs.map { l ->
  * Like the bus alert, it keeps its own copy of the keys while it runs, so it works with the app closed or locked.
  */
 class TripGuideService : Service() {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    // Anything unexpected while guiding ends the guidance quietly instead of crashing the app.
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, _ -> stopEverything() })
     private var job: Job? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -113,12 +115,13 @@ class TripGuideService : Service() {
         val c = applicationContext.container
         val key = c.apiKey.key.value
         Notifications.ensureChannels(this)
-        if (legs.isNullOrEmpty() || key.isNullOrBlank()) {
+        // Started with startForegroundService: Android requires the foreground notification first, even when the
+        // service stops straight away (otherwise it ends the app). If Android refuses, it just stops.
+        val destination = legs?.lastOrNull()?.toName.orEmpty()
+        if (!goForeground(ongoing(destination, str(R.string.guide_starting))) || legs.isNullOrEmpty() || key.isNullOrBlank()) {
             stopEverything()
             return START_NOT_STICKY
         }
-        val destination = legs.last().toName
-        startForeground(ONGOING_ID, ongoing(destination, str(R.string.guide_starting)), ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
         _running.value = true
         job?.cancel()
         job = scope.launch { guide(legs, key, c.gtfsKey.key.value) }
@@ -318,10 +321,22 @@ class TripGuideService : Service() {
         getSystemService(NotificationManager::class.java)?.notify(id, n)
     }
 
+    private fun goForeground(n: Notification): Boolean = try {
+        startForeground(ONGOING_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+        true
+    } catch (e: Exception) {
+        false
+    }
+
+    /** Android 15+: the daily time allowed for this kind of service is used up; stop before Android ends the app. */
+    override fun onTimeout(startId: Int, fgsType: Int) {
+        stopEverything()
+    }
+
     private fun stopEverything() {
         job?.cancel()
         _running.value = false
-        stopForeground(STOP_FOREGROUND_REMOVE)
+        runCatching { stopForeground(STOP_FOREGROUND_REMOVE) }
         stopSelf()
     }
 
@@ -346,11 +361,11 @@ class TripGuideService : Service() {
 
         fun start(context: Context, journey: Journey) {
             val json = DeLijnApi.JSON.encodeToString(ListSerializer(GuideLeg.serializer()), journey.toGuide())
-            ContextCompat.startForegroundService(context, Intent(context, TripGuideService::class.java).putExtra(EXTRA_LEGS, json))
+            runCatching { ContextCompat.startForegroundService(context, Intent(context, TripGuideService::class.java).putExtra(EXTRA_LEGS, json)) }
         }
 
         fun stop(context: Context) {
-            context.startService(Intent(context, TripGuideService::class.java).setAction(ACTION_STOP))
+            runCatching { context.startService(Intent(context, TripGuideService::class.java).setAction(ACTION_STOP)) }
         }
 
         private fun stopIntent(context: Context): PendingIntent = PendingIntent.getService(

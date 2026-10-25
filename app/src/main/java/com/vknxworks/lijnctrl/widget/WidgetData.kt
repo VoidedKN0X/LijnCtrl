@@ -3,7 +3,8 @@ package com.vknxworks.lijnctrl.widget
 import android.content.Context
 import androidx.glance.GlanceId
 import androidx.glance.appwidget.GlanceAppWidgetManager
-import androidx.glance.appwidget.updateAll
+import androidx.glance.appwidget.state.updateAppWidgetState
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -169,8 +170,20 @@ object Widgets {
         WorkManager.getInstance(context).enqueueUniqueWork(NOW, ExistingWorkPolicy.KEEP, req)
     }
 
+    /** Bumped on every redraw, so a widget that's still showing reads its stop and departures again. */
+    val REDRAW = longPreferencesKey("redraw")
+
     suspend fun redraw(context: Context) {
-        runCatching { DepartureWidget().updateAll(context) }
+        val app = context.applicationContext
+        for ((glanceId, _) in placed(app)) {
+            try {
+                updateAppWidgetState(app, glanceId) { it[REDRAW] = (it[REDRAW] ?: 0L) + 1 }
+                DepartureWidget().update(app, glanceId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Throwable) {
+            }
+        }
     }
 
     /** Fetches departures for every placed widget and redraws them. */
