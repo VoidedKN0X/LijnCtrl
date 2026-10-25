@@ -21,23 +21,28 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
+import com.vknxworks.lijnctrl.ui.theme.CtrlColors
+import com.vknxworks.lijnctrl.ui.theme.CtrlDialogModifier
+import com.vknxworks.lijnctrl.ui.theme.CtrlShapes
+import com.vknxworks.lijnctrl.ui.theme.CtrlType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -58,7 +63,7 @@ import com.vknxworks.lijnctrl.R
 
 // ---------- Top bars ----------
 
-/** Plain top bar for pushed screens: back arrow and a title. */
+/** Top bar for pushed screens: a square back button and the title in Space Grotesk. No colour fill. */
 @Composable
 fun ScreenTopBar(
     title: String,
@@ -66,20 +71,34 @@ fun ScreenTopBar(
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     val nav = LocalNavigator.current
-    TopAppBar(
-        title = { Text(title, style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-        navigationIcon = {
-            if (showBack) IconButton(onClick = nav::back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back)) }
-        },
-        actions = actions,
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.background,
-            scrolledContainerColor = MaterialTheme.colorScheme.background,
-        ),
-    )
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .background(CtrlColors.Background)
+            .windowInsetsPadding(WindowInsets.statusBars)
+            .heightIn(min = 68.dp)
+            .padding(start = Gutter, end = 8.dp, top = 8.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (showBack) {
+            CtrlSquareButton(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back), onClick = nav::back)
+            Spacer(Modifier.width(14.dp))
+        }
+        Text(
+            title,
+            style = MaterialTheme.typography.titleLarge,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        Row(verticalAlignment = Alignment.CenterVertically, content = actions)
+    }
 }
 
-/** Big left-aligned title for the main tabs, with your profile picture at the end. */
+/**
+ * Header of the main tabs: the LIJN/CTRL wordmark and your profile picture on top, then the tab's name as a
+ * big headline. Tapping the picture opens the You page with settings and about.
+ */
 @Composable
 fun TabTitle(
     title: String,
@@ -88,56 +107,86 @@ fun TabTitle(
     showProfile: Boolean = true,
     trailing: @Composable RowScope.() -> Unit = {},
 ) {
-    Row(
-        modifier.fillMaxWidth().padding(start = if (padded) Gutter else 0.dp, end = if (padded) 8.dp else 0.dp, top = 12.dp, bottom = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(title, style = MaterialTheme.typography.headlineLarge, modifier = Modifier.weight(1f))
-        trailing()
-        if (showProfile) ProfileButton()
+    val side = if (padded) Gutter else 0.dp
+    Column(modifier.fillMaxWidth().padding(start = side, end = side, top = 12.dp, bottom = 10.dp)) {
+        Row(Modifier.fillMaxWidth().heightIn(min = 44.dp), verticalAlignment = Alignment.CenterVertically) {
+            CtrlWordmark(Modifier.weight(1f))
+            trailing()
+            if (showProfile) {
+                Spacer(Modifier.width(8.dp))
+                ProfileButton()
+            }
+        }
+        Spacer(Modifier.height(18.dp))
+        Text(title, style = MaterialTheme.typography.headlineLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
-/** The profile picture at the top right; tapping it opens the You page with settings and about. */
+/**
+ * The profile picture at the top right: a 44dp square with a small accent badge while LijnCtrl is
+ * connected (your De Lijn key is set). Tapping it opens the You page with settings and about.
+ */
 @Composable
 fun ProfileButton() {
     val nav = LocalNavigator.current
-    IconButton(onClick = { nav.navigate(YouRoute) }) {
+    Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
         Box(
-            Modifier.size(34.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)),
+            Modifier
+                .size(44.dp)
+                .clip(CtrlShapes.Square)
+                .background(CtrlColors.Surface)
+                .border(1.dp, CtrlColors.ControlOutline, CtrlShapes.Square)
+                .clickable(role = Role.Button) { nav.navigate(YouRoute) },
             contentAlignment = Alignment.Center,
         ) {
-            Icon(Icons.Filled.Person, stringResource(R.string.you), Modifier.size(22.dp), tint = MaterialTheme.colorScheme.primary)
+            Icon(Icons.Outlined.Person, stringResource(R.string.you), Modifier.size(22.dp), tint = CtrlColors.OnBackground)
         }
+        // Connected: the main screens only show once a De Lijn key is saved.
+        Box(
+            Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 1.dp, bottom = 1.dp)
+                .size(10.dp)
+                .clip(RoundedCornerShape(3.dp))
+                .background(CtrlColors.Accent)
+                .border(2.dp, CtrlColors.Background, RoundedCornerShape(3.dp)),
+        )
+    }
+}
+
+/** Round-cornered square holding an icon, as used on empty states, setup and the You page. */
+@Composable
+fun IconTile(icon: ImageVector, modifier: Modifier = Modifier, size: Dp = 72.dp, accent: Boolean = false) {
+    val shape = RoundedCornerShape(size / 3)
+    Box(
+        modifier
+            .size(size)
+            .clip(shape)
+            .background(if (accent) CtrlColors.Accent else CtrlColors.Surface)
+            .then(if (accent) Modifier else Modifier.border(1.dp, CtrlColors.Outline, shape)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(icon, null, Modifier.size(size * 0.42f), tint = if (accent) CtrlColors.OnAccent else CtrlColors.Muted)
     }
 }
 
 // ---------- Grouped lists (settings, profile, admin) ----------
 
-/** A rounded block of related rows, with an optional heading above it. */
+/** A card of related rows with 1dp dividers between them, under a mono section label. */
 @Composable
 fun Group(
     title: String? = null,
     modifier: Modifier = Modifier,
     footer: String? = null,
     padded: Boolean = true,
-    content: @Composable ColumnScope.() -> Unit,
+    content: @Composable () -> Unit,
 ) {
-    Column(modifier.fillMaxWidth().padding(horizontal = if (padded) Gutter else 0.dp, vertical = 8.dp)) {
+    Column(modifier.fillMaxWidth().padding(horizontal = if (padded) Gutter else 0.dp, vertical = 10.dp)) {
         if (title != null) {
-            Text(
-                title,
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 4.dp, bottom = 8.dp),
-            )
+            CtrlLabel(title, Modifier.padding(start = 4.dp, bottom = 8.dp))
         }
-        Surface(
-            shape = MaterialTheme.shapes.large,
-            color = MaterialTheme.colorScheme.surfaceContainer,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Column(Modifier.padding(vertical = 6.dp), content = content)
+        CtrlCard {
+            DividedColumn(Modifier.fillMaxWidth(), content = content)
         }
         if (footer != null) {
             Text(
@@ -155,52 +204,51 @@ fun GroupRow(
     title: String,
     subtitle: String? = null,
     icon: ImageVector? = null,
-    iconTint: Color = MaterialTheme.colorScheme.primary,
+    iconTint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     titleColor: Color = MaterialTheme.colorScheme.onSurface,
     showChevron: Boolean = false,
     onClick: (() -> Unit)? = null,
     trailing: (@Composable () -> Unit)? = null,
 ) {
+    // Inside a [Group], rows are separated by hairlines.
     Row(
-        Modifier
-            .fillMaxWidth()
-            .heightIn(min = 56.dp)
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (icon != null) {
-            Box(
-                Modifier.size(36.dp).clip(CircleShape).background(iconTint.copy(alpha = 0.14f)),
-                contentAlignment = Alignment.Center,
-            ) { Icon(icon, null, Modifier.size(20.dp), tint = iconTint) }
-            Spacer(Modifier.width(14.dp))
-        }
-        Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.bodyLarge, color = titleColor, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            if (!subtitle.isNullOrBlank()) {
-                Text(
-                    subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis,
-                )
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 60.dp)
+                .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (icon != null) {
+                Icon(icon, null, Modifier.size(22.dp), tint = iconTint)
+                Spacer(Modifier.width(14.dp))
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(title, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium), color = titleColor, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                if (!subtitle.isNullOrBlank()) {
+                    Text(
+                        subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            if (trailing != null) {
+                Spacer(Modifier.width(12.dp))
+                trailing()
+            } else if (showChevron) {
+                Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-        if (trailing != null) {
-            Spacer(Modifier.width(12.dp))
-            trailing()
-        } else if (showChevron) {
-            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-    }
 }
 
 @Composable
 fun GroupSwitch(title: String, subtitle: String? = null, checked: Boolean, icon: ImageVector? = null, onChange: (Boolean) -> Unit) {
     GroupRow(title, subtitle, icon, onClick = { onChange(!checked) }) {
-        Switch(checked, onCheckedChange = onChange)
+        // The row handles the tap; the switch itself is announced as a switch with its state.
+        CtrlSwitch(checked, onCheckedChange = onChange)
     }
 }
 
@@ -216,7 +264,12 @@ fun <T> GroupChoice(
 ) {
     var open by remember { mutableStateOf(false) }
     val current = options.firstOrNull { it.first == selected }?.second ?: fallbackLabel
-    GroupRow(title, current, icon, showChevron = true, onClick = { open = true })
+    GroupRow(title, icon = icon, onClick = { open = true }) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(current, style = CtrlType.Data, color = CtrlColors.Muted, maxLines = 1)
+            Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
     if (open) {
         ChoiceSheet(title, options, selected, onDismiss = { open = false }) { onPick(it); open = false }
     }
@@ -230,13 +283,18 @@ fun <T> ChoiceSheet(
     onDismiss: () -> Unit,
     onPick: (T) -> Unit,
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surfaceContainer) {
-        Text(title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = CtrlColors.Surface,
+        shape = RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp),
+        modifier = Modifier.border(1.dp, CtrlColors.Outline, RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp)),
+    ) {
+        CtrlLabel(title, Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
         LazyColumn(Modifier.navigationBarsPadding(), contentPadding = PaddingValues(bottom = 16.dp)) {
             items(options, key = { it.second }) { (value, label) ->
                 val isSel = value == selected
                 Row(
-                    Modifier.fillMaxWidth().clickable { onPick(value) }.padding(horizontal = 24.dp, vertical = 14.dp),
+                    Modifier.fillMaxWidth().heightIn(min = 52.dp).clickable { onPick(value) }.padding(horizontal = 24.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
@@ -245,7 +303,7 @@ fun <T> ChoiceSheet(
                         color = if (isSel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f),
                     )
-                    if (isSel) Icon(Icons.Filled.Check, stringResource(R.string.selected), tint = MaterialTheme.colorScheme.primary)
+                    if (isSel) Icon(Icons.Outlined.Check, stringResource(R.string.selected), tint = MaterialTheme.colorScheme.primary)
                 }
             }
         }
@@ -254,7 +312,7 @@ fun <T> ChoiceSheet(
 
 // ---------- Buttons ----------
 
-/** The one main action on a screen. */
+/** The one main action on a screen: accent fill, 56dp tall. */
 @Composable
 fun PillButton(
     text: String,
@@ -262,26 +320,25 @@ fun PillButton(
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
     enabled: Boolean = true,
-    container: Color = MaterialTheme.colorScheme.primary,
-    content: Color = MaterialTheme.colorScheme.onPrimary,
+    container: Color = CtrlColors.Accent,
+    content: Color = CtrlColors.OnAccent,
 ) {
-    Button(
-        onClick = onClick,
+    CtrlButton(
+        text,
+        onClick,
+        modifier,
+        icon = icon,
         enabled = enabled,
-        modifier = modifier.heightIn(min = 52.dp),
-        shape = CircleShape,
-        colors = ButtonDefaults.buttonColors(containerColor = container, contentColor = content),
-        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
-    ) {
-        if (icon != null) {
-            Icon(icon, null, Modifier.size(22.dp))
-            Spacer(Modifier.width(8.dp))
-        }
-        Text(text, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-    }
+        colors = ButtonDefaults.buttonColors(
+            containerColor = container,
+            contentColor = content,
+            disabledContainerColor = CtrlColors.Raised,
+            disabledContentColor = CtrlColors.Inactive,
+        ),
+    )
 }
 
-/** Circular secondary action with a short label underneath. */
+/** Square secondary action with a short label underneath. */
 @Composable
 fun RoundAction(
     icon: ImageVector,
@@ -297,11 +354,12 @@ fun RoundAction(
         Box(
             Modifier
                 .size(48.dp)
-                .clip(CircleShape)
-                .background(if (active) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f) else MaterialTheme.colorScheme.surfaceContainerHigh),
+                .clip(CtrlShapes.Control)
+                .background(if (active) CtrlColors.Accent else CtrlColors.Surface)
+                .border(1.dp, if (active) CtrlColors.Accent else CtrlColors.ControlOutline, CtrlShapes.Control),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(icon, label, tint = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
+            Icon(icon, label, Modifier.size(22.dp), tint = if (active) CtrlColors.OnAccent else CtrlColors.OnBackground)
         }
         Spacer(Modifier.height(6.dp))
         Text(
@@ -321,7 +379,7 @@ fun MetaRow(parts: List<String>, modifier: Modifier = Modifier, color: Color = M
     val visible = parts.filter { it.isNotBlank() }
     if (visible.isEmpty()) return
     FlowRow(modifier, horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        visible.forEach { Text(it, style = MaterialTheme.typography.labelLarge, color = color) }
+        visible.forEach { Text(it, style = CtrlType.Data, color = color) }
     }
 }
 
@@ -331,6 +389,7 @@ fun MetaRow(parts: List<String>, modifier: Modifier = Modifier, color: Color = M
 fun ConfirmDialog(title: String, body: String, confirm: String, onDismiss: () -> Unit, onConfirm: () -> Unit) {
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
+        modifier = CtrlDialogModifier,
         title = { Text(title) },
         text = { Text(body) },
         confirmButton = { androidx.compose.material3.TextButton(onClick = onConfirm) { Text(confirm, color = MaterialTheme.colorScheme.error) } },

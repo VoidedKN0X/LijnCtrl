@@ -18,9 +18,9 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.OpenInNew
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.automirrored.outlined.OpenInNew
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -105,7 +105,7 @@ fun GtfsKeyScreen() {
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Text(stringResource(R.string.gtfs_key_intro), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.fillMaxWidth()) {
+            Surface(shape = com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Card, color = MaterialTheme.colorScheme.surface, border = com.vknxworks.lijnctrl.ui.theme.CardBorder, modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(stringResource(R.string.gtfs_key_steps), style = MaterialTheme.typography.bodyMedium)
                     OutlinedButton(
@@ -115,9 +115,11 @@ fun GtfsKeyScreen() {
                                 context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(LiveVehicles.PORTAL_URL)).addCategory(Intent.CATEGORY_BROWSABLE))
                             }
                         },
-                        shape = CircleShape,
+                        shape = com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Control,
+                        border = com.vknxworks.lijnctrl.ui.theme.ControlBorder,
+                        colors = com.vknxworks.lijnctrl.ui.components.ctrlSecondaryButtonColors(),
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.OpenInNew, null, Modifier.size(18.dp))
+                        Icon(Icons.AutoMirrored.Outlined.OpenInNew, null, Modifier.size(18.dp))
                         Spacer(Modifier.size(8.dp))
                         Text(stringResource(R.string.open_de_lijn_portal))
                     }
@@ -139,12 +141,14 @@ fun GtfsKeyScreen() {
                 trailingIcon = {
                     IconButton(onClick = { visible = !visible }) {
                         Icon(
-                            if (visible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                            if (visible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
                             stringResource(if (visible) R.string.hide_key else R.string.show_key),
                         )
                     }
                 },
                 supportingText = { Text(error ?: stringResource(R.string.key_stored_note)) },
+                shape = com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Control,
+                colors = com.vknxworks.lijnctrl.ui.components.ctrlFieldColors(),
                 modifier = Modifier.fillMaxWidth(),
             )
             PillButton(

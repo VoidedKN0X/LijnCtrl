@@ -62,7 +62,8 @@ fun TownScreen(number: String, name: String) {
                     placeholder = { Text(stringResource(R.string.filter_stops)) },
                     leadingIcon = { Icon(Icons.Outlined.FilterList, null) },
                     singleLine = true,
-                    shape = CircleShape,
+                    shape = com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Control,
+                    colors = com.vknxworks.lijnctrl.ui.components.ctrlFieldColors(),
                     modifier = Modifier.fillMaxWidth().padding(horizontal = Gutter, vertical = 4.dp),
                 )
                 Text(

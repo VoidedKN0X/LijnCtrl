@@ -13,7 +13,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.EventBusy
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -109,7 +108,7 @@ fun TimetableScreen(entity: String, number: String, name: String?) {
                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                 ) {
                     items(days.size) { i ->
-                        FilterChip(
+                        com.vknxworks.lijnctrl.ui.components.CtrlChip(
                             selected = i == dayIndex,
                             onClick = { dayIndex = i },
                             label = { Text(dayLabel(days[i], today)) },
@@ -125,10 +124,10 @@ fun TimetableScreen(entity: String, number: String, name: String?) {
                         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                     ) {
                         item {
-                            FilterChip(selected = lineFilter == null, onClick = { lineFilter = null }, label = { Text(stringResource(R.string.all_lines)) })
+                            com.vknxworks.lijnctrl.ui.components.CtrlChip(selected = lineFilter == null, onClick = { lineFilter = null }, label = { Text(stringResource(R.string.all_lines)) })
                         }
                         items(lineKeys.sortedBy { lines[it.toString()]?.publicNumber?.padStart(4, '0') ?: it.line }.toList()) { k ->
-                            FilterChip(
+                            com.vknxworks.lijnctrl.ui.components.CtrlChip(
                                 selected = lineFilter == k.toString(),
                                 onClick = { lineFilter = if (lineFilter == k.toString()) null else k.toString() },
                                 label = { LineBadge(lines[k.toString()], k.line, minWidth = 28.dp) },

@@ -130,7 +130,7 @@ LijnCtrl is free and open source. If it's useful to you, tap **Support LijnCtrl*
 
 ## The Ctrl series
 
-Native Android apps for self-hosted services and everyday tools, all with the same Material You design.
+Native Android apps for self-hosted services and everyday tools, all with the same dark Ctrl / Signal design.
 
 | App | What it's for |
 | --- | --- |
@@ -156,4 +156,4 @@ Native Android apps for self-hosted services and everyday tools, all with the sa
 
 LijnCtrl is licensed under the [GNU General Public License v3.0](LICENSE). © VKNXWorks
 
-The Manrope font is licensed under the SIL Open Font License; see `FONT-LICENSE-Manrope.txt`. The map uses [osmdroid](https://github.com/osmdroid/osmdroid) (Apache 2.0) and map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors.
+The [Space Grotesk](https://github.com/floriankarsten/space-grotesk) and [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) fonts are licensed under the SIL Open Font License 1.1; see `app/src/main/assets/licenses/`. The map uses [osmdroid](https://github.com/osmdroid/osmdroid) (Apache 2.0) and map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors.

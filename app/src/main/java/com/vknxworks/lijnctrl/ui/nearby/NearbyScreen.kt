@@ -21,7 +21,6 @@ import androidx.compose.material.icons.outlined.MyLocation
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.WrongLocation
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -125,18 +124,21 @@ fun NearbyScreen() {
     val sheet = androidx.compose.material3.rememberBottomSheetScaffoldState()
     Column(Modifier.fillMaxSize().statusBarsPadding()) {
         TabTitle(stringResource(R.string.tab_nearby)) {
-            IconButton(onClick = ::findMe) { Icon(Icons.Outlined.Refresh, stringResource(R.string.refresh)) }
+            com.vknxworks.lijnctrl.ui.components.CtrlSquareButton(Icons.Outlined.Refresh, stringResource(R.string.refresh), onClick = ::findMe)
         }
         androidx.compose.material3.BottomSheetScaffold(
             scaffoldState = sheet,
             sheetPeekHeight = peek + clearance,
-            sheetContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            sheetContainerColor = MaterialTheme.colorScheme.surface,
+            sheetShape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp),
+            sheetShadowElevation = 0.dp,
+            sheetTonalElevation = 0.dp,
+            containerColor = MaterialTheme.colorScheme.background,
             sheetContent = {
                 Column(Modifier.fillMaxWidth().fillMaxHeight(0.85f).padding(bottom = clearance)) {
-                    Text(
+                    com.vknxworks.lijnctrl.ui.components.CtrlLabel(
                         stringResource(R.string.stops_near_you),
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(horizontal = Gutter, vertical = 4.dp),
+                        Modifier.padding(horizontal = Gutter, vertical = 6.dp),
                     )
                     NearbyList(state, settings.nearbyRadius.metres, ::findMe, { trigger++ }, context)
                 }
@@ -209,8 +211,8 @@ private fun NearbyList(state: NearbyState, radius: Int, findMe: () -> Unit, retr
                 Modifier.padding(horizontal = Gutter, vertical = 4.dp),
                 horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
             ) {
-                androidx.compose.material3.FilterChip(selected = !board, onClick = { board = false }, label = { Text(stringResource(R.string.stops)) })
-                androidx.compose.material3.FilterChip(selected = board, onClick = { board = true }, label = { Text(stringResource(R.string.departures)) })
+                com.vknxworks.lijnctrl.ui.components.CtrlChip(selected = !board, onClick = { board = false }, label = { Text(stringResource(R.string.stops)) })
+                com.vknxworks.lijnctrl.ui.components.CtrlChip(selected = board, onClick = { board = true }, label = { Text(stringResource(R.string.departures)) })
             }
             if (board) {
                 DeparturesBoard(state.stops)
@@ -308,9 +310,9 @@ private fun DeparturesBoard(stops: List<ApiNearbyStop>) {
                     if (stop != null) {
                         Text(
                             listOfNotNull(stop.name, stop.distance?.let { stringResource(R.string.x_m_away, it) }).joinToString(" · "),
-                            style = MaterialTheme.typography.labelSmall,
+                            style = com.vknxworks.lijnctrl.ui.theme.CtrlType.DataSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(start = Gutter + 60.dp, bottom = 6.dp),
+                            modifier = Modifier.padding(start = 16.dp + 54.dp, bottom = 6.dp),
                             maxLines = 1,
                         )
                     }

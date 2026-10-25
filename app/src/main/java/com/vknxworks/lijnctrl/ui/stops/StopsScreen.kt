@@ -27,7 +27,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -54,7 +53,10 @@ import com.vknxworks.lijnctrl.data.api.Departure
 import com.vknxworks.lijnctrl.data.api.StopKey
 import com.vknxworks.lijnctrl.data.api.departuresByStop
 import com.vknxworks.lijnctrl.data.favourites.SavedStop
+import com.vknxworks.lijnctrl.ui.components.CtrlDivider
+import com.vknxworks.lijnctrl.ui.components.CtrlLabel
 import com.vknxworks.lijnctrl.ui.components.DepartureRow
+import com.vknxworks.lijnctrl.ui.components.NextDepartureHero
 import com.vknxworks.lijnctrl.ui.components.LocalBottomClearance
 import com.vknxworks.lijnctrl.ui.components.MessageView
 import com.vknxworks.lijnctrl.ui.components.TabTitle
@@ -174,7 +176,7 @@ fun StopsScreen() {
             LazyColumn(
                 Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(start = Gutter, end = Gutter, top = 4.dp, bottom = 24.dp + LocalBottomClearance.current),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(28.dp),
             ) {
                 items(saved, key = { it.key.toString() }) { stop ->
                     StopCard(
@@ -212,84 +214,98 @@ private fun StopCard(
     var menu by remember { mutableStateOf(false) }
     var renaming by remember { mutableStateOf(false) }
 
-    Surface(
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onOpen),
-    ) {
-        Column(Modifier.padding(vertical = 8.dp)) {
-            Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(stop.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    val sub = listOfNotNull(stop.name.takeIf { stop.nickname != null }, stop.municipality).joinToString(" · ")
-                    if (sub.isNotBlank()) {
-                        Text(sub, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    }
-                }
-                Box {
-                    IconButton(onClick = { menu = true }) { Icon(Icons.Outlined.MoreVert, stringResource(R.string.more)) }
-                    DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.rename)) },
-                            leadingIcon = { Icon(Icons.Outlined.Edit, null) },
-                            onClick = { menu = false; renaming = true },
-                        )
-                        if (index > 0) DropdownMenuItem(
-                            text = { Text(stringResource(R.string.move_up)) },
-                            leadingIcon = { Icon(Icons.Outlined.ArrowUpward, null) },
-                            onClick = { menu = false; scope.launch { c.favourites.move(stop.key, -1) } },
-                        )
-                        if (index < count - 1) DropdownMenuItem(
-                            text = { Text(stringResource(R.string.move_down)) },
-                            leadingIcon = { Icon(Icons.Outlined.ArrowDownward, null) },
-                            onClick = { menu = false; scope.launch { c.favourites.move(stop.key, 1) } },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.remove_from_stops), color = MaterialTheme.colorScheme.error) },
-                            leadingIcon = { Icon(Icons.Outlined.Delete, null, tint = MaterialTheme.colorScheme.error) },
-                            onClick = { menu = false; scope.launch { c.favourites.remove(stop.key) } },
-                        )
-                    }
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        // The stop: its number (mono label) and name, tap to open it; the menu sits on the right.
+        Row(Modifier.fillMaxWidth().clickable(onClick = onOpen), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                CtrlLabel(
+                    listOfNotNull(
+                        stringResource(R.string.stop_number_x, stop.number),
+                        stop.name.takeIf { stop.nickname != null },
+                        stop.municipality,
+                    ).joinToString(" · "),
+                )
+                Text(
+                    stop.title,
+                    style = MaterialTheme.typography.headlineMedium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Box {
+                IconButton(onClick = { menu = true }) { Icon(Icons.Outlined.MoreVert, stringResource(R.string.more), tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                DropdownMenu(
+                    expanded = menu,
+                    onDismissRequest = { menu = false },
+                    shape = com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Control,
+                    containerColor = com.vknxworks.lijnctrl.ui.theme.CtrlColors.Raised,
+                    border = com.vknxworks.lijnctrl.ui.theme.ControlBorder,
+                ) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.rename)) },
+                        leadingIcon = { Icon(Icons.Outlined.Edit, null) },
+                        onClick = { menu = false; renaming = true },
+                    )
+                    if (index > 0) DropdownMenuItem(
+                        text = { Text(stringResource(R.string.move_up)) },
+                        leadingIcon = { Icon(Icons.Outlined.ArrowUpward, null) },
+                        onClick = { menu = false; scope.launch { c.favourites.move(stop.key, -1) } },
+                    )
+                    if (index < count - 1) DropdownMenuItem(
+                        text = { Text(stringResource(R.string.move_down)) },
+                        leadingIcon = { Icon(Icons.Outlined.ArrowDownward, null) },
+                        onClick = { menu = false; scope.launch { c.favourites.move(stop.key, 1) } },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.remove_from_stops), color = MaterialTheme.colorScheme.error) },
+                        leadingIcon = { Icon(Icons.Outlined.Delete, null, tint = MaterialTheme.colorScheme.error) },
+                        onClick = { menu = false; scope.launch { c.favourites.remove(stop.key) } },
+                    )
                 }
             }
-            when {
-                departures == null && error == null -> Text(
-                    stringResource(R.string.loading_departures),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        }
+        when {
+            departures == null && error == null -> Text(
+                stringResource(R.string.loading_departures),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            error != null && departures == null -> Text(
+                error,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+            )
+            departures.isNullOrEmpty() -> Text(
+                stringResource(R.string.no_departures_soon),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            else -> {
+                val list = departures.orEmpty()
+                val first = list.first()
+                // The next one is the hero: in the accent colour for your first stop, on a card for the others.
+                NextDepartureHero(
+                    first,
+                    first.line?.let { lines[it.toString()] },
+                    now,
+                    settings.timeStyle,
+                    accent = index == 0,
+                    onClick = if (first.trip != null) ({ nav.trip(first.copy(stop = first.stop ?: stop.number)) }) else null,
                 )
-                error != null && departures == null -> Text(
-                    error,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                )
-                departures.isNullOrEmpty() -> Text(
-                    stringResource(R.string.no_departures_soon),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                )
-                else -> departures.orEmpty().forEachIndexed { i, d ->
-                    if (i == 0) {
-                        NextDeparture(
-                            d,
-                            d.line?.let { lines[it.toString()] },
-                            now,
-                            settings.timeStyle,
-                            onClick = if (d.trip != null) ({ nav.trip(d.copy(stop = d.stop ?: stop.number)) }) else null,
-                        )
-                        return@forEachIndexed
+                if (list.size > 1) {
+                    Column {
+                        list.drop(1).forEach { d ->
+                            CtrlDivider()
+                            DepartureRow(
+                                d,
+                                d.line?.let { lines[it.toString()] },
+                                now,
+                                settings.timeStyle,
+                                compact = true,
+                                onClick = if (d.trip != null) ({ nav.trip(d.copy(stop = d.stop ?: stop.number)) }) else null,
+                            )
+                        }
                     }
-                    DepartureRow(
-                        d,
-                        d.line?.let { lines[it.toString()] },
-                        now,
-                        settings.timeStyle,
-                        compact = true,
-                        onClick = if (d.trip != null) ({ nav.trip(d.copy(stop = d.stop ?: stop.number)) }) else null,
-                    )
                 }
             }
         }
@@ -299,73 +315,25 @@ private fun StopCard(
         var text by remember { mutableStateOf(stop.nickname.orEmpty()) }
         AlertDialog(
             onDismissRequest = { renaming = false },
+            modifier = com.vknxworks.lijnctrl.ui.theme.CtrlDialogModifier,
             title = { Text(stringResource(R.string.rename_stop)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(stringResource(R.string.rename_stop_body, stop.name), style = MaterialTheme.typography.bodyMedium)
-                    OutlinedTextField(text, { text = it.take(40) }, singleLine = true, label = { Text(stringResource(R.string.name)) })
+                    OutlinedTextField(
+                        text,
+                        { text = it.take(40) },
+                        singleLine = true,
+                        label = { Text(stringResource(R.string.name)) },
+                        shape = com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Control,
+                        colors = com.vknxworks.lijnctrl.ui.components.ctrlFieldColors(),
+                    )
                 }
             },
             confirmButton = {
                 TextButton(onClick = { renaming = false; scope.launch { c.favourites.rename(stop.key, text) } }) { Text(stringResource(R.string.save)) }
             },
             dismissButton = { TextButton(onClick = { renaming = false }) { Text(stringResource(R.string.cancel)) } },
-        )
-    }
-}
-
-/**
- * The next bus or tram from a saved stop, big enough to read at a glance: line, destination, when it leaves
- * (live in the accent colour), and whether it's late, early or cancelled.
- */
-@Composable
-private fun NextDeparture(
-    d: Departure,
-    info: com.vknxworks.lijnctrl.data.lines.LineInfo?,
-    now: Instant,
-    style: com.vknxworks.lijnctrl.data.settings.TimeStyle,
-    onClick: (() -> Unit)?,
-) {
-    val cs = MaterialTheme.colorScheme
-    Row(
-        Modifier.fillMaxWidth()
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        com.vknxworks.lijnctrl.ui.components.LineBadge(info, d.line?.line, large = true, minWidth = 52.dp)
-        androidx.compose.foundation.layout.Spacer(Modifier.width(14.dp))
-        Column(Modifier.weight(1f)) {
-            Text(
-                d.destination,
-                style = MaterialTheme.typography.titleMedium,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                textDecoration = if (d.cancelled) androidx.compose.ui.text.style.TextDecoration.LineThrough else null,
-            )
-            val delay = d.delayMinutes
-            val note = when {
-                d.cancelled -> stringResource(R.string.cancelled)
-                delay != null && delay > 0 -> stringResource(R.string.x_min_late, delay.toInt())
-                delay != null && delay < 0 -> stringResource(R.string.x_min_early, (-delay).toInt())
-                d.live -> stringResource(R.string.on_time)
-                else -> stringResource(R.string.timetable)
-            }
-            Text(
-                note,
-                style = MaterialTheme.typography.bodySmall,
-                color = when {
-                    d.cancelled || (delay ?: 0) >= 3 -> cs.error
-                    else -> cs.onSurfaceVariant
-                },
-            )
-        }
-        androidx.compose.foundation.layout.Spacer(Modifier.width(8.dp))
-        Text(
-            if (d.cancelled) "" else com.vknxworks.lijnctrl.ui.components.departureLabel(d, now, style),
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-            color = if (d.live) cs.primary else cs.onSurface,
         )
     }
 }

@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -229,7 +230,7 @@ fun StopMap(start: GeoPoint?, modifier: Modifier = Modifier, focus: GeoPoint? = 
                 else -> null
             }
             if (message != null || loading) {
-                Surface(shape = RoundedCornerShape(50), color = cs.surfaceContainerHigh, tonalElevation = 4.dp, shadowElevation = 4.dp) {
+                Surface(shape = com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Control, color = cs.surface.copy(alpha = 0.94f), border = com.vknxworks.lijnctrl.ui.theme.ControlBorder) {
                     Box(Modifier.padding(horizontal = 14.dp, vertical = 8.dp), contentAlignment = Alignment.Center) {
                         if (message != null) Text(message, style = MaterialTheme.typography.labelLarge)
                         else CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
@@ -247,20 +248,22 @@ fun StopMap(start: GeoPoint?, modifier: Modifier = Modifier, focus: GeoPoint? = 
                     }
                 }
             },
-            shape = CircleShape,
-            containerColor = cs.primaryContainer,
+            shape = com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Control,
+            containerColor = cs.primary,
+            contentColor = cs.onPrimary,
+            elevation = androidx.compose.material3.FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
             modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 16.dp + LocalBottomClearance.current),
         ) { Icon(Icons.Outlined.MyLocation, stringResource(R.string.my_location)) }
 
         // OpenStreetMap's licence asks for this credit on the map.
         Text(
             stringResource(R.string.osm_credit),
-            style = MaterialTheme.typography.labelSmall,
-            color = cs.onSurface,
+            style = com.vknxworks.lijnctrl.ui.theme.CtrlType.DataSmall.copy(fontSize = 10.sp),
+            color = cs.onSurfaceVariant,
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .padding(start = 8.dp, bottom = 8.dp + LocalBottomClearance.current)
-                .background(cs.surface.copy(alpha = 0.75f), RoundedCornerShape(6.dp))
+                .background(cs.background.copy(alpha = 0.8f), RoundedCornerShape(6.dp))
                 .padding(horizontal = 6.dp, vertical = 2.dp),
         )
     }

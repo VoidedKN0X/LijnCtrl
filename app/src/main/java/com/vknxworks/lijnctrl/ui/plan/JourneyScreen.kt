@@ -15,8 +15,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.outlined.DirectionsWalk
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Directions
 import androidx.compose.material.icons.outlined.Navigation
 import androidx.compose.runtime.getValue
@@ -105,7 +105,7 @@ private fun JourneyDetail(j: Journey, index: Int, modifier: Modifier) {
 @Composable
 private fun WalkLeg(leg: JourneyLeg) {
     Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-        Icon(Icons.AutoMirrored.Filled.DirectionsWalk, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Icon(Icons.AutoMirrored.Outlined.DirectionsWalk, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.width(12.dp))
         Text(
             listOfNotNull(
@@ -128,7 +128,7 @@ private fun RideLeg(
     onTo: (() -> Unit)?,
 ) {
     val cs = MaterialTheme.colorScheme
-    Surface(shape = MaterialTheme.shapes.large, color = cs.surfaceContainer, modifier = Modifier.fillMaxWidth()) {
+    Surface(shape = com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Card, color = cs.surface, border = com.vknxworks.lijnctrl.ui.theme.CardBorder, modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(vertical = 8.dp)) {
             Row(
                 Modifier.fillMaxWidth().then(if (onLine != null) Modifier.clickable(onClick = onLine) else Modifier).padding(horizontal = 16.dp, vertical = 6.dp),
@@ -169,7 +169,7 @@ private fun RideLeg(
                         color = if (onTrip != null) cs.primary else cs.onSurfaceVariant,
                         modifier = Modifier.weight(1f),
                     )
-                    if (onTrip != null) Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, stringResource(R.string.show_trip), Modifier.size(18.dp), tint = cs.primary)
+                    if (onTrip != null) Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, stringResource(R.string.show_trip), Modifier.size(18.dp), tint = cs.primary)
                 }
             }
             StopLine(clockTime(leg.end), leg.scheduledEnd?.takeIf { it != leg.end }?.let(::clockTime), stringResource(R.string.get_off_at_x, leg.toName), null, onTo)
@@ -193,7 +193,7 @@ private fun StopLine(time: String, scheduled: String?, text: String, extra: Stri
             Text(text, style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
             if (extra != null) Text(extra, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        if (onClick != null) Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (onClick != null) Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -219,7 +219,9 @@ private fun GuideButton(j: Journey) {
         if (running) {
             androidx.compose.material3.OutlinedButton(
                 onClick = { com.vknxworks.lijnctrl.alerts.TripGuideService.stop(context) },
-                shape = androidx.compose.foundation.shape.CircleShape,
+                shape = com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Control,
+                                    border = com.vknxworks.lijnctrl.ui.theme.ControlBorder,
+                                    colors = com.vknxworks.lijnctrl.ui.components.ctrlSecondaryButtonColors(),
                 modifier = Modifier.fillMaxWidth(),
             ) { Text(stringResource(R.string.guide_stop)) }
         } else {

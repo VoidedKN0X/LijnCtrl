@@ -4,6 +4,7 @@ import android.graphics.DashPathEffect
 import android.graphics.Paint
 import android.graphics.drawable.GradientDrawable
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,7 +28,6 @@ import androidx.compose.material.icons.outlined.DirectionsBus
 import androidx.compose.material.icons.outlined.OpenInFull
 import androidx.compose.material.icons.outlined.MyLocation
 import androidx.compose.material.icons.filled.MyLocation
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -557,8 +557,9 @@ fun RouteMap(
                         permission.launch(arrayOf(android.Manifest.permission.ACCESS_COARSE_LOCATION, android.Manifest.permission.ACCESS_FINE_LOCATION))
                     }
                 },
-                shape = CircleShape,
-                containerColor = if (following) cs.primary else cs.surfaceContainerHigh,
+                shape = com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Square,
+                elevation = androidx.compose.material3.FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
+                containerColor = if (following) cs.primary else cs.surface,
                 contentColor = if (following) cs.onPrimary else cs.onSurface,
                 modifier = Modifier.align(Alignment.BottomEnd).padding(12.dp),
             ) {
@@ -586,10 +587,9 @@ fun RouteMap(
                 else -> ""
             }
             Surface(
-                shape = RoundedCornerShape(50),
-                color = cs.surfaceContainerHigh,
-                tonalElevation = 4.dp,
-                shadowElevation = 4.dp,
+                shape = com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Control,
+                color = cs.surface.copy(alpha = 0.94f),
+                border = com.vknxworks.lijnctrl.ui.theme.ControlBorder,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(top = 8.dp, start = 16.dp, end = 16.dp)
@@ -610,12 +610,12 @@ fun RouteMap(
         // OpenStreetMap's licence asks for this credit on the map.
         Text(
             stringResource(R.string.osm_credit),
-            style = MaterialTheme.typography.labelSmall,
-            color = cs.onSurface,
+            style = com.vknxworks.lijnctrl.ui.theme.CtrlType.DataSmall,
+            color = cs.onSurfaceVariant,
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .padding(6.dp)
-                .background(cs.surface.copy(alpha = 0.75f), RoundedCornerShape(6.dp))
+                .background(cs.background.copy(alpha = 0.8f), RoundedCornerShape(6.dp))
                 .padding(horizontal = 6.dp, vertical = 2.dp),
         )
     }
@@ -625,13 +625,14 @@ fun RouteMap(
 @Composable
 fun RouteMapPreview(journey: Journey, onOpen: () -> Unit) {
     val cs = MaterialTheme.colorScheme
-    Box(Modifier.fillMaxWidth().height(200.dp).clip(MaterialTheme.shapes.large).background(cs.surfaceContainer)) {
+    Box(Modifier.fillMaxWidth().height(200.dp).clip(com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Card).background(cs.surface).border(1.dp, com.vknxworks.lijnctrl.ui.theme.CtrlColors.Outline, com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Card)) {
         RouteMap(journey, Modifier.fillMaxSize(), interactive = false)
         // On top of the map, so a tap opens the full map instead of reaching the (still) map.
         Box(Modifier.fillMaxSize().clickable(onClick = onOpen))
         Surface(
-            shape = CircleShape,
-            color = cs.surfaceContainerHigh.copy(alpha = 0.9f),
+            shape = com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Square,
+            color = cs.surface.copy(alpha = 0.94f),
+            border = com.vknxworks.lijnctrl.ui.theme.ControlBorder,
             modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
         ) {
             Icon(Icons.Outlined.OpenInFull, stringResource(R.string.open_map), Modifier.padding(8.dp).size(18.dp))
@@ -671,7 +672,7 @@ fun RouteMapScreen(index: Int) {
                         horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
                     ) {
                         itemsIndexed(results) { i, j ->
-                            FilterChip(
+                            com.vknxworks.lijnctrl.ui.components.CtrlChip(
                                 selected = i == selected,
                                 onClick = { selected = i },
                                 label = { Text("${clockTime(j.start)} → ${clockTime(j.end)}") },

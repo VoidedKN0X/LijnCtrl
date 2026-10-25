@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Sensors
 import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -43,6 +42,12 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.height
+import com.vknxworks.lijnctrl.ui.theme.CtrlColors
+import com.vknxworks.lijnctrl.ui.theme.CtrlShapes
+import com.vknxworks.lijnctrl.ui.theme.CtrlType
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vknxworks.lijnctrl.R
 import com.vknxworks.lijnctrl.container
@@ -112,11 +117,11 @@ fun LineBadge(info: LineInfo?, fallback: String?, modifier: Modifier = Modifier,
     val fg = hex(info?.foreground) ?: if (bg.luminance() > 0.5f) Color.Black else Color.White
     val border = hex(info?.backgroundBorder)?.takeIf { it != bg }
     val label = info?.publicNumber ?: fallback.orEmpty()
-    val shape = RoundedCornerShape(8.dp)
+    val shape = RoundedCornerShape(if (large) 10.dp else 9.dp)
     Box(
         modifier
             .widthIn(min = minWidth)
-            .heightIn(min = if (large) 36.dp else 28.dp)
+            .heightIn(min = if (large) 32.dp else 28.dp)
             .clip(shape)
             .background(bg)
             .then(if (border != null) Modifier.border(2.dp, border, shape) else Modifier)
@@ -127,8 +132,7 @@ fun LineBadge(info: LineInfo?, fallback: String?, modifier: Modifier = Modifier,
         Text(
             label,
             color = fg,
-            style = if (large) MaterialTheme.typography.titleMedium else MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.ExtraBold,
+            style = if (large) CtrlType.Readout.copy(fontSize = 16.sp, lineHeight = 20.sp) else CtrlType.Data.copy(fontSize = 14.sp, fontWeight = FontWeight.SemiBold),
             maxLines = 1,
         )
     }
@@ -159,17 +163,18 @@ fun DepartureRow(
     val cs = MaterialTheme.colorScheme
     Row(
         modifier.fillMaxWidth()
+            .heightIn(min = if (compact) 52.dp else 60.dp)
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(horizontal = 16.dp, vertical = if (compact) 6.dp else 10.dp),
+            .padding(horizontal = 16.dp, vertical = if (compact) 6.dp else 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        LineBadge(info, d.line?.line)
-        Spacer(Modifier.width(12.dp))
+        LineBadge(info, d.line?.line, minWidth = 40.dp)
+        Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
             Text(
                 d.destination.ifBlank { stringResource(R.string.unknown_destination) },
                 style = if (compact) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Medium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 textDecoration = if (d.cancelled) TextDecoration.LineThrough else null,
@@ -178,7 +183,7 @@ fun DepartureRow(
             if (!compact && d.vias.isNotEmpty()) {
                 Text(
                     stringResource(R.string.via_x, d.vias.joinToString(", ")),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = CtrlType.DataSmall,
                     color = cs.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -190,31 +195,26 @@ fun DepartureRow(
     }
 }
 
-/** The time on the right: "4 min" with a live marker, how late it is, or "Cancelled". */
+/** The time on the right: "4 min" in mono (accent when live, with a square dot), how late it is, or "Cancelled". */
 @Composable
 fun DepartureTime(d: Departure, now: Instant, style: TimeStyle, compact: Boolean = false) {
     val cs = MaterialTheme.colorScheme
     Column(horizontalAlignment = Alignment.End) {
         if (d.cancelled) {
-            Text(stringResource(R.string.cancelled), color = cs.error, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
-            Text(clockTime(d.scheduled), color = cs.onSurfaceVariant, style = MaterialTheme.typography.bodySmall, textDecoration = TextDecoration.LineThrough)
+            Text(stringResource(R.string.cancelled).uppercase(), color = cs.error, style = CtrlType.DataSmall.copy(fontWeight = FontWeight.SemiBold))
+            Text(clockTime(d.scheduled), color = cs.onSurfaceVariant, style = CtrlType.Data, textDecoration = TextDecoration.LineThrough)
             return@Column
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (d.live) {
-                Icon(
-                    Icons.Outlined.Sensors,
-                    stringResource(R.string.live),
-                    Modifier.size(14.dp),
-                    tint = cs.primary,
-                )
-                Spacer(Modifier.width(4.dp))
+                val liveLabel = stringResource(R.string.live)
+                StatusDot(CtrlColors.Accent, Modifier.semantics { contentDescription = liveLabel })
+                Spacer(Modifier.width(6.dp))
             }
             Text(
                 departureLabel(d, now, style),
-                style = if (compact) MaterialTheme.typography.titleSmall else MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = if (d.live) cs.primary else cs.onSurface,
+                style = if (compact) CtrlType.Readout.copy(fontSize = 17.sp) else CtrlType.Readout,
+                color = if (d.live) CtrlColors.Accent else cs.onSurface,
             )
         }
         val delay = d.delayMinutes
@@ -226,17 +226,130 @@ fun DepartureTime(d: Departure, now: Instant, style: TimeStyle, compact: Boolean
         }
         val subColor = when {
             delay != null && delay >= 3 -> cs.error
-            delay != null && delay >= 1 -> MaterialTheme.colorScheme.tertiary
+            delay == null -> CtrlColors.Inactive
             else -> cs.onSurfaceVariant
         }
         // With clock times the scheduled time is already shown, so only the delay is added.
         Text(
-            if (style == TimeStyle.MINUTES && delay != null && delay != 0L) "$sub · ${clockTime(d.time)}" else sub,
-            style = MaterialTheme.typography.bodySmall,
+            (if (style == TimeStyle.MINUTES && delay != null && delay != 0L) "$sub · ${clockTime(d.time)}" else sub).uppercase(),
+            style = CtrlType.DataSmall,
             color = subColor,
             maxLines = 1,
             textAlign = TextAlign.End,
         )
+    }
+}
+
+/**
+ * The next bus or tram, as the Ctrl hero card: line and destination with a LIVE marker on top, the countdown
+ * in giant mono numbers, the clock time and delay beside it, and a little progress track underneath.
+ */
+@Composable
+fun NextDepartureHero(
+    d: Departure,
+    info: LineInfo?,
+    now: Instant,
+    style: TimeStyle,
+    modifier: Modifier = Modifier,
+    accent: Boolean = true,
+    onClick: (() -> Unit)? = null,
+) {
+    val minutes = Math.floorDiv(d.time.toEpochMilli() - now.toEpochMilli(), 60_000L)
+    // Accent: the hero of the screen. Otherwise the same layout on a surface card, with accent details.
+    val ink = if (accent) CtrlColors.OnAccent else CtrlColors.OnBackground
+    val inkSoft = if (accent) CtrlColors.OnAccent.copy(alpha = 0.62f) else CtrlColors.Muted
+    val mark = if (accent) CtrlColors.OnAccent else CtrlColors.Accent
+    val badgeText = if (accent) CtrlColors.Accent else CtrlColors.OnAccent
+    val body: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit = {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier
+                    .widthIn(min = 44.dp)
+                    .heightIn(min = 32.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(mark)
+                    .padding(horizontal = 8.dp, vertical = 3.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(info?.publicNumber ?: d.line?.line.orEmpty(), style = CtrlType.Readout.copy(fontSize = 16.sp, lineHeight = 20.sp), color = badgeText, maxLines = 1)
+            }
+            Spacer(Modifier.width(10.dp))
+            Text(
+                listOfNotNull(
+                    info?.let { stringResource(if (it.isTram) R.string.tram else R.string.bus) },
+                    d.destination.ifBlank { stringResource(R.string.unknown_destination) },
+                ).joinToString(" → "),
+                style = MaterialTheme.typography.titleMedium,
+                color = ink,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                textDecoration = if (d.cancelled) TextDecoration.LineThrough else null,
+                modifier = Modifier.weight(1f),
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                (if (d.live) "● " + stringResource(R.string.live) else stringResource(R.string.timetable)).uppercase(),
+                style = CtrlType.DataSmall.copy(letterSpacing = 0.12.em),
+                color = if (d.live) mark else inkSoft,
+            )
+        }
+        Row(verticalAlignment = Alignment.Bottom) {
+            val big: String
+            val unit: String?
+            when {
+                d.cancelled -> { big = stringResource(R.string.cancelled); unit = null }
+                style == TimeStyle.CLOCK || minutes >= 60 -> { big = clockTime(d.time); unit = null }
+                minutes <= 0 -> { big = stringResource(R.string.now); unit = null }
+                else -> { big = minutes.toString().padStart(2, '0'); unit = stringResource(R.string.min_unit) }
+            }
+            Row(Modifier.weight(1f), verticalAlignment = Alignment.Bottom) {
+                Text(
+                    big,
+                    style = if (big.length > 5) CtrlType.Countdown.copy(fontSize = 40.sp, lineHeight = 44.sp) else CtrlType.Countdown,
+                    color = ink,
+                    maxLines = 1,
+                )
+                if (unit != null) {
+                    Text(" $unit", style = CtrlType.Readout.copy(fontSize = 20.sp, letterSpacing = 0.sp), color = inkSoft, modifier = Modifier.padding(bottom = 6.dp))
+                }
+            }
+            val delay = d.delayMinutes
+            Column(horizontalAlignment = Alignment.End) {
+                Text(clockTime(d.time), style = CtrlType.Data, color = inkSoft)
+                Text(
+                    when {
+                        d.cancelled -> stringResource(R.string.cancelled)
+                        delay != null && delay > 0 -> stringResource(R.string.x_min_late, delay.toInt())
+                        delay != null && delay < 0 -> stringResource(R.string.x_min_early, (-delay).toInt())
+                        d.live -> stringResource(R.string.on_time)
+                        else -> stringResource(R.string.timetable)
+                    },
+                    style = CtrlType.Data,
+                    color = inkSoft,
+                )
+            }
+        }
+        // Stop, ride, destination: the first part filled while it's on its way.
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Box(Modifier.size(10.dp).clip(RoundedCornerShape(3.dp)).background(mark))
+            Box(Modifier.weight(1f).height(2.dp).background(mark))
+            Box(Modifier.size(10.dp).clip(RoundedCornerShape(3.dp)).border(2.dp, mark, RoundedCornerShape(3.dp)))
+            Box(Modifier.weight(2f).height(2.dp).background(if (accent) inkSoft.copy(alpha = 0.35f) else CtrlColors.ProgressTrack))
+            Box(Modifier.size(10.dp).clip(RoundedCornerShape(3.dp)).border(2.dp, if (accent) inkSoft else CtrlColors.PinEmpty, RoundedCornerShape(3.dp)))
+        }
+    }
+    if (accent) {
+        CtrlHeroCard(modifier, onClick = onClick, content = body)
+    } else {
+        androidx.compose.material3.Surface(
+            shape = CtrlShapes.Hero,
+            color = CtrlColors.Surface,
+            contentColor = CtrlColors.OnBackground,
+            border = com.vknxworks.lijnctrl.ui.theme.CardBorder,
+            modifier = modifier.fillMaxWidth().then(if (onClick != null) Modifier.clip(CtrlShapes.Hero).clickable(onClick = onClick) else Modifier),
+        ) {
+            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp), content = body)
+        }
     }
 }
 
@@ -247,9 +360,10 @@ fun DisruptionCard(item: Disruption, lines: Map<String, LineInfo>, modifier: Mod
     val cs = MaterialTheme.colorScheme
     Surface(
         modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        color = cs.errorContainer.copy(alpha = 0.35f),
+        shape = CtrlShapes.Card,
+        color = CtrlColors.Surface,
         contentColor = cs.onSurface,
+        border = androidx.compose.foundation.BorderStroke(1.dp, cs.error.copy(alpha = 0.45f)),
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -258,6 +372,7 @@ fun DisruptionCard(item: Disruption, lines: Map<String, LineInfo>, modifier: Mod
                 Text(
                     item.title.ifBlank { stringResource(R.string.disruption) },
                     style = MaterialTheme.typography.titleSmall,
+                    color = cs.onSurface,
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -273,7 +388,7 @@ fun DisruptionCard(item: Disruption, lines: Map<String, LineInfo>, modifier: Mod
                 item.end != null -> stringResource(R.string.until_x, dayTime(item.end))
                 else -> null
             }
-            if (period != null) Text(period, style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
+            if (period != null) Text(period, style = CtrlType.Data, color = cs.onSurfaceVariant)
         }
     }
 }
@@ -283,8 +398,8 @@ fun DisruptionCard(item: Disruption, lines: Map<String, LineInfo>, modifier: Mod
 fun UpdatedLine(at: Instant?, modifier: Modifier = Modifier) {
     if (at == null) return
     Text(
-        stringResource(R.string.updated_x, clockTimeSeconds(at)),
-        style = MaterialTheme.typography.bodySmall,
+        stringResource(R.string.updated_x, clockTimeSeconds(at)).uppercase(),
+        style = CtrlType.DataSmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = modifier,
     )

@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -26,12 +27,10 @@ import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.DepartureBoard
 import androidx.compose.material.icons.outlined.Directions
 import androidx.compose.material.icons.outlined.StarBorder
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -253,31 +252,37 @@ fun StopScreen(entity: String, number: String, initialName: String?) {
                         )
                     }
                     else -> {
+                        val first = list.first()
                         item {
-                            Surface(
-                                shape = MaterialTheme.shapes.large,
-                                color = MaterialTheme.colorScheme.surfaceContainer,
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = Gutter),
-                            ) {
-                                Column(Modifier.padding(vertical = 6.dp)) {
-                                    list.forEachIndexed { i, d ->
-                                        if (i > 0) HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                                        DepartureRow(
-                                            d,
-                                            d.line?.let { lines[it.toString()] },
-                                            now,
-                                            settings.timeStyle,
-                                            onClick = if (d.trip != null) ({ nav.trip(d.copy(stop = d.stop ?: number)) }) else null,
-                                        )
-                                    }
-                                }
+                            com.vknxworks.lijnctrl.ui.components.NextDepartureHero(
+                                first,
+                                first.line?.let { lines[it.toString()] },
+                                now,
+                                settings.timeStyle,
+                                modifier = Modifier.padding(horizontal = Gutter, vertical = 6.dp),
+                                onClick = if (first.trip != null) ({ nav.trip(first.copy(stop = first.stop ?: number)) }) else null,
+                            )
+                        }
+                        item { Spacer(Modifier.height(8.dp)) }
+                        items(list.drop(1)) { d ->
+                            Column(Modifier.padding(horizontal = Gutter)) {
+                                com.vknxworks.lijnctrl.ui.components.CtrlDivider()
+                                DepartureRow(
+                                    d,
+                                    d.line?.let { lines[it.toString()] },
+                                    now,
+                                    settings.timeStyle,
+                                    onClick = if (d.trip != null) ({ nav.trip(d.copy(stop = d.stop ?: number)) }) else null,
+                                )
                             }
                         }
                         item {
                             Column(Modifier.fillMaxWidth().padding(horizontal = Gutter + 4.dp, vertical = 10.dp)) {
                                 androidx.compose.material3.OutlinedButton(
                                     onClick = { nav.timetable(entity, number, title) },
-                                    shape = androidx.compose.foundation.shape.CircleShape,
+                                    shape = com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Control,
+                                    border = com.vknxworks.lijnctrl.ui.theme.ControlBorder,
+                                    colors = com.vknxworks.lijnctrl.ui.components.ctrlSecondaryButtonColors(),
                                     modifier = Modifier.padding(bottom = 10.dp),
                                 ) {
                                     Icon(Icons.Outlined.CalendarMonth, null, Modifier.padding(end = 8.dp))
@@ -301,6 +306,7 @@ fun StopScreen(entity: String, number: String, initialName: String?) {
         var picked by remember { mutableStateOf(filter.ifEmpty { servedLines.map { it.toString() }.toSet() }) }
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { editFilter = false },
+            modifier = com.vknxworks.lijnctrl.ui.theme.CtrlDialogModifier,
             title = { Text(stringResource(R.string.filter_lines)) },
             text = {
                 Column {
@@ -345,30 +351,27 @@ fun StopScreen(entity: String, number: String, initialName: String?) {
 @Composable
 private fun StopHeader(name: String?, municipality: String?, number: String, accessible: Boolean) {
     val context = LocalContext.current
-    Column(Modifier.fillMaxWidth().padding(horizontal = Gutter, vertical = 4.dp)) {
-        if (name != null) Text(name, style = MaterialTheme.typography.bodyLarge)
+    Column(Modifier.fillMaxWidth().padding(horizontal = Gutter, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                listOfNotNull(municipality, context.getString(R.string.stop_number_x, number)).joinToString(" · "),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.weight(1f, fill = false),
+            com.vknxworks.lijnctrl.ui.components.CtrlLabel(
+                listOfNotNull(context.getString(R.string.stop_number_x, number), municipality).joinToString(" · "),
+                Modifier.weight(1f, fill = false),
             )
             if (accessible) {
-                Spacer(Modifier.padding(4.dp))
                 Icon(
                     Icons.Outlined.Accessible,
                     stringResource(R.string.accessible_stop),
-                    Modifier.padding(start = 4.dp),
+                    Modifier.padding(start = 8.dp).size(18.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
+        if (name != null) Text(name, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(
-            stringResource(R.string.copy_stop_number),
-            style = MaterialTheme.typography.labelMedium,
+            stringResource(R.string.copy_stop_number).uppercase(),
+            style = com.vknxworks.lijnctrl.ui.theme.CtrlType.DataSmall,
             color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(top = 2.dp).clickable {
+            modifier = Modifier.clickable {
                 context.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newPlainText("stop", number))
                 Toast.makeText(context, context.getString(R.string.copied), Toast.LENGTH_SHORT).show()
             },

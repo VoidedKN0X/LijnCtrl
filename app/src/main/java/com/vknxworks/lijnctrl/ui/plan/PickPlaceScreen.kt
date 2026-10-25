@@ -15,7 +15,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.DirectionsBus
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Work
@@ -153,9 +153,10 @@ fun PickPlaceScreen(forFrom: Boolean, saveAs: String? = null) {
                 onValueChange = { query = it.take(80) },
                 placeholder = { Text(stringResource(R.string.pick_place_hint)) },
                 leadingIcon = { Icon(Icons.Outlined.Search, null) },
-                trailingIcon = { if (query.isNotEmpty()) IconButton(onClick = { query = "" }) { Icon(Icons.Filled.Close, stringResource(R.string.clear)) } },
+                trailingIcon = { if (query.isNotEmpty()) IconButton(onClick = { query = "" }) { Icon(Icons.Outlined.Close, stringResource(R.string.clear)) } },
                 singleLine = true,
-                shape = CircleShape,
+                shape = com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Control,
+                colors = com.vknxworks.lijnctrl.ui.components.ctrlFieldColors(),
                 modifier = Modifier.fillMaxWidth().padding(horizontal = Gutter, vertical = 4.dp).focusRequester(focus),
             )
             if (loading) LinearProgressIndicator(Modifier.fillMaxWidth().padding(horizontal = Gutter))

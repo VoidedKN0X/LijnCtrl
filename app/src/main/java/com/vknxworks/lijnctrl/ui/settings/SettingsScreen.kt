@@ -40,7 +40,6 @@ import com.vknxworks.lijnctrl.data.settings.AppSettings
 import com.vknxworks.lijnctrl.data.settings.LockTimeout
 import com.vknxworks.lijnctrl.data.settings.MessageLanguage
 import com.vknxworks.lijnctrl.data.settings.NearbyRadius
-import com.vknxworks.lijnctrl.data.settings.ThemeChoice
 import com.vknxworks.lijnctrl.data.settings.TimeStyle
 import com.vknxworks.lijnctrl.ui.components.Group
 import com.vknxworks.lijnctrl.ui.components.GroupChoice
@@ -67,13 +66,7 @@ fun SettingsScreen() {
         topBar = { ScreenTopBar(stringResource(R.string.settings)) },
     ) { padding ->
         Column(Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
-            Group(stringResource(R.string.appearance)) {
-                GroupChoice(stringResource(R.string.theme), ThemeChoice.entries.map { it to stringResource(it.label) }, s.theme) { v -> update { it.copy(theme = v) } }
-                GroupSwitch(stringResource(R.string.use_wallpaper_colours), stringResource(R.string.replaces_the_default_colours_with_ones), s.dynamicColor) { v ->
-                    update { it.copy(dynamicColor = v) }
-                }
-            }
-
+            // No Appearance group: the Ctrl look is dark only, without wallpaper colours.
             Group(stringResource(R.string.departures), footer = stringResource(R.string.departures_footer)) {
                 GroupChoice(
                     stringResource(R.string.show_times_as),

@@ -22,11 +22,11 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.OpenInNew
-import androidx.compose.material.icons.filled.DirectionsBus
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.outlined.DirectionsBus
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.OpenInNew
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -145,17 +145,16 @@ fun ApiKeyScreen(firstRun: Boolean, unreadable: Boolean, onDone: () -> Unit, onC
             ) {
                 if (onCancel != null) {
                     Row(Modifier.fillMaxWidth()) {
-                        IconButton(onClick = onCancel) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back)) }
+                        com.vknxworks.lijnctrl.ui.components.CtrlSquareButton(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back), onClick = onCancel)
                     }
                 } else {
                     Spacer(Modifier.height(32.dp))
                 }
                 Column(Modifier.widthIn(max = 480.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Box(
-                        Modifier.size(80.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)),
-                        contentAlignment = Alignment.Center,
-                    ) { Icon(Icons.Filled.DirectionsBus, null, Modifier.size(40.dp), tint = MaterialTheme.colorScheme.primary) }
-                    Spacer(Modifier.height(18.dp))
+                    com.vknxworks.lijnctrl.ui.components.IconTile(Icons.Outlined.DirectionsBus, size = 72.dp, accent = true)
+                    Spacer(Modifier.height(20.dp))
+                    com.vknxworks.lijnctrl.ui.components.CtrlWordmark()
+                    Spacer(Modifier.height(10.dp))
                     Text(
                         stringResource(if (firstRun) R.string.welcome_title else R.string.change_api_key),
                         style = MaterialTheme.typography.headlineMedium,
@@ -170,14 +169,14 @@ fun ApiKeyScreen(firstRun: Boolean, unreadable: Boolean, onDone: () -> Unit, onC
                     )
                     Spacer(Modifier.height(24.dp))
 
-                    Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.fillMaxWidth()) {
+                    Surface(shape = com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Card, color = MaterialTheme.colorScheme.surface, border = com.vknxworks.lijnctrl.ui.theme.CardBorder, modifier = Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Text(stringResource(R.string.key_steps_title), style = MaterialTheme.typography.titleMedium)
                             Step(1, stringResource(R.string.key_step_1))
                             Step(2, stringResource(R.string.key_step_2))
                             Step(3, stringResource(R.string.key_step_3))
-                            OutlinedButton(onClick = ::openPortal, shape = CircleShape) {
-                                Icon(Icons.AutoMirrored.Filled.OpenInNew, null, Modifier.size(18.dp))
+                            OutlinedButton(onClick = ::openPortal, shape = com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Control, border = com.vknxworks.lijnctrl.ui.theme.ControlBorder, colors = com.vknxworks.lijnctrl.ui.components.ctrlSecondaryButtonColors()) {
+                                Icon(Icons.AutoMirrored.Outlined.OpenInNew, null, Modifier.size(18.dp))
                                 Spacer(Modifier.size(8.dp))
                                 Text(stringResource(R.string.open_de_lijn_portal))
                             }
@@ -198,17 +197,19 @@ fun ApiKeyScreen(firstRun: Boolean, unreadable: Boolean, onDone: () -> Unit, onC
                         trailingIcon = {
                             IconButton(onClick = { visible = !visible }) {
                                 Icon(
-                                    if (visible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                                    if (visible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
                                     stringResource(if (visible) R.string.hide_key else R.string.show_key),
                                 )
                             }
                         },
                         supportingText = { Text(error ?: stringResource(R.string.key_stored_note)) },
+                        shape = com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Control,
+                        colors = com.vknxworks.lijnctrl.ui.components.ctrlFieldColors(),
                         modifier = Modifier.fillMaxWidth(),
                     )
                     if (firstRun) {
                         Spacer(Modifier.height(8.dp))
-                        Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.fillMaxWidth()) {
+                        Surface(shape = com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Card, color = MaterialTheme.colorScheme.surface, border = com.vknxworks.lijnctrl.ui.theme.CardBorder, modifier = Modifier.fillMaxWidth()) {
                             Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                                 Text(stringResource(R.string.setup_optional_title), style = MaterialTheme.typography.titleMedium)
                                 // Transitous: route planning and address search.
@@ -218,7 +219,7 @@ fun ApiKeyScreen(firstRun: Boolean, unreadable: Boolean, onDone: () -> Unit, onC
                                         Text(stringResource(R.string.setup_transitous_body), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                     Spacer(Modifier.size(12.dp))
-                                    androidx.compose.material3.Switch(checked = useTransitous, onCheckedChange = { useTransitous = it }, enabled = !checking)
+                                    com.vknxworks.lijnctrl.ui.components.CtrlSwitch(checked = useTransitous, onCheckedChange = { useTransitous = it }, enabled = !checking)
                                 }
                                 // Live buses: the second, optional key.
                                 Text(stringResource(R.string.live_vehicles), style = MaterialTheme.typography.bodyLarge)
@@ -234,6 +235,8 @@ fun ApiKeyScreen(firstRun: Boolean, unreadable: Boolean, onDone: () -> Unit, onC
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false, imeAction = ImeAction.Done),
                                     keyboardActions = KeyboardActions(onDone = { check() }),
                                     supportingText = { gtfsError?.let { Text(it) } },
+                                    shape = com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Control,
+                                    colors = com.vknxworks.lijnctrl.ui.components.ctrlFieldColors(),
                                     modifier = Modifier.fillMaxWidth(),
                                 )
                             }
@@ -267,9 +270,9 @@ fun ApiKeyScreen(firstRun: Boolean, unreadable: Boolean, onDone: () -> Unit, onC
 private fun Step(n: Int, text: String) {
     Row(verticalAlignment = Alignment.Top) {
         Box(
-            Modifier.size(26.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)),
+            Modifier.size(26.dp).clip(com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Badge).background(MaterialTheme.colorScheme.primary),
             contentAlignment = Alignment.Center,
-        ) { Text("$n", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold) }
+        ) { Text("$n", style = com.vknxworks.lijnctrl.ui.theme.CtrlType.Data, color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.SemiBold) }
         Spacer(Modifier.size(12.dp))
         Text(text, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f).padding(top = 3.dp))
     }

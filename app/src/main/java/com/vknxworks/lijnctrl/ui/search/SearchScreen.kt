@@ -17,7 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.SearchOff
@@ -168,10 +168,11 @@ fun SearchScreen() {
             placeholder = { Text(stringResource(R.string.search_hint)) },
             leadingIcon = { Icon(Icons.Outlined.Search, null) },
             trailingIcon = {
-                if (query.isNotEmpty()) IconButton(onClick = { query = "" }) { Icon(Icons.Filled.Close, stringResource(R.string.clear)) }
+                if (query.isNotEmpty()) IconButton(onClick = { query = "" }) { Icon(Icons.Outlined.Close, stringResource(R.string.clear)) }
             },
             singleLine = true,
-            shape = CircleShape,
+            shape = com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Control,
+            colors = com.vknxworks.lijnctrl.ui.components.ctrlFieldColors(),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
             keyboardActions = KeyboardActions(onSearch = { focus.clearFocus() }),
             modifier = Modifier.fillMaxWidth().padding(horizontal = Gutter),
@@ -316,8 +317,9 @@ fun placeIcon(kind: PlaceKind): androidx.compose.ui.graphics.vector.ImageVector 
 @Composable
 fun AddressSearchPrompt(onTurnOn: () -> Unit) {
     androidx.compose.material3.Surface(
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        shape = com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Card,
+        color = MaterialTheme.colorScheme.surface,
+        border = com.vknxworks.lijnctrl.ui.theme.CardBorder,
         modifier = Modifier.fillMaxWidth().padding(horizontal = Gutter, vertical = 8.dp),
     ) {
         Column(Modifier.padding(16.dp)) {

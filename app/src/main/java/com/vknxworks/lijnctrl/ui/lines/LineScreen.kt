@@ -25,11 +25,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DirectionsBus
+import androidx.compose.material.icons.outlined.DirectionsBus
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Tram
+import androidx.compose.material.icons.outlined.Tram
 import androidx.compose.material.icons.outlined.StarBorder
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -240,7 +239,7 @@ fun LineScreen(entity: String, line: String, initialDirection: String?) {
                         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                     ) {
                         items(dirs, key = { it.direction.orEmpty() }) { d ->
-                            FilterChip(
+                            com.vknxworks.lijnctrl.ui.components.CtrlChip(
                                 selected = d.direction == direction,
                                 onClick = { selected = d.direction },
                                 label = { Text(stringResource(R.string.to_x, directionEnd(d.description) ?: d.direction.orEmpty()), maxLines = 1) },
@@ -283,7 +282,7 @@ fun LineScreen(entity: String, line: String, initialDirection: String?) {
                             modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                         ) {
                             items(dirs, key = { it.direction.orEmpty() }) { d ->
-                                FilterChip(
+                                com.vknxworks.lijnctrl.ui.components.CtrlChip(
                                     selected = d.direction == direction,
                                     onClick = { selected = d.direction },
                                     label = { Text(stringResource(R.string.to_x, directionEnd(d.description) ?: d.direction.orEmpty()), maxLines = 1) },
@@ -346,14 +345,14 @@ private fun RouteStopRow(stop: ApiStop, first: Boolean, last: Boolean, arriving:
         }
         if (arriving != null) {
             val minutes = Math.floorDiv(arriving.toEpochMilli() - now.toEpochMilli(), 60_000L)
-            Surface(shape = CircleShape, color = cs.primary.copy(alpha = 0.16f), contentColor = cs.primary) {
+            Surface(shape = com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Badge, color = cs.primary, contentColor = cs.onPrimary) {
                 Row(Modifier.padding(horizontal = 10.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(if (tram) Icons.Filled.Tram else Icons.Filled.DirectionsBus, null, Modifier.size(16.dp))
+                    Icon(if (tram) Icons.Outlined.Tram else Icons.Outlined.DirectionsBus, null, Modifier.size(16.dp))
                     Spacer(Modifier.width(4.dp))
                     Text(
                         if (minutes <= 0) stringResource(R.string.now) else stringResource(R.string.x_min_short, minutes.toInt()),
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
+                        style = com.vknxworks.lijnctrl.ui.theme.CtrlType.Data,
+                        fontWeight = FontWeight.SemiBold,
                     )
                 }
             }

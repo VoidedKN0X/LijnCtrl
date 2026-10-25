@@ -4,6 +4,35 @@ What changed in each LijnCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## v0.11.0 (2026-10-25)
+
+A new look: Ctrl / Signal, the dark, high-contrast design now shared by every Ctrl app. Everything works as before; only how it looks has changed.
+
+### Changed
+
+- **Dark only, with one accent.** LijnCtrl now always uses a near-black background (#08080A), dark grey cards with a thin border, off-white text and a single lavender accent (#B48CFF) instead of the amber one. The status bar and navigation bar take the same background colour, with light icons.
+- **New fonts.** All text is now set in Space Grotesk, and numbers, times, stop numbers and section labels in JetBrains Mono. Both are bundled in the app (no font downloads) and both are free under the SIL Open Font License 1.1; their licences are included in the app. Manrope is no longer used.
+- **The next departure stands out.** On the Stops tab each saved stop now shows its stop number as a small label, its name in large type, and the next bus or tram as a big card with the line, where it's going, "LIVE" when De Lijn tracks it, and the minutes to go as a giant countdown, with the clock time and any delay beside it. Your first stop's card is filled in the accent colour; the others use the same layout on a dark card. Later departures are listed underneath as simple rows separated by thin lines.
+- **Stop pages** open with the stop number and town as a label and the next departure as the same big countdown card, then every later departure as a plain row.
+- **Departure times** in lists are in monospaced numbers: in the accent colour with a small square dot when they're live, white when they come from the timetable. "On time", "+2 min late", "Timetable" and "Cancelled" are now small capital labels under the time.
+- **New top of the main tabs.** Stops, Nearby, Plan and Search show the LIJN/CTRL wordmark at the top left and your profile picture at the top right, as a rounded square with a small accent badge; the tab's name is below it in large type. Tapping the picture still opens the You page with settings.
+- **Pushed pages** (stop, line, trip, timetable, route, settings and others) have a square back button and their title, with no coloured bar behind it.
+- **New tab bar.** The frosted, round "island" is replaced by a floating dark bar with rounded corners. The selected tab is a filled accent block with its icon and name; the other tabs show only their icon.
+- **New switches.** Switches are rounded squares: accent with a dark knob when on, grey when off. They still work with TalkBack as switches.
+- **Settings and the You page** are grouped into dark cards with thin dividers between rows, under small capital labels. The You page has a close button, the app's icon in an accent tile, and a full-width **Support LijnCtrl** button at the bottom, followed by "GOOGLE-FREE · TELEMETRY-FREE · ARM64".
+- **New lock screen.** An accent lock tile, "VKNXWORKS · CTRL", "Locked" in large type, square PIN cells that fill with the accent colour, and a three-column keypad of rounded keys with monospaced digits. The fingerprint button is now a key on the keypad, outlined in the accent colour, next to 0 and the delete key. The lock itself, your PIN and fingerprint unlock work exactly as before.
+- **Buttons, fields and chips.** Main buttons are accent-filled rounded rectangles; other buttons are dark with a thin border. Text fields are dark with a thin border that turns accent while you type. Filter chips (days, lines, directions, Leave now / Leave at / Arrive by, Stops / Departures, routes on the map) are rounded squares that fill with the accent colour when selected.
+- **Dialogs and sheets** are dark cards with 26dp corners and a thin border.
+- **Maps.** The buttons and messages on the Nearby, route, trip and line maps are rounded squares on dark cards instead of round bubbles; the "find me" button is accent-filled. The OpenStreetMap credit is in small monospaced type.
+- **Route planner.** From and To use small capital labels, the "Turn on Transitous" box is a dark card with an accent border, and route results show their times in monospaced numbers.
+- **Line badges** keep De Lijn's own colours, now with slightly squarer corners and monospaced numbers.
+- **Disruptions** are shown on dark cards with a red border instead of a red tint.
+- **Icons** use the outlined style throughout (filled stars still mark saved stops and lines).
+
+### Removed
+
+- **Theme and wallpaper colours.** Settings no longer has an Appearance section: the Light, Follow system and Pure black themes and **Use wallpaper colours** are gone, because the Ctrl look is dark only. A theme you picked before is ignored.
+
 ## v0.10.0 (2026-10-25)
 
 This release also brings everything in 0.9.0 below, which wasn't published on its own.

@@ -1,20 +1,14 @@
 package com.vknxworks.lijnctrl.ui.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -178,7 +172,7 @@ fun <T> LoadContent(
 
 @Composable
 fun LoadingView(modifier: Modifier = Modifier) {
-    Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+    Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = MaterialTheme.colorScheme.primary, trackColor = com.vknxworks.lijnctrl.ui.theme.CtrlColors.ProgressTrack, strokeWidth = 3.dp) }
 }
 
 @Composable
@@ -201,12 +195,7 @@ fun MessageView(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Box(
-                Modifier.size(72.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainerHigh),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(icon, null, Modifier.size(32.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+            IconTile(icon)
             Text(title, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
             if (body != null) {
                 Text(
@@ -217,7 +206,7 @@ fun MessageView(
                 )
             }
             if (actionLabel != null && onAction != null) {
-                FilledTonalButton(onClick = onAction, shape = CircleShape) { Text(actionLabel) }
+                CtrlSecondaryButton(actionLabel, onClick = onAction)
             }
         }
     }

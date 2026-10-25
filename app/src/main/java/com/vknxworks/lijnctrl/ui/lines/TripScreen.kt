@@ -308,6 +308,7 @@ fun TripScreen(entity: String, line: String, direction: String, trip: String, da
         val stopName = fromStop?.let { names[it]?.name } ?: fromStop.orEmpty()
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { askAlert = false },
+            modifier = com.vknxworks.lijnctrl.ui.theme.CtrlDialogModifier,
             title = { Text(stringResource(R.string.alert_me)) },
             text = {
                 Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {

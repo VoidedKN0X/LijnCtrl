@@ -22,15 +22,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.outlined.DirectionsWalk
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Directions
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Work
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.material.icons.outlined.History
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.SwapVert
@@ -38,7 +38,6 @@ import androidx.compose.material.icons.outlined.TripOrigin
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -64,6 +63,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vknxworks.lijnctrl.R
 import com.vknxworks.lijnctrl.container
@@ -165,11 +165,11 @@ fun PlanScreen() {
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item {
-                Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.fillMaxWidth()) {
+                Surface(shape = com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Card, color = MaterialTheme.colorScheme.surface, border = com.vknxworks.lijnctrl.ui.theme.CardBorder, modifier = Modifier.fillMaxWidth()) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f).padding(vertical = 4.dp)) {
                             EndRow(Icons.Outlined.TripOrigin, stringResource(R.string.from), s.from) { nav.navigate(PickPlaceRoute(forFrom = true)) }
-                            HorizontalDivider(Modifier.padding(start = 52.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                            HorizontalDivider(Modifier.padding(start = 52.dp), color = com.vknxworks.lijnctrl.ui.theme.CtrlColors.Divider)
                             EndRow(Icons.Outlined.Flag, stringResource(R.string.to), s.to) { nav.navigate(PickPlaceRoute(forFrom = false)) }
                         }
                         IconButton(onClick = {
@@ -213,7 +213,7 @@ fun PlanScreen() {
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     TimeMode.entries.forEach { m ->
-                        FilterChip(
+                        com.vknxworks.lijnctrl.ui.components.CtrlChip(
                             selected = s.mode == m,
                             onClick = {
                                 s.mode = m
@@ -238,10 +238,10 @@ fun PlanScreen() {
                 item {
                     val t = s.time ?: Instant.now()
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(onClick = { pickDate = true }, shape = CircleShape) {
+                        OutlinedButton(onClick = { pickDate = true }, shape = com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Control, border = com.vknxworks.lijnctrl.ui.theme.ControlBorder, colors = com.vknxworks.lijnctrl.ui.components.ctrlSecondaryButtonColors()) {
                             Text(dayLabel(t.atZone(BRUSSELS).toLocalDate()))
                         }
-                        OutlinedButton(onClick = { pickTime = true }, shape = CircleShape) {
+                        OutlinedButton(onClick = { pickTime = true }, shape = com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Control, border = com.vknxworks.lijnctrl.ui.theme.ControlBorder, colors = com.vknxworks.lijnctrl.ui.components.ctrlSecondaryButtonColors()) {
                             Icon(Icons.Outlined.Schedule, null, Modifier.size(18.dp))
                             Spacer(Modifier.width(6.dp))
                             Text(clockTime(t))
@@ -252,10 +252,10 @@ fun PlanScreen() {
             if (!settings.useTransitous) {
                 // Routes come from Transitous: asked once, here or at setup, because it receives where you're going.
                 item {
-                    Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.fillMaxWidth()) {
+                    Surface(shape = com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Card, color = MaterialTheme.colorScheme.surface, border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary), modifier = Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(stringResource(R.string.transitous_prompt_title), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                            Text(stringResource(R.string.transitous_prompt_body), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                            Text(stringResource(R.string.transitous_prompt_title), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+                            Text(stringResource(R.string.transitous_prompt_body), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             PillButton(
                                 stringResource(R.string.turn_on_transitous),
                                 onClick = { scope.launch { c.settings.update { it.copy(useTransitous = true) } } },
@@ -291,20 +291,15 @@ fun PlanScreen() {
                 results == null -> if (!s.planning && settings.planHistory && history.isNotEmpty()) {
                     item {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                stringResource(R.string.recent_routes),
-                                style = MaterialTheme.typography.titleSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.weight(1f),
-                            )
+                            com.vknxworks.lijnctrl.ui.components.CtrlLabel(stringResource(R.string.recent_routes), Modifier.weight(1f))
                             TextButton(onClick = { scope.launch { c.planHistory.clear() } }) { Text(stringResource(R.string.clear_history)) }
                         }
                     }
                     item {
-                        Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.fillMaxWidth()) {
+                        Surface(shape = com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Card, color = MaterialTheme.colorScheme.surface, border = com.vknxworks.lijnctrl.ui.theme.CardBorder, modifier = Modifier.fillMaxWidth()) {
                             Column(Modifier.padding(vertical = 4.dp)) {
                                 history.forEachIndexed { i, h ->
-                                    if (i > 0) HorizontalDivider(Modifier.padding(start = 52.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                                    if (i > 0) HorizontalDivider(Modifier.padding(start = 52.dp), color = com.vknxworks.lijnctrl.ui.theme.CtrlColors.Divider)
                                     HistoryRow(
                                         h,
                                         onClick = {
@@ -332,13 +327,8 @@ fun PlanScreen() {
                     if (results.any { j -> j.legs.any { it.path.size >= 2 } }) {
                         item {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    pluralStringResource(R.plurals.routes_found, results.size, results.size),
-                                    style = MaterialTheme.typography.titleSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.weight(1f),
-                                )
-                                OutlinedButton(onClick = { nav.navigate(com.vknxworks.lijnctrl.ui.nav.RouteMapRoute(0)) }, shape = CircleShape) {
+                                com.vknxworks.lijnctrl.ui.components.CtrlLabel(pluralStringResource(R.plurals.routes_found, results.size, results.size), Modifier.weight(1f))
+                                OutlinedButton(onClick = { nav.navigate(com.vknxworks.lijnctrl.ui.nav.RouteMapRoute(0)) }, shape = com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Control, border = com.vknxworks.lijnctrl.ui.theme.ControlBorder, colors = com.vknxworks.lijnctrl.ui.components.ctrlSecondaryButtonColors()) {
                                     Icon(Icons.Outlined.Map, null, Modifier.size(18.dp))
                                     Spacer(Modifier.width(6.dp))
                                     Text(stringResource(R.string.show_on_map))
@@ -359,6 +349,7 @@ fun PlanScreen() {
         val state = rememberDatePickerState(initialSelectedDateMillis = initial.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())
         DatePickerDialog(
             onDismissRequest = { pickDate = false },
+            modifier = com.vknxworks.lijnctrl.ui.theme.CtrlDialogModifier,
             confirmButton = {
                 TextButton(onClick = {
                     state.selectedDateMillis?.let { ms ->
@@ -378,6 +369,7 @@ fun PlanScreen() {
         val state = rememberTimePickerState(initialHour = now.hour, initialMinute = now.minute, is24Hour = true)
         AlertDialog(
             onDismissRequest = { pickTime = false },
+            modifier = com.vknxworks.lijnctrl.ui.theme.CtrlDialogModifier,
             confirmButton = {
                 TextButton(onClick = {
                     val day = (s.time ?: Instant.now()).atZone(BRUSSELS).toLocalDate()
@@ -409,8 +401,9 @@ private fun QuickPlace(
     var menu by remember { mutableStateOf(false) }
     Box(modifier) {
         Surface(
-            shape = MaterialTheme.shapes.large,
-            color = MaterialTheme.colorScheme.surfaceContainer,
+            shape = com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Card,
+            color = MaterialTheme.colorScheme.surface,
+            border = com.vknxworks.lijnctrl.ui.theme.CardBorder,
             modifier = Modifier.fillMaxWidth().combinedClickable(onClick = onGo, onLongClick = { if (place != null) menu = true }),
         ) {
             Row(Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -459,12 +452,12 @@ private fun HistoryRow(h: com.vknxworks.lijnctrl.data.plan.PlanHistoryEntry, onC
             )
             Text(
                 dayTime(Instant.ofEpochMilli(h.plannedAt)),
-                style = MaterialTheme.typography.bodySmall,
+                style = com.vknxworks.lijnctrl.ui.theme.CtrlType.DataSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         IconButton(onClick = onRemove) {
-            Icon(Icons.Filled.Close, stringResource(R.string.remove_from_history), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Icon(Icons.Outlined.Close, stringResource(R.string.remove_from_history), tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -488,7 +481,7 @@ private fun EndRow(icon: androidx.compose.ui.graphics.vector.ImageVector, label:
         Icon(icon, null, tint = MaterialTheme.colorScheme.primary)
         Spacer(Modifier.width(16.dp))
         Column(Modifier.weight(1f)) {
-            Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            com.vknxworks.lijnctrl.ui.components.CtrlLabel(label)
             Text(
                 point?.name ?: stringResource(R.string.choose_a_place),
                 style = MaterialTheme.typography.bodyLarge,
@@ -512,27 +505,27 @@ fun legBadgeInfo(leg: JourneyLeg, lines: Map<String, LineInfo>): LineInfo? {
 fun JourneyCard(j: Journey, onClick: (() -> Unit)?) {
     val lines = rememberLineInfo(j.legs.mapNotNull { it.line })
     Surface(
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        shape = com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Card,
+        color = MaterialTheme.colorScheme.surface,
+        border = com.vknxworks.lijnctrl.ui.theme.CardBorder,
         modifier = Modifier.fillMaxWidth().then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     "${dayTime(j.start)}  →  ${clockTime(j.end)}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    style = com.vknxworks.lijnctrl.ui.theme.CtrlType.Readout.copy(fontSize = 18.sp),
                     modifier = Modifier.weight(1f),
                 )
-                Text(durationText(j.minutes), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
-                if (onClick != null) Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(durationText(j.minutes), style = com.vknxworks.lijnctrl.ui.theme.CtrlType.Data.copy(fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.primary)
+                if (onClick != null) Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 j.legs.forEachIndexed { i, leg ->
-                    if (i > 0) Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, Modifier.size(18.dp).align(Alignment.CenterVertically), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (i > 0) Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, null, Modifier.size(18.dp).align(Alignment.CenterVertically), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     if (leg.isWalk) {
                         Row(Modifier.align(Alignment.CenterVertically), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.AutoMirrored.Filled.DirectionsWalk, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Icon(Icons.AutoMirrored.Outlined.DirectionsWalk, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text("${leg.minutes}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     } else {
