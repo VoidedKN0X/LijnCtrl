@@ -52,6 +52,7 @@ import com.vknxworks.lijnctrl.data.api.ApiLocation
 import com.vknxworks.lijnctrl.data.api.ApiSearchLineDirection
 import com.vknxworks.lijnctrl.data.api.StopSearchResponse
 import com.vknxworks.lijnctrl.data.towns.TownRepository
+import androidx.compose.material.icons.outlined.DirectionsBus
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Place
 import com.vknxworks.lijnctrl.data.api.ApiStop
@@ -84,6 +85,8 @@ private data class Results(
     val stops: List<ApiStop> = emptyList(),
     val totalStops: Int = 0,
     val places: List<ApiLocation> = emptyList(),
+    /** Why the place search failed, shown so a problem with it doesn't look like "nothing found". */
+    val placesError: String? = null,
     val stopsError: String? = null,
 )
 
@@ -118,7 +121,7 @@ fun SearchScreen() {
                 }
             }
             val stops = async { runCatching { searchStopsAnyOrder(c.api, q) } }
-            val places = async { runCatching { c.api.searchLocations(q, max = 8).locations }.getOrDefault(emptyList()) }
+            val places = async { runCatching { c.api.searchLocations(q, max = 8).locations } }
             val st = stops.await()
             Results(
                 numberMatch = number.await(),
@@ -128,7 +131,8 @@ fun SearchScreen() {
                 totalStops = st.getOrNull()?.total ?: 0,
                 stopsError = st.exceptionOrNull()?.friendlyMessage(),
                 // Stops already listed above aren't repeated as places; places without a position can't be used.
-                places = places.await().filter { it.coordinate != null && it.coordinate.latitude != 0.0 && it.stopNumber.isNullOrBlank() }.take(6),
+                places = places.await().getOrDefault(emptyList()).filter { it.coordinate != null || it.isStop }.take(6),
+                placesError = places.await().exceptionOrNull()?.friendlyMessage(),
             )
         }
         loading = false
@@ -169,7 +173,7 @@ fun SearchScreen() {
         val bottom = Modifier.padding(bottom = LocalBottomClearance.current)
         when {
             r == null -> MessageView(Icons.Outlined.Signpost, stringResource(R.string.search_intro_title), stringResource(R.string.search_intro_body), bottom)
-            r.numberMatch == null && r.towns.isEmpty() && r.lines.isEmpty() && r.stops.isEmpty() && r.places.isEmpty() -> {
+            r.numberMatch == null && r.towns.isEmpty() && r.lines.isEmpty() && r.stops.isEmpty() && r.places.isEmpty() && r.placesError == null -> {
                 if (r.stopsError != null) MessageView(Icons.Outlined.SearchOff, stringResource(R.string.search_failed), r.stopsError, bottom)
                 else MessageView(Icons.Outlined.SearchOff, stringResource(R.string.nothing_found), stringResource(R.string.try_fewer_or_different_words), bottom)
             }
@@ -181,10 +185,26 @@ fun SearchScreen() {
                     item { SectionTitle(stringResource(R.string.stop_number_match)) }
                     item(key = "number") { StopResultRow(s.entity, s.number, s.name ?: s.number, s.municipality, null) }
                 }
+                if (r.placesError != null) {
+                    item { SectionTitle(stringResource(R.string.places)) }
+                    item {
+                        Text(
+                            stringResource(R.string.place_search_failed_x, r.placesError),
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(horizontal = Gutter, vertical = 8.dp),
+                        )
+                    }
+                }
                 if (r.places.isNotEmpty()) {
                     item { SectionTitle(stringResource(R.string.places)) }
                     items(r.places, key = { "place-${it.coordinate?.latitude}_${it.coordinate?.longitude}_${it.name}_${it.street}_${it.houseNumber}" }) { p ->
                         PlaceRow(p) {
+                            val number = p.stopNumber
+                            if (p.isStop && number != null) {
+                                nav.stop(number.take(1), number, placeTitle(p))
+                                return@PlaceRow
+                            }
                             val coord = p.coordinate ?: return@PlaceRow
                             nav.place(coord.latitude, coord.longitude, placeTitle(p), placeDetail(p))
                         }
@@ -259,7 +279,11 @@ private fun PlaceRow(p: ApiLocation, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
-            if (p.houseNumber.isNullOrBlank() && !p.name.isNullOrBlank()) Icons.Outlined.Place else Icons.Outlined.Home,
+            when {
+                p.isStop -> Icons.Outlined.DirectionsBus
+                p.houseNumber.isNullOrBlank() && !p.name.isNullOrBlank() -> Icons.Outlined.Place
+                else -> Icons.Outlined.Home
+            },
             null,
             tint = MaterialTheme.colorScheme.primary,
         )
@@ -267,7 +291,7 @@ private fun PlaceRow(p: ApiLocation, onClick: () -> Unit) {
         Column(Modifier.weight(1f)) {
             Text(placeTitle(p), style = MaterialTheme.typography.bodyLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Text(
-                listOfNotNull(placeDetail(p), stringResource(R.string.stops_nearby_short)).joinToString(" · "),
+                listOfNotNull(placeDetail(p), if (p.isStop) null else stringResource(R.string.stops_nearby_short)).joinToString(" · "),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,

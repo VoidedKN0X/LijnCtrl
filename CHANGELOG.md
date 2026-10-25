@@ -4,6 +4,17 @@ What changed in each LijnCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## v0.3.1 (2026-10-25)
+
+### Fixed
+
+- **Addresses and places show up in Search again** (and when picking **From** or **To** on the Plan tab). De Lijn's place search sends the nearest stop's number along with an address. LijnCtrl took every result with a stop number for a stop and left it out of **Places and addresses**, so addresses, shops and landmarks never appeared, for example your own address or "Vandenborre Roeselare". Now only results De Lijn marks as a stop are treated as stops (with a bus icon, opening that stop straight away); everything else shows as a place with the stops around it.
+- **Places are read whatever shape De Lijn sends them in.** A place's name, town and position are now picked up from whichever fields De Lijn fills in, with the position either as two numbers or as text, so a different layout no longer makes places silently disappear.
+
+### Changed
+
+- **When the place search fails, Search says so** (with De Lijn's reason) under **Places and addresses**, instead of quietly showing nothing.
+
 ## v0.3.0 (2026-10-25)
 
 A route planner, and search that finds shops, addresses and landmarks the way De Lijn's own app does.

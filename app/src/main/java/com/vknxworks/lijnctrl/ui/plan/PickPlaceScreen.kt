@@ -113,7 +113,7 @@ fun PickPlaceScreen(forFrom: Boolean) {
             val st = async { runCatching { searchStopsAnyOrder(c.api, q).stops }.getOrDefault(emptyList()) }
             val pl = async { runCatching { c.api.searchLocations(q, max = 8).locations }.getOrDefault(emptyList()) }
             stops = st.await().take(25)
-            places = pl.await().filter { it.coordinate != null && it.coordinate.latitude != 0.0 && it.stopNumber.isNullOrBlank() }.take(8)
+            places = pl.await().filter { it.coordinate != null || it.isStop }.take(8)
         }
         loading = false
     }
@@ -151,8 +151,14 @@ fun PickPlaceScreen(forFrom: Boolean) {
                 } else {
                     items(places, key = { "place-${it.coordinate?.latitude}_${it.coordinate?.longitude}_${it.name}_${it.street}_${it.houseNumber}" }) { p ->
                         PickRow(if (p.houseNumber.isNullOrBlank() && !p.name.isNullOrBlank()) Icons.Outlined.Place else Icons.Outlined.Home, placeTitle(p), placeDetail(p)) {
-                            val coord = p.coordinate ?: return@PickRow
-                            choose(PlanPoint(placeTitle(p), coord.latitude, coord.longitude, detail = placeDetail(p)))
+                            val coord = p.coordinate
+                            val number = p.stopNumber
+                            when {
+                                coord != null -> choose(
+                                    PlanPoint(placeTitle(p), coord.latitude, coord.longitude, stop = if (p.isStop && number != null) StopKey(number.take(1), number) else null, detail = placeDetail(p)),
+                                )
+                                p.isStop && number != null -> chooseStop(StopKey(number.take(1), number), placeTitle(p), p.town)
+                            }
                         }
                     }
                     items(stops, key = { "stop-${it.entity}_${it.number}" }) { st ->

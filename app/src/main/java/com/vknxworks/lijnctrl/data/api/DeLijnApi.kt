@@ -5,6 +5,10 @@ import com.vknxworks.lijnctrl.str
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -98,8 +102,13 @@ class DeLijnApi(private val http: OkHttpClient, private val apiKey: () -> String
      * Coordinates are put right in case they're swapped, as they are in the stop search.
      */
     suspend fun searchLocations(query: String, max: Int = 10): LocationSearchResponse {
-        val r: LocationSearchResponse = get(SEARCH, "/zoek/locaties/${seg(query.trim())}", mapOf("maxAantalHits" to max))
-        return r.copy(locations = r.locations.map { l -> l.copy(coordinate = l.coordinate?.let(::fixSwapped)) })
+        // Read field by field: the published description doesn't say which field holds a landmark's name, and the
+        // coordinate comes as an object or as "lat,lon" text, so nothing here may depend on a guessed shape.
+        val raw = getRaw(SEARCH, "/zoek/locaties/${seg(query.trim())}", mapOf("maxAantalHits" to max), null)
+        val root = JSON.parseToJsonElement(raw) as? JsonObject ?: return LocationSearchResponse()
+        val list = (root["locaties"] as? JsonArray).orEmpty().mapNotNull { e -> (e as? JsonObject)?.let { o -> locationFrom(o) } }
+        val total = (root["aantalHits"] as? JsonPrimitive)?.contentOrNull?.toIntOrNull() ?: list.size
+        return LocationSearchResponse(total, list)
     }
 
     /** Line directions matching [query]: a number on the bus ("71", "T1") or a place on the route. */
@@ -216,6 +225,45 @@ class DeLijnApi(private val http: OkHttpClient, private val apiKey: () -> String
         /** In Flanders the latitude (~51) is always larger than the longitude (~2-6), so a swap is easy to spot. */
         fun fixSwapped(c: GeoCoordinate): GeoCoordinate =
             if (c.latitude < c.longitude) GeoCoordinate(latitude = c.longitude, longitude = c.latitude) else c
+
+        private val KNOWN_LOCATION_FIELDS = setOf(
+            "type", "subtype", "deelgemeentes", "hoofdgemeente", "straat", "haltenummer", "huisnummer",
+            "geoCoordinaat", "links", "entiteitnummer", "postcode", "gemeentenummer", "taal",
+        )
+
+        private fun text(o: JsonObject, vararg keys: String): String? =
+            keys.firstNotNullOfOrNull { k -> (o[k] as? JsonPrimitive)?.contentOrNull?.trim()?.takeIf { it.isNotEmpty() && it != "null" } }
+
+        private fun coordinateOf(e: JsonElement?): GeoCoordinate? = when (e) {
+            is JsonObject -> {
+                val lat = text(e, "latitude", "lat")?.toDoubleOrNull()
+                val lon = text(e, "longitude", "lon", "lng")?.toDoubleOrNull()
+                if (lat != null && lon != null) GeoCoordinate(lat, lon) else null
+            }
+            is JsonPrimitive -> e.contentOrNull?.split(',')?.mapNotNull { it.trim().toDoubleOrNull() }
+                ?.takeIf { it.size == 2 }?.let { GeoCoordinate(it[0], it[1]) }
+            else -> null
+        }
+
+        /** One result of the location search, whatever shape De Lijn sends it in. */
+        fun locationFrom(o: JsonObject): ApiLocation {
+            val name = text(o, "omschrijving", "naam", "naamHerkenningspunt", "herkenningspunt", "titel", "label", "beschrijving", "omschrijvingLang")
+                ?: o.entries.firstOrNull { (k, v) ->
+                    k !in KNOWN_LOCATION_FIELDS && v is JsonPrimitive && v.isString && v.content.length in 2..80 && v.content.any(Char::isLetter)
+                }?.let { (it.value as JsonPrimitive).content }
+            val coord = coordinateOf(o["geoCoordinaat"]) ?: coordinateOf(o["coordinaat"]) ?: coordinateOf(o)
+            return ApiLocation(
+                type = text(o, "type"),
+                subtype = text(o, "subtype"),
+                name = name,
+                street = text(o, "straat"),
+                houseNumber = text(o, "huisnummer"),
+                town = text(o, "hoofdgemeente"),
+                districtsRaw = o["deelgemeentes"],
+                stopNumber = text(o, "haltenummer"),
+                coordinate = coord?.takeIf { it.latitude != 0.0 && it.longitude != 0.0 }?.let(::fixSwapped),
+            )
+        }
 
         /** The entity number of a nearby stop, read from its links (…/haltes/{entity}/{stop}/…). */
         fun entityFromLinks(stop: ApiNearbyStop): String? = stop.links.firstNotNullOfOrNull { link ->

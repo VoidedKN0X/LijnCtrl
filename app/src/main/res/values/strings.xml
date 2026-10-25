@@ -263,6 +263,7 @@
     <!-- 0.3.0: places and the route planner -->
     <string name="places">Places and addresses</string>
     <string name="stops_nearby_short">stops nearby</string>
+    <string name="place_search_failed_x">Couldn\'t search places and addresses: %1$s</string>
     <string name="stops_near_place">Stops nearby, closest first</string>
     <string name="no_stops_near_place">No stops near this place</string>
     <string name="no_stops_near_place_body">There are no De Lijn stops within 2 km of this place.</string>

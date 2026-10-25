@@ -266,9 +266,14 @@ data class ApiLocation(
     val districts: List<String>
         get() = when (val d = districtsRaw) {
             is JsonArray -> d.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
-            is JsonPrimitive -> listOfNotNull(d.contentOrNull)
+            // Sometimes one text with commas: "Putkapel,Leuven".
+            is JsonPrimitive -> d.contentOrNull?.split(',').orEmpty()
             else -> emptyList()
-        }.filter { it.isNotBlank() }
+        }.map { it.trim() }.filter { it.isNotBlank() }
+
+    /** A stop or station result, which opens that stop instead of the stops around it. */
+    val isStop: Boolean
+        get() = !stopNumber.isNullOrBlank() && (type.equals("halte", true) || subtype.equals("halte", true))
 }
 
 /** The coordinate comes as {"latitude":…,"longitude":…} or, in some responses, as the text "51.03,3.70". */
