@@ -95,6 +95,38 @@ class LiveVehicles(private val http: OkHttpClient, private val key: () -> String
     suspend fun locate(target: LiveTarget): LiveFix? = locate(listOf(target)).first()
 
     /**
+     * Whether De Lijn answers a request for one vehicle with just that vehicle (a few hundred bytes) rather than
+     * the whole feed. Unknown (null) until the first [follow]; when it doesn't, following falls back to the feed.
+     */
+    @Volatile private var filterWorks: Boolean? = null
+
+    /** A vehicle can be asked for on its own, so it can be followed every [FAST_MS] without big downloads. */
+    val canFollowFast: Boolean get() = filterWorks != false
+
+    /** The latest position of one vehicle, asked for on its own when De Lijn allows that. */
+    suspend fun follow(vehicleId: String): LiveFix? {
+        val k = key()?.takeIf { it.isNotBlank() } ?: return null
+        if (filterWorks == false) return feed()?.let { find(it, vehicleId) }
+        val f = download(k, mapOf("vehicleid" to vehicleId))
+        if (f.entityCount > 10) {
+            // The filter was ignored and this is the whole feed: keep it as the cached copy and stop asking per vehicle.
+            filterWorks = false
+            mutex.withLock {
+                cached = f
+                cachedAt = System.currentTimeMillis()
+            }
+        } else {
+            filterWorks = true
+        }
+        return find(f, vehicleId)
+    }
+
+    private fun find(feed: RtFeed, vehicleId: String): LiveFix? =
+        feed.vehicles.firstOrNull { it.vehicleId == vehicleId }?.let {
+            LiveFix(it.vehicleId, it.latitude, it.longitude, it.bearing, it.speed, it.timestamp?.let(Instant::ofEpochSecond))
+        }
+
+    /**
      * The live trip that fits [t] best: the most of its stops expected within [TOLERANCE_S] of when the app
      * expects them, the closest times breaking ties. The trip number in the GTFS id (its third part) helps when
      * it matches.
@@ -129,8 +161,12 @@ class LiveVehicles(private val http: OkHttpClient, private val key: () -> String
     companion object {
         /** The feed is downloaded at most this often. */
         const val MIN_AGE_MS = 12_000L
-        /** How often screens ask for new positions. */
-        const val REFRESH_MS = 15_000L
+        /** How often screens ask for the whole feed (to find vehicles, or when one can't be asked for on its own). */
+        const val REFRESH_MS = 12_000L
+        /** How often a found vehicle is asked for on its own. Vehicles report about every 15 seconds. */
+        const val FAST_MS = 3_000L
+        /** How often the whole feed is checked again while following, in case the bus changed trips. */
+        const val RELOCATE_MS = 45_000L
         /** How far a live time may be from what the app expects and still count as the same trip. */
         const val TOLERANCE_S = 8 * 60L
         const val PORTAL_URL = "https://data.delijn.be/"

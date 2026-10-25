@@ -4,6 +4,15 @@ What changed in each LijnCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## v0.6.1 (2026-10-25)
+
+Live buses and trams that keep up and move smoothly.
+
+### Changed
+
+- **Live positions update much faster.** Once your bus or tram is found, LijnCtrl asks De Lijn for just that vehicle every 3 seconds (a tiny request) instead of reloading the whole live feed every 15 seconds, so a new position shows up within a few seconds of the vehicle reporting it. Buses and trams themselves report about every 15 seconds. If De Lijn doesn't allow asking for one vehicle, LijnCtrl notices straight away and falls back to the whole feed every 12 seconds. The whole feed is still checked every 45 seconds, in case the vehicle starts another trip.
+- **Buses and trams move smoothly on the map.** Instead of jumping from one report to the next, a vehicle now keeps moving along its route at the speed measured from its last reports, and glides to each new position when it arrives. It stops moving on after 15 seconds without a report, so it never drifts far from where it really is. The pointer turns with the route as the vehicle goes round corners.
+
 ## v0.6.0 (2026-10-25)
 
 See where your bus or tram is right now.

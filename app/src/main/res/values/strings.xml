@@ -344,9 +344,9 @@
     <string name="gtfs_key_replace">New GTFS Realtime key</string>
     <string name="gtfs_key_saved">A GTFS Realtime key is saved.</string>
     <string name="gtfs_key_remove">Remove the key</string>
-    <string name="gtfs_key_intro">With this key, LijnCtrl shows where your bus or tram is right now: on a trip\'s map (the map button on a trip page) and on the route planner\'s map, with its line number and which way it\'s heading, updated every 15 seconds.</string>
+    <string name="gtfs_key_intro">With this key, LijnCtrl shows where your bus or tram is right now: on a trip\'s map (the map button on a trip page) and on the route planner\'s map, with its line number and which way it\'s heading, updated every few seconds.</string>
     <string name="gtfs_key_steps">On data.delijn.be, open Products, subscribe to GTFS Realtime (free), and copy that subscription\'s primary key here. It\'s a different key from the one LijnCtrl already uses.</string>
-    <string name="gtfs_key_privacy">The key is only sent to De Lijn (api.delijn.be), the same as your main key, and is stored encrypted on this phone, sealed with your PIN while the app lock is on. While a map with live vehicles is open, LijnCtrl downloads De Lijn\'s live feed (about 250 KB) at most every 15 seconds.</string>
+    <string name="gtfs_key_privacy">The key is only sent to De Lijn (api.delijn.be), the same as your main key, and is stored encrypted on this phone, sealed with your PIN while the app lock is on. While a map with live vehicles is open, LijnCtrl downloads De Lijn\'s live feed (about 250 KB) to find the vehicle, then asks for just that vehicle every 3 seconds.</string>
     <string name="gtfs_key_refused">De Lijn refused this GTFS Realtime key. Check that it\'s the key of an active GTFS Realtime subscription.</string>
     <string name="gtfs_busy">De Lijn\'s live feed is busy. Trying again shortly.</string>
     <string name="gtfs_error_x">De Lijn\'s live feed answered with error %1$d</string>

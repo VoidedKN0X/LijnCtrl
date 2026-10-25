@@ -293,47 +293,112 @@ fun RouteMap(
         }
     }
     val wantsLive = interactive && targets.any { it != null }
-    LaunchedEffect(targets, gtfsKey, lines, dark) {
+    // One smooth track and one marker per ride being followed (keyed by the ride's position in the journey).
+    val tracks = remember(journey) { mutableMapOf<Int, BusTrack>() }
+    val markerByRide = remember(journey) { mutableMapOf<Int, Marker>() }
+    val iconBucket = remember(journey) { mutableMapOf<Int, Int>() }
+    fun clearBuses() {
+        map.overlays.removeAll(busMarkers)
+        busMarkers.clear()
+        markerByRide.clear()
+        tracks.clear()
+        iconBucket.clear()
+        map.invalidate()
+    }
+    fun styleOf(ride: Int): Triple<String, Int, Int> {
+        val leg = rideLegs[ride]
+        val info = legBadgeInfo(leg, lines)
+        val fill = rideColor(info, primary).toArgb()
+        val text = if (Color(fill).luminance() > 0.5f) android.graphics.Color.BLACK else android.graphics.Color.WHITE
+        return Triple(info?.publicNumber ?: leg.badge ?: "", fill, text)
+    }
+    fun applyFix(ride: Int, fix: com.vknxworks.lijnctrl.data.live.LiveFix, nowMs: Long) {
+        val track = tracks.getOrPut(ride) {
+            BusTrack(rideLegs[ride].path.filter { it.latitude != 0.0 }.takeIf { it.size >= 2 }?.let { PathGeometry(it) })
+        }
+        track.update(fix, nowMs)
+        if (ride !in markerByRide) {
+            val m = Marker(map).apply {
+                title = rideLegs[ride].badge
+                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+                setOnMarkerClickListener { _, _ -> true }
+            }
+            markerByRide[ride] = m
+            busMarkers += m
+            map.overlays.add(m)
+        }
+    }
+
+    // Finding the vehicles: the whole feed now and then; in between, each found vehicle on its own, every few seconds.
+    LaunchedEffect(targets, gtfsKey) {
+        clearBuses()
         if (!wantsLive || gtfsKey.isNullOrBlank()) {
-            map.overlays.removeAll(busMarkers)
-            busMarkers.clear()
             liveState = null
-            map.invalidate()
             return@LaunchedEffect
         }
         liveState = LiveState.Searching
+        var lastFull = 0L
         lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             while (true) {
+                val now = System.currentTimeMillis()
+                val followed = tracks.filterValues { it.vehicleId != null }
                 val wanted = targets.withIndex().filter { it.value != null }
-                runCatching { c.live.locate(wanted.map { it.value!! }) }
-                    .onSuccess { fixes ->
-                        map.overlays.removeAll(busMarkers)
-                        busMarkers.clear()
-                        fixes.forEachIndexed { j, fix ->
-                            fix ?: return@forEachIndexed
-                            val leg = rideLegs[wanted[j].index]
-                            val info = legBadgeInfo(leg, lines)
-                            val fill = rideColor(info, primary).toArgb()
-                            val textColor = if (Color(fill).luminance() > 0.5f) android.graphics.Color.BLACK else android.graphics.Color.WHITE
-                            busMarkers += Marker(map).apply {
-                                position = GeoPoint(fix.latitude, fix.longitude)
-                                title = leg.badge
-                                icon = busIcon(context, info?.publicNumber ?: leg.badge ?: "", fill, textColor, fix.bearing, density.density)
-                                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
-                                setOnMarkerClickListener { _, _ -> true }
-                            }
-                        }
-                        map.overlays.addAll(busMarkers)
-                        map.invalidate()
-                        val found = fixes.filterNotNull()
-                        liveState = if (found.isEmpty()) LiveState.NotFound else LiveState.Found(found.size, found.mapNotNull { it.reportedAt }.maxOrNull())
-                        if (focusOnBus && !focusedBus && !following && found.isNotEmpty()) {
-                            focusedBus = true
-                            map.controller.animateTo(GeoPoint(found.first().latitude, found.first().longitude), maxOf(map.zoomLevelDouble, 15.0), 600L)
-                        }
+                val sinceFull = now - lastFull
+                // The whole feed: to find vehicles not found yet (every 12 s), and every 45 s in case one changed trips.
+                val fast = c.live.canFollowFast && followed.isNotEmpty() &&
+                    sinceFull < com.vknxworks.lijnctrl.data.live.LiveVehicles.RELOCATE_MS &&
+                    (followed.size == wanted.size || sinceFull < com.vknxworks.lijnctrl.data.live.LiveVehicles.REFRESH_MS)
+                val result = runCatching {
+                    if (fast) {
+                        followed.forEach { (ride, track) -> c.live.follow(track.vehicleId!!)?.let { applyFix(ride, it, System.currentTimeMillis()) } }
+                    } else {
+                        val fixes = c.live.locate(wanted.map { it.value!! })
+                        lastFull = System.currentTimeMillis()
+                        fixes.forEachIndexed { j, fix -> fix?.let { applyFix(wanted[j].index, it, lastFull) } }
                     }
-                    .onFailure { e -> liveState = LiveState.Failed(e.friendlyMessage()) }
-                delay(com.vknxworks.lijnctrl.data.live.LiveVehicles.REFRESH_MS)
+                }
+                result.onFailure { e -> if (tracks.isEmpty()) liveState = LiveState.Failed(e.friendlyMessage()) }
+                result.onSuccess {
+                    val live = tracks.values.filter { it.hasFix }
+                    liveState = if (live.isEmpty()) LiveState.NotFound else LiveState.Found(live.size, live.mapNotNull { it.reportedAt }.maxOrNull())
+                    if (focusOnBus && !focusedBus && !following && live.isNotEmpty()) {
+                        focusedBus = true
+                        val (lat, lon, _) = live.first().position(System.currentTimeMillis())
+                        map.controller.animateTo(GeoPoint(lat, lon), maxOf(map.zoomLevelDouble, 15.0), 600L)
+                    }
+                }
+                val tracking = tracks.values.any { it.vehicleId != null }
+                delay(
+                    if (tracking && c.live.canFollowFast) com.vknxworks.lijnctrl.data.live.LiveVehicles.FAST_MS
+                    else com.vknxworks.lijnctrl.data.live.LiveVehicles.REFRESH_MS,
+                )
+            }
+        }
+    }
+
+    // Drawing the vehicles: about 12 times a second, so they move smoothly between reports.
+    LaunchedEffect(targets, gtfsKey, lines, dark) {
+        if (!wantsLive || gtfsKey.isNullOrBlank()) return@LaunchedEffect
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            while (true) {
+                val now = System.currentTimeMillis()
+                var moved = false
+                tracks.forEach { (ride, track) ->
+                    val m = markerByRide[ride] ?: return@forEach
+                    if (!track.hasFix) return@forEach
+                    val (lat, lon, heading) = track.position(now)
+                    m.position = GeoPoint(lat, lon)
+                    // The icon (with its heading pointer) is only redrawn when the heading changes noticeably.
+                    val bucket = heading?.let { Math.round(it / 15f) } ?: -1
+                    if (iconBucket[ride] != bucket) {
+                        iconBucket[ride] = bucket
+                        val (label, fill, text) = styleOf(ride)
+                        m.icon = busIcon(context, label, fill, text, heading, density.density)
+                    }
+                    moved = true
+                }
+                if (moved) map.invalidate()
+                delay(80)
             }
         }
     }
