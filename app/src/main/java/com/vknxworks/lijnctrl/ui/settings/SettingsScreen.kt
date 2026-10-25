@@ -16,7 +16,6 @@ import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Layers
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.NearMe
-import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material.icons.outlined.Password
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Timer
@@ -98,22 +97,13 @@ fun SettingsScreen() {
                 ) { v -> update { it.copy(nearbyRadius = v) } }
             }
 
-            Group(stringResource(R.string.tab_search), footer = stringResource(R.string.address_search_footer)) {
-                GroupSwitch(
-                    stringResource(R.string.address_search),
-                    stringResource(R.string.address_search_subtitle),
-                    s.addressSearch,
-                    icon = Icons.Outlined.Place,
-                ) { v -> update { it.copy(addressSearch = v) } }
-            }
-
             Group(stringResource(R.string.route_planner), footer = stringResource(R.string.route_planner_footer)) {
                 GroupSwitch(
                     stringResource(R.string.use_transitous),
                     stringResource(R.string.use_transitous_subtitle),
-                    s.transitousRoutes,
+                    s.useTransitous,
                     icon = Icons.Outlined.Directions,
-                ) { v -> update { it.copy(transitousRoutes = v) } }
+                ) { v -> update { it.copy(useTransitous = v) } }
                 GroupSwitch(
                     stringResource(R.string.route_history),
                     stringResource(R.string.route_history_subtitle),
@@ -124,7 +114,7 @@ fun SettingsScreen() {
                     // Turning it off also forgets what was kept.
                     if (!v) scope.launch { c.planHistory.clear() }
                 }
-                if (s.transitousRoutes) {
+                if (s.useTransitous) {
                     GroupRow(
                         stringResource(R.string.transitous_sources),
                         stringResource(R.string.transitous_sources_subtitle),

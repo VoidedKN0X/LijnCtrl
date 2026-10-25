@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -261,7 +262,17 @@ private fun StopCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 )
-                else -> departures.orEmpty().forEach { d ->
+                else -> departures.orEmpty().forEachIndexed { i, d ->
+                    if (i == 0) {
+                        NextDeparture(
+                            d,
+                            d.line?.let { lines[it.toString()] },
+                            now,
+                            settings.timeStyle,
+                            onClick = if (d.trip != null) ({ nav.trip(d.copy(stop = d.stop ?: stop.number)) }) else null,
+                        )
+                        return@forEachIndexed
+                    }
                     DepartureRow(
                         d,
                         d.line?.let { lines[it.toString()] },
@@ -290,6 +301,62 @@ private fun StopCard(
                 TextButton(onClick = { renaming = false; scope.launch { c.favourites.rename(stop.key, text) } }) { Text(stringResource(R.string.save)) }
             },
             dismissButton = { TextButton(onClick = { renaming = false }) { Text(stringResource(R.string.cancel)) } },
+        )
+    }
+}
+
+/**
+ * The next bus or tram from a saved stop, big enough to read at a glance: line, destination, when it leaves
+ * (live in the accent colour), and whether it's late, early or cancelled.
+ */
+@Composable
+private fun NextDeparture(
+    d: Departure,
+    info: com.vknxworks.lijnctrl.data.lines.LineInfo?,
+    now: Instant,
+    style: com.vknxworks.lijnctrl.data.settings.TimeStyle,
+    onClick: (() -> Unit)?,
+) {
+    val cs = MaterialTheme.colorScheme
+    Row(
+        Modifier.fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        com.vknxworks.lijnctrl.ui.components.LineBadge(info, d.line?.line, large = true, minWidth = 52.dp)
+        androidx.compose.foundation.layout.Spacer(Modifier.width(14.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                d.destination,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                textDecoration = if (d.cancelled) androidx.compose.ui.text.style.TextDecoration.LineThrough else null,
+            )
+            val delay = d.delayMinutes
+            val note = when {
+                d.cancelled -> stringResource(R.string.cancelled)
+                delay != null && delay > 0 -> stringResource(R.string.x_min_late, delay.toInt())
+                delay != null && delay < 0 -> stringResource(R.string.x_min_early, (-delay).toInt())
+                d.live -> stringResource(R.string.on_time)
+                else -> stringResource(R.string.timetable)
+            }
+            Text(
+                note,
+                style = MaterialTheme.typography.bodySmall,
+                color = when {
+                    d.cancelled || (delay ?: 0) >= 3 -> cs.error
+                    else -> cs.onSurfaceVariant
+                },
+            )
+        }
+        androidx.compose.foundation.layout.Spacer(Modifier.width(8.dp))
+        Text(
+            if (d.cancelled) "" else com.vknxworks.lijnctrl.ui.components.departureLabel(d, now, style),
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+            color = if (d.live) cs.primary else cs.onSurface,
         )
     }
 }

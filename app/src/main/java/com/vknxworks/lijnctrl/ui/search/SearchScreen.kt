@@ -47,6 +47,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vknxworks.lijnctrl.R
+import androidx.compose.material.icons.outlined.Directions
+import com.vknxworks.lijnctrl.data.plan.PlanPoint
 import com.vknxworks.lijnctrl.container
 import com.vknxworks.lijnctrl.data.places.PlaceKind
 import com.vknxworks.lijnctrl.data.places.PlaceResult
@@ -104,7 +106,7 @@ fun SearchScreen() {
     var loadingMore by remember { mutableStateOf(false) }
     val settings by c.settings.settings.collectAsStateWithLifecycle()
 
-    LaunchedEffect(query, settings.addressSearch) {
+    LaunchedEffect(query, settings.useTransitous) {
         val q = query.trim()
         if (q.isEmpty() || (q.length < 2 && !q.all(Char::isDigit))) {
             results = null
@@ -125,7 +127,7 @@ fun SearchScreen() {
             val stops = async { runCatching { searchStopsAnyOrder(c.api, q) } }
             // Addresses and places only when you've switched it on: the text then goes to Transitous.
             val places = async {
-                if (settings.addressSearch && q.length >= 3 && q.any(Char::isLetter)) runCatching { c.transitous.geocode(q, max = 6) }
+                if (settings.useTransitous && q.length >= 3 && q.any(Char::isLetter)) runCatching { c.transitous.geocode(q, max = 6) }
                 else Result.success(emptyList())
             }
             val st = stops.await()
@@ -184,8 +186,8 @@ fun SearchScreen() {
             r.numberMatch == null && r.towns.isEmpty() && r.lines.isEmpty() && r.stops.isEmpty() && r.places.isEmpty() && r.placesError == null -> {
                 Column(bottom) {
                     // Nothing among the stops: often an address or a shop, which address search can find.
-                    if (!settings.addressSearch && query.trim().length >= 3) {
-                        AddressSearchPrompt { scope.launch { c.settings.update { it.copy(addressSearch = true) } } }
+                    if (!settings.useTransitous && query.trim().length >= 3) {
+                        AddressSearchPrompt { scope.launch { c.settings.update { it.copy(useTransitous = true) } } }
                     }
                     if (r.stopsError != null) MessageView(Icons.Outlined.SearchOff, stringResource(R.string.search_failed), r.stopsError)
                     else MessageView(Icons.Outlined.SearchOff, stringResource(R.string.nothing_found), stringResource(R.string.try_fewer_or_different_words))
@@ -220,8 +222,8 @@ fun SearchScreen() {
                         }
                     }
                 }
-                if (!settings.addressSearch && query.trim().length >= 3) {
-                    item { AddressSearchPrompt { scope.launch { c.settings.update { it.copy(addressSearch = true) } } } }
+                if (!settings.useTransitous && query.trim().length >= 3) {
+                    item { AddressSearchPrompt { scope.launch { c.settings.update { it.copy(useTransitous = true) } } } }
                 }
                 if (r.towns.isNotEmpty()) {
                     item { SectionTitle(stringResource(R.string.towns)) }
@@ -275,8 +277,9 @@ internal suspend fun searchStopsAnyOrder(api: DeLijnApi, q: String): StopSearchR
 
 @Composable
 private fun PlaceRow(p: PlaceResult, onClick: () -> Unit) {
+    val nav = LocalNavigator.current
     Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = Gutter, vertical = 12.dp),
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(start = Gutter, end = 8.dp, top = 6.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(placeIcon(p.kind), null, tint = MaterialTheme.colorScheme.primary)
@@ -290,6 +293,11 @@ private fun PlaceRow(p: PlaceResult, onClick: () -> Unit) {
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+        }
+        Spacer(Modifier.width(8.dp))
+        // Straight to the route planner, with this place as the destination.
+        IconButton(onClick = { nav.routeTo(PlanPoint(p.name, p.latitude, p.longitude, stop = p.stop, detail = p.detail)) }) {
+            Icon(Icons.Outlined.Directions, stringResource(R.string.route_here), tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -422,6 +430,16 @@ fun StopResultRow(entity: String, number: String, name: String, municipality: St
             )
         }
         Spacer(Modifier.width(8.dp))
+        // Route here: the stop's position is looked up first (search results don't always carry it).
+        IconButton(onClick = {
+            scope.launch {
+                runCatching { c.api.stop(StopKey(entity, number)) }.getOrNull()?.coordinate
+                    ?.takeIf { it.latitude != 0.0 }
+                    ?.let { nav.routeTo(PlanPoint(name, it.latitude, it.longitude, stop = StopKey(entity, number), detail = municipality)) }
+            }
+        }) {
+            Icon(Icons.Outlined.Directions, stringResource(R.string.route_here), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
         IconButton(onClick = { scope.launch { c.favourites.toggle(SavedStop(entity, number, name, municipality)) } }) {
             Icon(
                 if (isSaved) Icons.Filled.Star else Icons.Outlined.StarBorder,

@@ -99,7 +99,7 @@ fun PickPlaceScreen(forFrom: Boolean) {
         }
     }
 
-    LaunchedEffect(query, settings.addressSearch) {
+    LaunchedEffect(query, settings.useTransitous) {
         val q = query.trim()
         if (q.length < 2) {
             stops = emptyList()
@@ -111,7 +111,7 @@ fun PickPlaceScreen(forFrom: Boolean) {
         coroutineScope {
             val st = async { runCatching { searchStopsAnyOrder(c.api, q).stops }.getOrDefault(emptyList()) }
             val pl = async {
-                if (settings.addressSearch && q.length >= 3) runCatching { c.transitous.geocode(q, max = 8) }.getOrDefault(emptyList())
+                if (settings.useTransitous && q.length >= 3) runCatching { c.transitous.geocode(q, max = 8) }.getOrDefault(emptyList())
                 else emptyList()
             }
             stops = st.await().take(25)
@@ -151,10 +151,10 @@ fun PickPlaceScreen(forFrom: Boolean) {
                         }
                     }
                 } else {
-                    if (!settings.addressSearch && query.trim().length >= 3) {
+                    if (!settings.useTransitous && query.trim().length >= 3) {
                         item {
                             com.vknxworks.lijnctrl.ui.search.AddressSearchPrompt {
-                                scope.launch { c.settings.update { it.copy(addressSearch = true) } }
+                                scope.launch { c.settings.update { it.copy(useTransitous = true) } }
                             }
                         }
                     }

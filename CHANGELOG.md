@@ -4,6 +4,22 @@ What changed in each LijnCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## v0.7.0 (2026-10-25)
+
+A simpler, cleaner LijnCtrl: fewer switches, one planner, setup on one screen, and the things you look at most made easier to read.
+
+### Changed
+
+- **One route planner: Transitous.** The planner that ran on the phone with De Lijn's data only (buses and trams, one change at most, timetable times) is gone. Routes are now always planned by Transitous, with every Belgian operator, trains included, more changes and live delays. Because Transitous receives the start and end of the routes you plan, the Plan tab asks once before using it, with a **Turn on Transitous** button.
+- **One switch for Transitous.** **Plan with Transitous** and **Search addresses and places** are now a single **Use Transitous** switch under **Settings > Route planner**, covering route planning and finding addresses and places. If you had either switch on, it stays on.
+- **Setup on one screen.** First start now asks for your De Lijn key and, on the same screen, whether to use Transitous and (optionally) your GTFS Realtime key for live buses, so everything is ready in one go. Both keys are checked with De Lijn before they're saved.
+- **Nearby is one map.** Nearby now opens on the map with the stops near you in a sheet at the bottom: pull it up for the full list, push it down to see more map. The map moves to where you are when it finds you, and the refresh button at the top looks again. There's no more switching between a list and a map.
+- **The next bus stands out on your saved stops.** On the Stops tab, the first departure of each saved stop is now shown big: the line badge, where it's going, whether it's on time, late, early or cancelled, and the minutes (or time) to go in large type, in the accent colour when it's live. Later departures stay listed below it, smaller.
+
+### New
+
+- **Route here from search results.** Every stop and place in Search now has a **Route here** button that opens the Plan tab with it as the destination (and your location as the start, if you hadn't picked one), so you don't need to open the stop first.
+
 ## v0.6.1 (2026-10-25)
 
 Live buses and trams that keep up and move smoothly.

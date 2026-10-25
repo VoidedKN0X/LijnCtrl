@@ -6,8 +6,6 @@ import com.vknxworks.lijnctrl.data.auth.ApiKeyStore
 import com.vknxworks.lijnctrl.data.departures.DepartureRepository
 import com.vknxworks.lijnctrl.data.favourites.FavouritesRepository
 import com.vknxworks.lijnctrl.data.towns.TownRepository
-import com.vknxworks.lijnctrl.data.plan.BuiltInPlanner
-import com.vknxworks.lijnctrl.data.plan.PlanRepository
 import com.vknxworks.lijnctrl.data.plan.TransitousPlanner
 import com.vknxworks.lijnctrl.data.lines.LineRepository
 import com.vknxworks.lijnctrl.data.lock.LockVault
@@ -64,9 +62,8 @@ class AppContainer(val context: Context) {
     val lines = LineRepository(context, api)
     val departures = DepartureRepository(api)
     val towns = TownRepository(api)
-    /** Only contacted when the user turns on Transitous routes or address search. */
+    /** Route planning and address search; only contacted once the user turns on Transitous. */
     val transitous = TransitousPlanner()
-    val planner = PlanRepository(BuiltInPlanner(api, departures, lines), transitous)
     val favourites = FavouritesRepository(context, appScope)
     val planHistory = com.vknxworks.lijnctrl.data.plan.PlanHistoryRepository(context, appScope)
 

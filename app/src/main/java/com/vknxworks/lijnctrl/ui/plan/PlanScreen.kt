@@ -126,7 +126,7 @@ fun PlanScreen() {
                     return@launch
                 }
                 val time = if (s.mode == TimeMode.NOW) Instant.now() else s.time ?: Instant.now()
-                s.results = c.planner.plan(a, b, time, s.mode == TimeMode.ARRIVE_BY, settings.transitousRoutes)
+                s.results = c.transitous.plan(a, b, time, s.mode == TimeMode.ARRIVE_BY)
                 // Remembers from and to as you chose them ("my location" stays "my location", not where you were).
                 if (settings.planHistory) runCatching { c.planHistory.add(from, to) }
             } catch (e: kotlin.coroutines.cancellation.CancellationException) {
@@ -215,22 +215,40 @@ fun PlanScreen() {
                     }
                 }
             }
-            item {
-                PillButton(
-                    if (s.planning) stringResource(R.string.planning) else stringResource(R.string.plan_route),
-                    onClick = ::planChecked,
-                    enabled = s.from != null && s.to != null && !s.planning,
-                    icon = Icons.Outlined.Directions,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-            item {
-                Text(
-                    stringResource(if (settings.transitousRoutes) R.string.planner_transitous_note else R.string.planner_builtin_note),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.clickable { nav.navigate(SettingsRoute) },
-                )
+            if (!settings.useTransitous) {
+                // Routes come from Transitous: asked once, here or at setup, because it receives where you're going.
+                item {
+                    Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.fillMaxWidth()) {
+                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(stringResource(R.string.transitous_prompt_title), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                            Text(stringResource(R.string.transitous_prompt_body), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                            PillButton(
+                                stringResource(R.string.turn_on_transitous),
+                                onClick = { scope.launch { c.settings.update { it.copy(useTransitous = true) } } },
+                                icon = Icons.Outlined.Directions,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                    }
+                }
+            } else {
+                item {
+                    PillButton(
+                        if (s.planning) stringResource(R.string.planning) else stringResource(R.string.plan_route),
+                        onClick = ::planChecked,
+                        enabled = s.from != null && s.to != null && !s.planning,
+                        icon = Icons.Outlined.Directions,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                item {
+                    Text(
+                        stringResource(R.string.planner_transitous_note),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.clickable { nav.navigate(SettingsRoute) },
+                    )
+                }
             }
             val results = s.results
             val err = s.error
@@ -272,7 +290,7 @@ fun PlanScreen() {
                     MessageView(
                         Icons.Outlined.Directions,
                         stringResource(R.string.no_routes_found),
-                        stringResource(if (settings.transitousRoutes) R.string.no_routes_found_body_transitous else R.string.no_routes_found_body),
+                        stringResource(R.string.no_routes_found_body_transitous),
                         Modifier.height(300.dp),
                     )
                 }

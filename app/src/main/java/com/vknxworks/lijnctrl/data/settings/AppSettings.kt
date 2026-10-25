@@ -56,10 +56,11 @@ data class AppSettings(
     val messageLanguage: MessageLanguage = MessageLanguage.ENGLISH,
     /** Distance for Nearby, the list and the map's "Search this area". */
     val nearbyRadius: NearbyRadius = NearbyRadius.M1000,
-    /** Plan routes with Transitous (every operator, live) instead of on the phone (De Lijn only). Off by default. */
-    val transitousRoutes: Boolean = false,
-    /** Search addresses, streets, shops and landmarks with Transitous's geocoder. Off by default. */
-    val addressSearch: Boolean = false,
+    /**
+     * Use Transitous for route planning and for address and place search. What you plan and type for those goes
+     * to transitous.org; off until you turn it on (at setup or in Settings).
+     */
+    val useTransitous: Boolean = false,
     /** Remember the routes you plan (from and to only), on this phone. On by default. */
     val planHistory: Boolean = true,
     val lockTimeout: LockTimeout = LockTimeout.IMMEDIATELY,
@@ -76,8 +77,10 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val timeStyle = stringPreferencesKey("time_style")
         val language = stringPreferencesKey("message_language")
         val radius = stringPreferencesKey("nearby_radius")
-        val transitous = booleanPreferencesKey("transitous_routes")
-        val addressSearch = booleanPreferencesKey("address_search")
+        val useTransitous = booleanPreferencesKey("use_transitous")
+        // Before 0.7.0 these were two separate switches; either one being on carries over.
+        val oldTransitous = booleanPreferencesKey("transitous_routes")
+        val oldAddressSearch = booleanPreferencesKey("address_search")
         val planHistory = booleanPreferencesKey("plan_history_on")
         val lockTimeout = stringPreferencesKey("lock_timeout")
         val hideScreenshots = booleanPreferencesKey("hide_screenshots")
@@ -94,8 +97,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         timeStyle = enumOr(this[K.timeStyle], TimeStyle.MINUTES),
         messageLanguage = enumOr(this[K.language], MessageLanguage.ENGLISH),
         nearbyRadius = enumOr(this[K.radius], NearbyRadius.M1000),
-        transitousRoutes = this[K.transitous] ?: false,
-        addressSearch = this[K.addressSearch] ?: false,
+        useTransitous = this[K.useTransitous] ?: ((this[K.oldTransitous] ?: false) || (this[K.oldAddressSearch] ?: false)),
         planHistory = this[K.planHistory] ?: true,
         lockTimeout = enumOr(this[K.lockTimeout], LockTimeout.IMMEDIATELY),
         hideScreenshots = this[K.hideScreenshots] ?: false,
@@ -110,8 +112,9 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
             p[K.timeStyle] = s.timeStyle.name
             p[K.language] = s.messageLanguage.name
             p[K.radius] = s.nearbyRadius.name
-            p[K.transitous] = s.transitousRoutes
-            p[K.addressSearch] = s.addressSearch
+            p[K.useTransitous] = s.useTransitous
+            p.remove(K.oldTransitous)
+            p.remove(K.oldAddressSearch)
             p[K.planHistory] = s.planHistory
             p[K.lockTimeout] = s.lockTimeout.name
             p[K.hideScreenshots] = s.hideScreenshots

@@ -91,7 +91,7 @@ internal fun configureOsm(context: Context) {
  * enough; tap one to open it. Map tiles come from tile.openstreetmap.org; stops still come from De Lijn.
  */
 @Composable
-fun StopMap(start: GeoPoint?, modifier: Modifier = Modifier) {
+fun StopMap(start: GeoPoint?, modifier: Modifier = Modifier, focus: GeoPoint? = null) {
     val context = LocalContext.current
     val c = context.container
     val nav = LocalNavigator.current
@@ -119,6 +119,11 @@ fun StopMap(start: GeoPoint?, modifier: Modifier = Modifier) {
             controller.setZoom(if (center != null) MapMemory.zoom.coerceAtLeast(MIN_STOP_ZOOM) else 9.0)
             controller.setCenter(center ?: FLANDERS)
         }
+    }
+
+    // Moves to where you are each time Nearby finds you.
+    LaunchedEffect(focus) {
+        focus?.let { map.controller.animateTo(it, maxOf(map.zoomLevelDouble, 16.0), 600L) }
     }
 
     // Light map tiles turned dark in a dark theme, so the map doesn't glare at night.

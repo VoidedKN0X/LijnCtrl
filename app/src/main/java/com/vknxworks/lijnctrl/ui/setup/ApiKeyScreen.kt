@@ -85,6 +85,10 @@ fun ApiKeyScreen(firstRun: Boolean, unreadable: Boolean, onDone: () -> Unit, onC
     var visible by rememberSaveable { mutableStateOf(false) }
     var checking by rememberSaveable { mutableStateOf(false) }
     var error by rememberSaveable { mutableStateOf<String?>(null) }
+    // First start only: the optional live-bus key and whether to use Transitous, so setup is one screen.
+    var gtfs by rememberSaveable { mutableStateOf("") }
+    var gtfsError by rememberSaveable { mutableStateOf<String?>(null) }
+    var useTransitous by rememberSaveable { mutableStateOf(true) }
 
     fun openPortal() {
         runCatching {
@@ -116,7 +120,16 @@ fun ApiKeyScreen(firstRun: Boolean, unreadable: Boolean, onDone: () -> Unit, onC
                 coreErr == null && searchErr != null -> str(R.string.key_missing_search, searchErr.friendlyMessage())
                 else -> (coreErr ?: searchErr)!!.friendlyMessage()
             }
+            if (error == null && firstRun && gtfs.isNotBlank()) {
+                checking = true
+                gtfsError = runCatching { c.live.check(gtfs) }.exceptionOrNull()?.friendlyMessage()
+                checking = false
+                if (gtfsError != null) return@launch
+                c.gtfsKey.set(gtfs)
+                gtfs = ""
+            }
             if (error == null) {
+                if (firstRun) c.settings.update { it.copy(useTransitous = useTransitous) }
                 c.apiKey.set(k)
                 key = ""
                 onDone()
@@ -193,6 +206,39 @@ fun ApiKeyScreen(firstRun: Boolean, unreadable: Boolean, onDone: () -> Unit, onC
                         supportingText = { Text(error ?: stringResource(R.string.key_stored_note)) },
                         modifier = Modifier.fillMaxWidth(),
                     )
+                    if (firstRun) {
+                        Spacer(Modifier.height(8.dp))
+                        Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.fillMaxWidth()) {
+                            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Text(stringResource(R.string.setup_optional_title), style = MaterialTheme.typography.titleMedium)
+                                // Transitous: route planning and address search.
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text(stringResource(R.string.use_transitous), style = MaterialTheme.typography.bodyLarge)
+                                        Text(stringResource(R.string.setup_transitous_body), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                    Spacer(Modifier.size(12.dp))
+                                    androidx.compose.material3.Switch(checked = useTransitous, onCheckedChange = { useTransitous = it }, enabled = !checking)
+                                }
+                                // Live buses: the second, optional key.
+                                Text(stringResource(R.string.live_vehicles), style = MaterialTheme.typography.bodyLarge)
+                                Text(stringResource(R.string.setup_gtfs_body), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                OutlinedTextField(
+                                    value = gtfs,
+                                    onValueChange = { gtfs = it.trim(); gtfsError = null },
+                                    label = { Text(stringResource(R.string.gtfs_key_optional)) },
+                                    singleLine = true,
+                                    enabled = !checking,
+                                    isError = gtfsError != null,
+                                    visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false, imeAction = ImeAction.Done),
+                                    keyboardActions = KeyboardActions(onDone = { check() }),
+                                    supportingText = { gtfsError?.let { Text(it) } },
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
+                        }
+                    }
                     Spacer(Modifier.height(16.dp))
                     PillButton(
                         if (checking) stringResource(R.string.checking_key) else stringResource(R.string.check_and_save),
