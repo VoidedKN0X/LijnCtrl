@@ -58,6 +58,33 @@
             android:exported="false"
             android:foregroundServiceType="dataSync" />
 
+        <!-- "Next departures" home-screen widget (Glance). Refreshed by WorkManager every 15 minutes and by its
+             refresh button, never by the launcher (updatePeriodMillis is 0). -->
+        <receiver
+            android:name=".widget.DepartureWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/departure_widget_info" />
+        </receiver>
+        <!-- Picks the widget's stop. Only the launcher can start it with a widget it's adding (Android checks that
+             the widget id belongs to the caller); it's behind the app lock like the app. -->
+        <activity
+            android:name=".widget.DepartureWidgetConfigActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|keyboard|navigation|density|uiMode"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.LijnCtrl">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
         <!-- No downloadable emoji font: androidx.emoji2 would look one up from a font provider on start.
              Emoji use the phone's own font. -->
         <provider

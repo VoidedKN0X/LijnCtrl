@@ -4,6 +4,28 @@ What changed in each LijnCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## v0.15.0 (2026-10-25)
+
+A "Next departures" widget for your home screen.
+
+### New
+
+- **Next departures widget.** Long-press your home screen, choose **Widgets**, and drag **Next departures** from LijnCtrl onto it. Pick one of your saved stops and, if you like, only the lines you take there (or **All lines**). The widget shows the stop's number and name and its next five buses and trams, each with its line badge in De Lijn's colours, where it's going, and the time: in the accent colour with a small square when it's live, with "+2 min late", "On time" or "Timetable" underneath. Cancelled trips say **CANCELLED** with the timetable time crossed out, and a departure hit by a disruption or diversion at that stop says so in red.
+- **Clock times on the widget.** The widget shows "14:32" rather than "4 min", because a home-screen widget isn't redrawn every minute and a countdown would soon be wrong. Departures that already left are dropped at the next redraw.
+- **Refreshing.** The widget refreshes every 15 minutes while you have a network connection (the shortest interval Android allows for background work, and easy on your De Lijn API key's limits), and straight away when you tap its refresh button (taps less than 20 seconds apart count once). Several widgets for the same stop share one request. When a refresh fails, the last departures stay up and the error is shown when there's nothing left to show.
+- **Tap to open.** Tapping the stop's name or a departure opens that stop's page in LijnCtrl (through the app lock, when it's on). On launchers that offer it, the widget's settings let you pick another stop or other lines.
+- **Light and dark.** The widget uses the Ctrl / Signal look and follows your phone's dark/light setting: a white or dark grey card with a thin border and 22dp corners.
+
+### Security
+
+- **Nothing on the widget while LijnCtrl is locked.** With the app lock on, your API key is sealed with your PIN whenever the app is locked, so the widget can't fetch departures. It then shows "LijnCtrl is locked" instead of your stop, without the last departures either, and fills in again (with a fresh refresh) as soon as you unlock the app.
+- **The widget's stop picker** is behind the app lock like the app, and follows **Hide in screenshots** and **Hide in recent apps**. Only the launcher can open it for a widget it's adding.
+- **Widget taps only work from LijnCtrl's own widget**, using the same private secret as the Go home / Go to work shortcuts, so other apps can't open pages in LijnCtrl through it.
+
+### Changed
+
+- **New library:** Jetpack Glance (Apache 2.0) for the widget. It's part of AndroidX and has nothing to do with Google services; LijnCtrl still never contacts Google.
+
 ## v0.14.0 (2026-10-25)
 
 Go home and Go to work from the app icon: two launcher shortcuts that plan the route from where you are, straight away.

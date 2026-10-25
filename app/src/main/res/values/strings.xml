@@ -436,4 +436,22 @@
     <string name="shortcut_go_to_work_long">Route to work from here</string>
     <string name="add_to_home_screen">Add to home screen</string>
     <string name="shortcut_pin_failed">Your launcher didn\'t accept the shortcut</string>
+
+    <!-- Next departures widget (0.15.0) -->
+    <string name="widget_name">Next departures</string>
+    <string name="widget_description">The next buses and trams at one of your saved stops</string>
+    <string name="widget_pick_stop">Tap to choose a stop</string>
+    <string name="widget_updated_x">Updated %1$s</string>
+    <string name="widget_disruption">Disruption at this stop</string>
+    <string name="widget_locked">LijnCtrl is locked</string>
+    <string name="widget_locked_body">Open LijnCtrl and unlock it to see departures</string>
+    <string name="widget_no_key">No API key yet</string>
+    <string name="widget_no_key_body">Open LijnCtrl to add your De Lijn API key</string>
+    <string name="widget_config_title">Next departures</string>
+    <string name="widget_config_subtitle">Choose one of your saved stops. The widget shows its next five departures and refreshes every 15 minutes, or when you tap its refresh button.</string>
+    <string name="widget_config_no_stops">Save a stop in LijnCtrl first (tap its star), then add the widget again.</string>
+    <string name="widget_config_stop">Stop</string>
+    <string name="widget_config_lines">Lines</string>
+    <string name="widget_config_lines_body">Show every line, or only the ones you pick.</string>
+    <string name="widget_config_save">Add widget</string>
 </resources>

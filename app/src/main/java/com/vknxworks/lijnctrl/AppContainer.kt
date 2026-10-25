@@ -14,6 +14,7 @@ import com.vknxworks.lijnctrl.ui.lock.AppLock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -102,12 +103,18 @@ class AppContainer(val context: Context) {
         vault.close()
         apiKey.onLocked()
         gtfsKey.onLocked()
+        // The departures widgets stop showing your stop while the key is sealed.
+        if (vault.enabled) appScope.launch { runCatching { com.vknxworks.lijnctrl.widget.Widgets.redraw(context) } }
     }
 
     fun onUnlocked() {
         AppLock.markUnlocked()
         apiKey.onUnlocked()
         gtfsKey.onUnlocked()
+        // Unlocked: the departures widgets can show (and fetch) departures again.
+        if (vault.enabled) appScope.launch {
+            runCatching { if (com.vknxworks.lijnctrl.widget.Widgets.placed(context).isNotEmpty()) com.vknxworks.lijnctrl.widget.Widgets.refreshNow(context) }
+        }
     }
 
     init {

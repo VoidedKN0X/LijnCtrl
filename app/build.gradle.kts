@@ -22,8 +22,8 @@ android {
         minSdk = 33
         targetSdk = 36
         // Bump both to publish a new release (see CHANGELOG.md).
-        versionCode = 17
-        versionName = "0.14.0"
+        versionCode = 18
+        versionName = "0.15.0"
         // 64-bit ARM phones only (arm64-v8a), like every Ctrl app.
         ndk { abiFilters += listOf("arm64-v8a") }
     }
@@ -123,4 +123,6 @@ dependencies {
     // OpenStreetMap map for Nearby (no Google services). Map tiles come from tile.openstreetmap.org.
     implementation(libs.osmdroid)
     implementation(libs.androidx.work.runtime)
+    // Home-screen widget (Jetpack Glance, Apache 2.0; no Google services).
+    implementation(libs.glance.appwidget)
 }
