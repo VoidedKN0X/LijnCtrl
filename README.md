@@ -26,6 +26,7 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Alerts**: a notification when your bus is a few minutes from your stop, and (optionally) when De Lijn reports a new disruption on your saved stops or lines
 - **Search** for stops by name (in any word order) or the number on their sign, lines by number, every stop in a town, and (if you switch it on) shops, addresses and landmarks with the stops around them
 - **Nearby** stops as a list or on an OpenStreetMap map
+- **Disruptions on the departure board**: a departure hit by a disruption or diversion shows a warning you can tap open for the full message, and trip pages list the disruptions on their line
 - **Disruption messages** in English, Dutch, French or German
 - **Rename** saved stops ("Home", "Work") and put them in your own order
 - **Minutes to go or clock times**, always in Belgian time

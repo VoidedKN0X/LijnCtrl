@@ -61,6 +61,8 @@ class AppContainer(val context: Context) {
     val live = com.vknxworks.lijnctrl.data.live.LiveVehicles(http) { gtfsKey.key.value }
     val lines = LineRepository(context, api)
     val departures = DepartureRepository(api)
+    /** Disruptions and diversions per stop and line direction, cached for a few minutes. */
+    val disruptions = com.vknxworks.lijnctrl.data.disruptions.DisruptionRepository(api)
     val towns = TownRepository(api)
     /** Route planning and address search; only contacted once the user turns on Transitous. */
     val transitous = TransitousPlanner()

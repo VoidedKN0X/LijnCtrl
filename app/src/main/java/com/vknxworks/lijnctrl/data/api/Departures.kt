@@ -91,6 +91,9 @@ fun ApiStopSchedule.departuresByStop(): Map<String, List<Departure>> =
 
 fun ApiStopSchedule.departures(): List<Departure> = departuresByStop().values.flatten().sortedBy { it.time }
 
+/** One line direction a disruption is about; [direction] (HEEN / TERUG) can be missing. */
+data class DisruptionLine(val line: LineKey, val direction: String?)
+
 /** A disruption or diversion in the language the user picked, falling back to Dutch. */
 data class Disruption(
     val title: String,
@@ -98,7 +101,27 @@ data class Disruption(
     val start: Instant?,
     val end: Instant?,
     val lines: List<LineKey>,
-)
+    /** The line directions De Lijn says it affects; empty means the whole stop (or it didn't say). */
+    val directions: List<DisruptionLine> = emptyList(),
+) {
+    /** Same message, whichever list (stop, line, storing or omleiding) it came from. */
+    val identity: String get() = "${title.lowercase()}|${text.lowercase()}"
+
+    /** It's about [line] (in [direction], when both sides say which way). */
+    fun affectsLine(line: LineKey, direction: String?): Boolean = directions.any {
+        it.line == line && (it.direction.isNullOrBlank() || direction.isNullOrBlank() || it.direction.equals(direction, ignoreCase = true))
+    }
+
+    /**
+     * A stop disruption affects a departure from that stop when it names the departure's line (and direction),
+     * or when it names no lines at all (then it's about the stop itself, so every bus or tram there).
+     */
+    fun affects(d: Departure): Boolean {
+        if (directions.isEmpty()) return lines.isEmpty()
+        val line = d.line ?: return false
+        return affectsLine(line, d.direction)
+    }
+}
 
 fun ApiDisruption.localized(language: String): Disruption {
     val title = titles[language]?.takeIf { it.isNotBlank() } ?: title ?: titles["nederlands"].orEmpty()
@@ -109,5 +132,6 @@ fun ApiDisruption.localized(language: String): Disruption {
         start = parseLocalTime(period?.start),
         end = parseLocalTime(period?.end),
         lines = lineDirections.map { LineKey(it.entity, it.line) }.distinct(),
+        directions = lineDirections.map { DisruptionLine(LineKey(it.entity, it.line), it.direction) }.distinct(),
     )
 }

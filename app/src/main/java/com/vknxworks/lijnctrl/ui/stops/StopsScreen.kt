@@ -92,6 +92,7 @@ fun StopsScreen() {
     var errors by remember { mutableStateOf<Map<StopKey, String>>(emptyMap()) }
     var updated by remember { mutableStateOf<Instant?>(null) }
     var refreshing by remember { mutableStateOf(false) }
+    var affecting by remember { mutableStateOf<Map<String, List<com.vknxworks.lijnctrl.data.api.Disruption>>>(emptyMap()) }
 
     suspend fun load() {
         val stops = saved.map { it.key }
@@ -138,6 +139,14 @@ fun StopsScreen() {
         departures = result
         errors = failed
         updated = Instant.now()
+        // Disruptions on the departures shown: the stop's own list, plus the line directions of what's shown
+        // (cached for 10 minutes, so this doesn't add calls on every 30-second refresh).
+        val language = c.settings.settings.value.messageLanguage.key
+        affecting = coroutineScope {
+            result.map { (k, list) ->
+                async { runCatching { c.disruptions.forDepartures(k, list.take(PER_STOP), language, withLines = true) }.getOrDefault(emptyMap<String, List<com.vknxworks.lijnctrl.data.api.Disruption>>()) }
+            }.awaitAll()
+        }.fold(emptyMap<String, List<com.vknxworks.lijnctrl.data.api.Disruption>>()) { acc, m -> acc + m }
     }
 
     val lifecycle = LocalLifecycleOwner.current.lifecycle
@@ -184,6 +193,7 @@ fun StopsScreen() {
                         departures = departures[stop.key]?.take(PER_STOP),
                         error = errors[stop.key],
                         lines = lines,
+                        affecting = affecting,
                         now = now,
                         index = saved.indexOf(stop),
                         count = saved.size,
@@ -202,6 +212,7 @@ private fun StopCard(
     departures: List<Departure>?,
     error: String?,
     lines: Map<String, com.vknxworks.lijnctrl.data.lines.LineInfo>,
+    affecting: Map<String, List<com.vknxworks.lijnctrl.data.api.Disruption>>,
     now: Instant,
     index: Int,
     count: Int,
@@ -290,6 +301,7 @@ private fun StopCard(
                     now,
                     settings.timeStyle,
                     accent = index == 0,
+                    disruptions = affecting[first.matchKey].orEmpty(),
                     onClick = if (first.trip != null) ({ nav.trip(first.copy(stop = first.stop ?: stop.number)) }) else null,
                 )
                 if (list.size > 1) {
@@ -302,6 +314,7 @@ private fun StopCard(
                                 now,
                                 settings.timeStyle,
                                 compact = true,
+                                disruptions = affecting[d.matchKey].orEmpty(),
                                 onClick = if (d.trip != null) ({ nav.trip(d.copy(stop = d.stop ?: stop.number)) }) else null,
                             )
                         }

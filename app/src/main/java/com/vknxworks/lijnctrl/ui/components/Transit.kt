@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ExpandLess
+import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -25,6 +27,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -158,41 +163,158 @@ fun DepartureRow(
     style: TimeStyle,
     modifier: Modifier = Modifier,
     compact: Boolean = false,
+    /** Disruptions and diversions that affect this departure: a red marker under the destination, tap for details. */
+    disruptions: List<Disruption> = emptyList(),
     onClick: (() -> Unit)? = null,
 ) {
     val cs = MaterialTheme.colorScheme
-    Row(
-        modifier.fillMaxWidth()
-            .heightIn(min = if (compact) 52.dp else 60.dp)
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(horizontal = 16.dp, vertical = if (compact) 6.dp else 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        LineBadge(info, d.line?.line, minWidth = 40.dp)
-        Spacer(Modifier.width(14.dp))
-        Column(Modifier.weight(1f)) {
-            Text(
-                d.destination.ifBlank { stringResource(R.string.unknown_destination) },
-                style = if (compact) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                textDecoration = if (d.cancelled) TextDecoration.LineThrough else null,
-                color = if (d.cancelled) cs.onSurfaceVariant else cs.onSurface,
-            )
-            if (!compact && d.vias.isNotEmpty()) {
+    var expanded by rememberSaveable(d.matchKey) { mutableStateOf(false) }
+    Column(modifier.fillMaxWidth()) {
+        Row(
+            Modifier.fillMaxWidth()
+                .heightIn(min = if (compact) 52.dp else 60.dp)
+                .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+                .padding(horizontal = 16.dp, vertical = if (compact) 6.dp else 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            LineBadge(info, d.line?.line, minWidth = 40.dp)
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
                 Text(
-                    stringResource(R.string.via_x, d.vias.joinToString(", ")),
-                    style = CtrlType.DataSmall,
-                    color = cs.onSurfaceVariant,
+                    d.destination.ifBlank { stringResource(R.string.unknown_destination) },
+                    style = if (compact) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    textDecoration = if (d.cancelled) TextDecoration.LineThrough else null,
+                    color = if (d.cancelled) cs.onSurfaceVariant else cs.onSurface,
                 )
+                if (!compact && d.vias.isNotEmpty()) {
+                    Text(
+                        stringResource(R.string.via_x, d.vias.joinToString(", ")),
+                        style = CtrlType.DataSmall,
+                        color = cs.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                if (disruptions.isNotEmpty()) {
+                    DisruptionMarker(disruptions, expanded, cs.error) { expanded = !expanded }
+                }
+            }
+            Spacer(Modifier.width(10.dp))
+            DepartureTime(d, now, style, compact)
+        }
+        if (expanded && disruptions.isNotEmpty()) {
+            DisruptionDetails(disruptions, Modifier.padding(start = 16.dp, end = 16.dp, bottom = 10.dp))
+        }
+    }
+}
+
+/**
+ * The short disruption line under a departure: a warning icon and the first message's title (with "+1" for
+ * more), in [color]. Tapping it shows or hides the full messages.
+ */
+@Composable
+fun DisruptionMarker(items: List<Disruption>, expanded: Boolean, color: Color, onToggle: () -> Unit) {
+    val first = items.first()
+    val more = items.size - 1
+    val label = first.title.ifBlank { first.text.lineSequence().firstOrNull().orEmpty() }.ifBlank { stringResource(R.string.disruption) }
+    val action = stringResource(if (expanded) R.string.hide_disruption_details else R.string.show_disruption_details)
+    Row(
+        Modifier
+            .padding(top = 3.dp)
+            .clip(RoundedCornerShape(6.dp))
+            .clickable(onClickLabel = action, onClick = onToggle)
+            .padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(Icons.Outlined.WarningAmber, null, Modifier.size(14.dp), tint = color)
+        Spacer(Modifier.width(5.dp))
+        Text(
+            label,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.Medium,
+            color = color,
+            maxLines = if (expanded) 2 else 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f, fill = false),
+        )
+        if (more > 0) {
+            Spacer(Modifier.width(4.dp))
+            Text(stringResource(R.string.plus_x, more), style = CtrlType.DataSmall, color = color, maxLines = 1)
+        }
+        Icon(
+            if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
+            action,
+            Modifier.size(16.dp),
+            tint = color,
+        )
+    }
+}
+
+/** The full messages of [items], one card each, with their lines in De Lijn's colours. */
+@Composable
+fun DisruptionDetails(items: List<Disruption>, modifier: Modifier = Modifier) {
+    val lines = rememberLineInfo(items.flatMap { it.lines }.toSet())
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        items.forEach { DisruptionCard(it, lines) }
+    }
+}
+
+/**
+ * One disruption as a compact banner: icon and title, tap to show the full text and when it applies.
+ * Used on the trip page, where several can be listed above the stops.
+ */
+@Composable
+fun DisruptionBanner(item: Disruption, lines: Map<String, LineInfo>, modifier: Modifier = Modifier) {
+    val cs = MaterialTheme.colorScheme
+    var expanded by rememberSaveable(item.identity) { mutableStateOf(false) }
+    val action = stringResource(if (expanded) R.string.hide_disruption_details else R.string.show_disruption_details)
+    Surface(
+        modifier.fillMaxWidth(),
+        shape = CtrlShapes.Card,
+        color = CtrlColors.Surface,
+        contentColor = cs.onSurface,
+        border = androidx.compose.foundation.BorderStroke(1.dp, cs.error.copy(alpha = 0.45f)),
+    ) {
+        Column(
+            Modifier.clickable(onClickLabel = action) { expanded = !expanded }.padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Outlined.WarningAmber, null, Modifier.size(20.dp), tint = cs.error)
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    item.title.ifBlank { stringResource(R.string.disruption) },
+                    style = MaterialTheme.typography.titleSmall,
+                    maxLines = if (expanded) 4 else 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                Icon(if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, action, tint = cs.onSurfaceVariant)
+            }
+            if (expanded) {
+                if (item.lines.isNotEmpty()) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        item.lines.take(8).forEach { k -> LineBadge(lines[k.toString()], k.line, minWidth = 32.dp) }
+                    }
+                }
+                if (item.text.isNotBlank()) Text(item.text, style = MaterialTheme.typography.bodyMedium)
+                disruptionPeriod(item)?.let { Text(it, style = CtrlType.Data, color = cs.onSurfaceVariant) }
+            } else if (item.text.isNotBlank()) {
+                Text(item.text, style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
-        Spacer(Modifier.width(10.dp))
-        DepartureTime(d, now, style, compact)
     }
+}
+
+@Composable
+private fun disruptionPeriod(item: Disruption): String? = when {
+    item.start != null && item.end != null -> stringResource(R.string.from_x_until_y, dayTime(item.start), dayTime(item.end))
+    item.start != null -> stringResource(R.string.since_x, dayTime(item.start))
+    item.end != null -> stringResource(R.string.until_x, dayTime(item.end))
+    else -> null
 }
 
 /** The time on the right: "4 min" in mono (accent when live, with a square dot), how late it is, or "Cancelled". */
@@ -252,8 +374,10 @@ fun NextDepartureHero(
     style: TimeStyle,
     modifier: Modifier = Modifier,
     accent: Boolean = true,
+    disruptions: List<Disruption> = emptyList(),
     onClick: (() -> Unit)? = null,
 ) {
+    var showDisruptions by rememberSaveable(d.matchKey) { mutableStateOf(false) }
     val minutes = Math.floorDiv(d.time.toEpochMilli() - now.toEpochMilli(), 60_000L)
     // Accent: the hero of the screen. Otherwise the same layout on a surface card, with accent details.
     val ink = if (accent) CtrlColors.OnAccent else CtrlColors.OnBackground
@@ -330,6 +454,9 @@ fun NextDepartureHero(
                 )
             }
         }
+        if (disruptions.isNotEmpty()) {
+            DisruptionMarker(disruptions, showDisruptions, if (accent) ink else MaterialTheme.colorScheme.error) { showDisruptions = !showDisruptions }
+        }
         // Stop, ride, destination: the first part filled while it's on its way.
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Box(Modifier.size(10.dp).clip(RoundedCornerShape(3.dp)).background(mark))
@@ -339,18 +466,21 @@ fun NextDepartureHero(
             Box(Modifier.size(10.dp).clip(RoundedCornerShape(3.dp)).border(2.dp, if (accent) inkSoft else CtrlColors.PinEmpty, RoundedCornerShape(3.dp)))
         }
     }
-    if (accent) {
-        CtrlHeroCard(modifier, onClick = onClick, content = body)
-    } else {
-        androidx.compose.material3.Surface(
-            shape = CtrlShapes.Hero,
-            color = CtrlColors.Surface,
-            contentColor = CtrlColors.OnBackground,
-            border = com.vknxworks.lijnctrl.ui.theme.CardBorder,
-            modifier = modifier.fillMaxWidth().then(if (onClick != null) Modifier.clip(CtrlShapes.Hero).clickable(onClick = onClick) else Modifier),
-        ) {
-            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp), content = body)
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (accent) {
+            CtrlHeroCard(Modifier, onClick = onClick, content = body)
+        } else {
+            androidx.compose.material3.Surface(
+                shape = CtrlShapes.Hero,
+                color = CtrlColors.Surface,
+                contentColor = CtrlColors.OnBackground,
+                border = com.vknxworks.lijnctrl.ui.theme.CardBorder,
+                modifier = Modifier.fillMaxWidth().then(if (onClick != null) Modifier.clip(CtrlShapes.Hero).clickable(onClick = onClick) else Modifier),
+            ) {
+                Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp), content = body)
+            }
         }
+        if (showDisruptions && disruptions.isNotEmpty()) DisruptionDetails(disruptions)
     }
 }
 

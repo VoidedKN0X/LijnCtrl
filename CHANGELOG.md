@@ -4,6 +4,21 @@ What changed in each LijnCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## v0.13.0 (2026-10-25)
+
+Disruptions right where you look: every departure that's hit by a De Lijn disruption or diversion now says so on the departure board, and the trip page lists them too.
+
+### New
+
+- **Disruptions on departures.** On a stop page, on the Stops tab and on the Nearby departures board, a bus or tram affected by a disruption (storing) or diversion (omleiding) shows a small red warning line under its destination with the message's title, and "+1", "+2" when there's more than one. Tap that line to unfold the full messages, with the lines they're about in De Lijn's colours and when they apply; tap again to fold them away. Tapping the rest of the row still opens the trip.
+- **Which departures are affected.** A departure is marked when De Lijn reports the disruption at that stop for its line (and direction, when De Lijn says which way), when the disruption is about the stop as a whole, or, on stop pages and the Stops tab, when it's reported on that line direction anywhere. The Nearby board only uses each stop's own messages, to keep the number of requests low.
+- **The next-departure card** shows the same warning line (in the card's own colours) and unfolds the details underneath the card.
+- **Disruptions on the trip page.** A trip now starts with a short red-bordered banner for every disruption or diversion on its line direction today, and for those at the stop you opened it from that concern this line. Tap a banner to read the whole message and when it applies.
+
+### Changed
+
+- **Fewer requests for disruptions.** Disruption and diversion lists are kept in memory for 10 minutes per stop and per line direction (2 minutes after a failed lookup), so boards that refresh every 30 seconds don't ask De Lijn again each time, and at most three are looked up at once. Messages follow your **Language of disruption messages** setting.
+
 ## v0.12.0 (2026-10-25)
 
 Light mode that follows the device theme: LijnCtrl is now light when your phone is set to light and dark when it's set to dark, switching by itself.

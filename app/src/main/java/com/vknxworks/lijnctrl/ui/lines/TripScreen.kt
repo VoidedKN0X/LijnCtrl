@@ -50,7 +50,9 @@ import com.vknxworks.lijnctrl.data.api.ApiTrip
 import com.vknxworks.lijnctrl.data.api.BRUSSELS
 import com.vknxworks.lijnctrl.data.api.LineKey
 import com.vknxworks.lijnctrl.data.api.StopKey
+import com.vknxworks.lijnctrl.data.api.localized
 import com.vknxworks.lijnctrl.data.api.parseLocalTime
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vknxworks.lijnctrl.ui.components.ErrorView
 import com.vknxworks.lijnctrl.ui.components.LineBadge
 import com.vknxworks.lijnctrl.ui.components.LoadingView
@@ -100,6 +102,20 @@ fun TripScreen(entity: String, line: String, direction: String, trip: String, da
     var error by remember { mutableStateOf<String?>(null) }
     var updated by remember { mutableStateOf<Instant?>(null) }
     var attempt by remember { mutableStateOf(0) }
+    var disruptions by remember { mutableStateOf<List<com.vknxworks.lijnctrl.data.api.Disruption>>(emptyList()) }
+    val settings by c.settings.settings.collectAsStateWithLifecycle()
+
+    // Disruptions and diversions on this line direction today, and those at the stop you came from that name
+    // this line (or the whole stop). Cached for a few minutes, so coming back here doesn't ask De Lijn again.
+    LaunchedEffect(lineKey, direction, fromStop, settings.messageLanguage) {
+        val language = settings.messageLanguage.key
+        val onLine = c.disruptions.onLine(lineKey, direction).map { it.localized(language) }
+        val atStop = fromStop?.let { s ->
+            c.disruptions.atStop(StopKey(entity, s)).map { it.localized(language) }
+                .filter { d -> if (d.directions.isEmpty()) d.lines.isEmpty() else d.affectsLine(lineKey, direction) }
+        }.orEmpty()
+        disruptions = (onLine + atStop).distinctBy { it.identity }
+    }
 
     // The trip itself and the names of its stops: once.
     LaunchedEffect(attempt) {
@@ -189,6 +205,7 @@ fun TripScreen(entity: String, line: String, direction: String, trip: String, da
         )
         Triple(com.vknxworks.lijnctrl.data.plan.Journey(listOf(leg), "trip"), extra, target)
     }
+    val disruptionLines = rememberLineInfo(disruptions.flatMap { it.lines }.toSet())
     val listState = rememberLazyListState()
     LaunchedEffect(stops.isNotEmpty()) {
         val i = stops.indexOfFirst { it.number == fromStop }
@@ -280,6 +297,12 @@ fun TripScreen(entity: String, line: String, direction: String, trip: String, da
                             )
                         }
                     }
+                }
+                if (disruptions.isNotEmpty()) {
+                    itemsIndexed(disruptions, key = { i, d -> "d$i-${d.identity.hashCode()}" }) { _, d ->
+                        com.vknxworks.lijnctrl.ui.components.DisruptionBanner(d, disruptionLines, Modifier.padding(horizontal = Gutter, vertical = 4.dp))
+                    }
+                    item { Spacer(Modifier.height(6.dp)) }
                 }
                 itemsIndexed(stops, key = { i, s -> "$i-${s.number}" }) { i, s ->
                     TripStopRow(

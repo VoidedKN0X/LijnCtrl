@@ -425,4 +425,9 @@
     <string name="guide_tram_x">Tram %1$s</string>
     <string name="guide_train_x">Train %1$s</string>
     <string name="guide_metro_x">Metro %1$s</string>
+
+    <!-- Disruptions on departures (0.13.0) -->
+    <string name="show_disruption_details">Show disruption details</string>
+    <string name="hide_disruption_details">Hide disruption details</string>
+    <string name="plus_x">+%1$d</string>
 </resources>

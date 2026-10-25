@@ -97,6 +97,8 @@ fun StopScreen(entity: String, number: String, initialName: String?) {
     var error by remember { mutableStateOf<String?>(null) }
     var updated by remember { mutableStateOf<Instant?>(null) }
     var refreshing by remember { mutableStateOf(false) }
+    // Disruptions that affect each departure (by matchKey): the stop's own, and those on its line directions.
+    var affecting by remember { mutableStateOf<Map<String, List<com.vknxworks.lijnctrl.data.api.Disruption>>>(emptyMap()) }
 
     // Live departures topped up with the timetable, so quiet stops and lines without live data still show.
     suspend fun loadDepartures() {
@@ -105,6 +107,9 @@ fun StopScreen(entity: String, number: String, initialName: String?) {
                 departures = it
                 error = null
                 updated = Instant.now()
+                affecting = runCatching {
+                    c.disruptions.forDepartures(key, it, c.settings.settings.value.messageLanguage.key, withLines = true)
+                }.getOrDefault(affecting)
             }
             .onFailure { error = it.friendlyMessage() }
     }
@@ -260,6 +265,7 @@ fun StopScreen(entity: String, number: String, initialName: String?) {
                                 now,
                                 settings.timeStyle,
                                 modifier = Modifier.padding(horizontal = Gutter, vertical = 6.dp),
+                                disruptions = affecting[first.matchKey].orEmpty(),
                                 onClick = if (first.trip != null) ({ nav.trip(first.copy(stop = first.stop ?: number)) }) else null,
                             )
                         }
@@ -272,6 +278,7 @@ fun StopScreen(entity: String, number: String, initialName: String?) {
                                     d.line?.let { lines[it.toString()] },
                                     now,
                                     settings.timeStyle,
+                                    disruptions = affecting[d.matchKey].orEmpty(),
                                     onClick = if (d.trip != null) ({ nav.trip(d.copy(stop = d.stop ?: number)) }) else null,
                                 )
                             }

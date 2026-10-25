@@ -260,6 +260,7 @@ private fun DeparturesBoard(stops: List<ApiNearbyStop>) {
         closest.map { com.vknxworks.lijnctrl.data.api.StopKey(DeLijnApi.entityFromLinks(it) ?: it.id.take(1), it.id) }
     }
     var rows by remember { mutableStateOf<List<com.vknxworks.lijnctrl.data.api.Departure>?>(null) }
+    var affecting by remember { mutableStateOf<Map<String, List<com.vknxworks.lijnctrl.data.api.Disruption>>>(emptyMap()) }
     var failed by remember { mutableStateOf<String?>(null) }
 
     val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
@@ -279,6 +280,18 @@ private fun DeparturesBoard(stops: List<ApiNearbyStop>) {
                 val nowI = java.time.Instant.now()
                 rows = merged.filter { !it.time.isBefore(nowI.minusSeconds(30)) }.distinctBy { it.matchKey }.sortedBy { it.time }.take(40)
                 failed = if (merged.isEmpty()) live.exceptionOrNull()?.friendlyMessage() else null
+                // Each stop's own disruptions (cached for 10 minutes); line-wide ones are on the stop and trip pages.
+                val shown = rows.orEmpty()
+                val language = settings.messageLanguage.key
+                affecting = kotlinx.coroutines.coroutineScope {
+                    keys.map { k ->
+                        async {
+                            val here = shown.filter { it.stop == k.number }
+                            if (here.isEmpty()) emptyMap<String, List<com.vknxworks.lijnctrl.data.api.Disruption>>()
+                            else runCatching { c.disruptions.forDepartures(k, here, language, withLines = false) }.getOrDefault(emptyMap())
+                        }
+                    }.awaitAll()
+                }.fold(emptyMap<String, List<com.vknxworks.lijnctrl.data.api.Disruption>>()) { acc, m -> acc + m }
                 delay(30_000)
             }
         }
@@ -305,6 +318,7 @@ private fun DeparturesBoard(stops: List<ApiNearbyStop>) {
                         now,
                         settings.timeStyle,
                         compact = true,
+                        disruptions = affecting[d.matchKey].orEmpty(),
                         onClick = if (d.trip != null) ({ nav.trip(d) }) else null,
                     )
                     if (stop != null) {
