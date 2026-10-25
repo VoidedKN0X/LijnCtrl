@@ -17,9 +17,11 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Directions
 import androidx.compose.material.icons.filled.NearMe
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.Directions
 import androidx.compose.material.icons.outlined.NearMe
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.StarBorder
@@ -59,6 +61,10 @@ import com.vknxworks.lijnctrl.ui.components.LocalHazeState
 import com.vknxworks.lijnctrl.ui.lines.LineScreen
 import com.vknxworks.lijnctrl.ui.lines.TripScreen
 import com.vknxworks.lijnctrl.ui.nearby.NearbyScreen
+import com.vknxworks.lijnctrl.ui.plan.JourneyScreen
+import com.vknxworks.lijnctrl.ui.plan.PickPlaceScreen
+import com.vknxworks.lijnctrl.ui.plan.PlanScreen
+import com.vknxworks.lijnctrl.ui.search.PlaceScreen
 import com.vknxworks.lijnctrl.ui.search.TownScreen
 import com.vknxworks.lijnctrl.ui.stops.TimetableScreen
 import com.vknxworks.lijnctrl.ui.search.SearchScreen
@@ -89,6 +95,7 @@ private data class TopDest(val route: Any, val item: TabItem)
 private val topDestinations = listOf(
     TopDest(StopsRoute, TabItem(R.string.tab_stops, Icons.Outlined.StarBorder, Icons.Filled.Star)),
     TopDest(NearbyRoute, TabItem(R.string.tab_nearby, Icons.Outlined.NearMe, Icons.Filled.NearMe)),
+    TopDest(PlanRoute, TabItem(R.string.tab_plan, Icons.Outlined.Directions, Icons.Filled.Directions)),
     TopDest(SearchRoute, TabItem(R.string.tab_search, Icons.Outlined.Search, Icons.Filled.Search)),
 )
 
@@ -192,12 +199,16 @@ private fun AppNavHost(navController: NavHostController) {
         composable<StopsRoute> { StopsScreen() }
         composable<NearbyRoute> { NearbyScreen() }
         composable<SearchRoute> { SearchScreen() }
+        composable<PlanRoute> { PlanScreen() }
+        composable<PickPlaceRoute> { PickPlaceScreen(it.toRoute<PickPlaceRoute>().forFrom) }
+        composable<JourneyRoute> { JourneyScreen(it.toRoute<JourneyRoute>().index) }
 
         composable<StopRoute> { val r = it.toRoute<StopRoute>(); StopScreen(r.entity, r.number, r.name) }
         composable<TimetableRoute> { val r = it.toRoute<TimetableRoute>(); TimetableScreen(r.entity, r.number, r.name) }
         composable<LineRoute> { val r = it.toRoute<LineRoute>(); LineScreen(r.entity, r.line, r.direction) }
         composable<TripRoute> { val r = it.toRoute<TripRoute>(); TripScreen(r.entity, r.line, r.direction, r.trip, r.date, r.fromStop) }
         composable<TownRoute> { val r = it.toRoute<TownRoute>(); TownScreen(r.number, r.name) }
+        composable<PlaceRoute> { val r = it.toRoute<PlaceRoute>(); PlaceScreen(r.latitude, r.longitude, r.name, r.detail) }
         composable<YouRoute> { YouScreen() }
         composable<SettingsRoute> { SettingsScreen() }
         composable<ApiKeyRoute> {

@@ -2,6 +2,12 @@ package com.vknxworks.lijnctrl.data.api
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.JsonTransformingSerializer
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
 
 // De Lijn Open Data responses. Field names are the API's Dutch ones. Nullability follows what the live API
 // returns, not its OpenAPI spec: almost everything can be missing, and identifiers arrive as numbers or strings
@@ -235,3 +241,52 @@ data class ApiMunicipality(
 
 @Serializable
 data class MunicipalityList(@SerialName("gemeenten") val municipalities: List<ApiMunicipality> = emptyList())
+
+// ------------------------------------------------------------- places (0.3.0)
+
+/**
+ * A place from De Lijn's own geocoder: an address, a point of interest (a shop, a school, a station) or a stop.
+ * Every field can be missing; [name] and [street] are the useful ones for showing it.
+ */
+@Serializable
+data class ApiLocation(
+    val type: String? = null,
+    val subtype: String? = null,
+    @SerialName("omschrijving") val name: String? = null,
+    @SerialName("naam") val altName: String? = null,
+    @SerialName("straat") val street: String? = null,
+    @SerialName("huisnummer") val houseNumber: String? = null,
+    @SerialName("hoofdgemeente") val town: String? = null,
+    /** A list of names, or sometimes a single name. */
+    @SerialName("deelgemeentes") val districtsRaw: JsonElement? = null,
+    @SerialName("haltenummer") val stopNumber: String? = null,
+    @Serializable(with = LenientCoordinateSerializer::class)
+    @SerialName("geoCoordinaat") val coordinate: GeoCoordinate? = null,
+) {
+    val districts: List<String>
+        get() = when (val d = districtsRaw) {
+            is JsonArray -> d.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
+            is JsonPrimitive -> listOfNotNull(d.contentOrNull)
+            else -> emptyList()
+        }.filter { it.isNotBlank() }
+}
+
+/** The coordinate comes as {"latitude":…,"longitude":…} or, in some responses, as the text "51.03,3.70". */
+object LenientCoordinateSerializer : JsonTransformingSerializer<GeoCoordinate>(GeoCoordinate.serializer()) {
+    override fun transformDeserialize(element: JsonElement): JsonElement {
+        if (element is JsonPrimitive && element.isString) {
+            val parts = element.content.split(',').mapNotNull { it.trim().toDoubleOrNull() }
+            if (parts.size == 2) return buildJsonObject {
+                put("latitude", JsonPrimitive(parts[0]))
+                put("longitude", JsonPrimitive(parts[1]))
+            }
+        }
+        return element
+    }
+}
+
+@Serializable
+data class LocationSearchResponse(
+    @SerialName("aantalHits") val total: Int = 0,
+    @SerialName("locaties") val locations: List<ApiLocation> = emptyList(),
+)

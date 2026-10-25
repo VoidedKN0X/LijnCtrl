@@ -6,6 +6,7 @@ import kotlinx.serialization.Serializable
 @Serializable data object StopsRoute
 @Serializable data object NearbyRoute
 @Serializable data object SearchRoute
+@Serializable data object PlanRoute
 
 @Serializable data class StopRoute(val entity: String, val number: String, val name: String? = null)
 @Serializable data class TimetableRoute(val entity: String, val number: String, val name: String? = null)
@@ -21,7 +22,11 @@ import kotlinx.serialization.Serializable
     val fromStop: String? = null,
 )
 @Serializable data class TownRoute(val number: String, val name: String)
+/** A place from the search (an address, a shop, a landmark): the stops around it. */
+@Serializable data class PlaceRoute(val latitude: Double, val longitude: Double, val name: String, val detail: String? = null)
 
 @Serializable data object YouRoute
 @Serializable data object SettingsRoute
 @Serializable data object ApiKeyRoute
+@Serializable data class PickPlaceRoute(val forFrom: Boolean)
+@Serializable data class JourneyRoute(val index: Int)

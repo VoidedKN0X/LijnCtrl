@@ -259,4 +259,61 @@
     <string name="nearby_distance">Distance for nearby stops</string>
     <string name="within_x_m">Within %1$d m</string>
     <string name="nearby_settings_footer">The map shows map tiles from OpenStreetMap (tile.openstreetmap.org), which sees the area you\'re looking at. Stops and departures still only come from De Lijn.</string>
+
+    <!-- 0.3.0: places and the route planner -->
+    <string name="places">Places and addresses</string>
+    <string name="stops_nearby_short">stops nearby</string>
+    <string name="stops_near_place">Stops nearby, closest first</string>
+    <string name="no_stops_near_place">No stops near this place</string>
+    <string name="no_stops_near_place_body">There are no De Lijn stops within 2 km of this place.</string>
+    <string name="place_footer">Places and addresses come from De Lijn\'s own search, the same as in its app.</string>
+    <string name="route_here">Route here</string>
+    <string name="tab_plan">Plan</string>
+    <string name="from">From</string>
+    <string name="to">To</string>
+    <string name="swap">Swap</string>
+    <string name="choose_a_place">Choose a stop, address or place</string>
+    <string name="leave_now">Leave now</string>
+    <string name="leave_at">Leave at</string>
+    <string name="arrive_by">Arrive by</string>
+    <string name="plan_route">Plan route</string>
+    <string name="planning">Planning…</string>
+    <string name="planner_builtin_note">Planned on this phone with De Lijn\'s data: buses and trams, up to one change, timetable times. Trains and live delays: switch on Transitous in Settings.</string>
+    <string name="planner_transitous_note">Planned by Transitous: every operator in Belgium, with live delays. The start and end of your route are sent to transitous.org. Change this in Settings.</string>
+    <string name="no_routes_found">No routes found</string>
+    <string name="no_routes_found_body">The planner on this phone only knows De Lijn and at most one change. Try another time, a stop closer by, or switch on Transitous in Settings for trains and longer routes.</string>
+    <string name="no_routes_found_body_transitous">Transitous found nothing for this time. Try another time or places a bit further apart.</string>
+    <string name="location_needed_for_my_location">LijnCtrl needs your location to plan from or to where you are.</string>
+    <string name="walk_only">Walk only</string>
+    <plurals name="changes">
+        <item quantity="one">%1$d change</item>
+        <item quantity="other">%1$d changes</item>
+    </plurals>
+    <string name="board_at_x_y">board at %1$s at %2$s</string>
+    <string name="x_h_y_min">%1$d h %2$d min</string>
+    <string name="pick_place_hint">Stop, address or place</string>
+    <string name="my_location_detail">Where you are when you plan</string>
+    <string name="no_position_for_stop">De Lijn doesn\'t have a position for this stop</string>
+    <string name="route">Route</string>
+    <string name="route_gone">Route not available</string>
+    <string name="route_gone_body">Plan the route again on the Plan tab.</string>
+    <string name="walk_x_min_to_y">Walk %1$d min to %2$s</string>
+    <string name="get_on_at_x">Get on at %1$s</string>
+    <string name="get_off_at_x">Get off at %1$s</string>
+    <string name="platform_x">Platform %1$s</string>
+    <plurals name="stops_between">
+        <item quantity="one">%1$d stop</item>
+        <item quantity="other">%1$d stops</item>
+    </plurals>
+    <string name="show_trip">Show trip</string>
+    <string name="route_source_builtin">Planned on this phone from De Lijn\'s timetables. Tap a ride for live times.</string>
+    <string name="route_source_transitous">Planned by Transitous (transitous.org) from open data of every Belgian operator.</string>
+    <string name="route_planner">Route planner</string>
+    <string name="route_planner_footer">Off: routes are planned on this phone with De Lijn\'s data only, so nothing else learns where you\'re going. On: Transitous, a free, open-source community planner, plans with every operator (De Lijn, NMBS/SNCB, STIB/MIVB, TEC) and live delays, and receives the start and end of each route you plan.</string>
+    <string name="use_transitous">Plan with Transitous</string>
+    <string name="use_transitous_subtitle">Trains and every operator, live delays, longer routes</string>
+    <string name="transitous_sources">Transitous data sources</string>
+    <string name="transitous_sources_subtitle">transitous.org/sources</string>
+    <string name="transitous_busy">Transitous is busy right now. Try again in a moment.</string>
+    <string name="transitous_error_x">Transitous answered with error %1$d</string>
 </resources>

@@ -20,4 +20,5 @@ Every new version needs a detailed entry at the top of `CHANGELOG.md`, under a h
 - Quirks of the live API (see `data/api/DeLijnApi.kt`): the Search API swaps latitude and longitude; identifiers arrive as numbers or strings; departures only carry the internal `lijnnummer`, so public line numbers and colours come from `/lijnen/lijst/{…}` and `/lijnen/lijst/{…}/lijnkleuren` (field `lijnLijnkleurCodesijst`, sic) via `LineRepository`; disruption lists come under `storingen` or `omleidingen`.
 - Times are local Belgian time without an offset (`Europe/Brussels`).
 - Upcoming departures come from `DepartureRepository`: the live feed (`/real-time`) merged with the stop's timetable (`/dienstregelingen`), because the live feed alone misses later trips and lines without live data.
-- The one other host is OpenStreetMap's tile server, used only by the osmdroid map in Nearby (not through the app's OkHttp client).
+- Other hosts: OpenStreetMap's tile server, used only by the osmdroid map in Nearby, and api.transitous.org (`TransitousPlanner`, its own OkHttp client limited to that host), only when the user turns on "Plan with Transitous". The default route planner (`BuiltInPlanner`) uses De Lijn's API only.
+- Places and addresses come from the Search API's `/zoek/locaties/{query}` (not in the published V1 spec, but documented as the "Search locations" operation).

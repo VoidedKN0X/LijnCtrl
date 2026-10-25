@@ -19,7 +19,8 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Full timetable** for any stop, today or the next six days, per hour and per line
 - **Trip pages**: every stop of a bus or tram run, with live times while it's on the road
 - **Line pages**: both directions stop by stop, where the next vehicles are heading, and the line's disruptions
-- **Search** for stops by name or the number on their sign, lines by number, and every stop in a town
+- **Route planner** from your location, a stop or an address to anywhere, leaving now, at a time or arriving by a time; planned on the phone with De Lijn's data, or with Transitous for trains and live delays (your choice in Settings)
+- **Search** for stops by name (in any word order) or the number on their sign, lines by number, every stop in a town, and shops, addresses and landmarks with the stops around them
 - **Nearby** stops as a list or on an OpenStreetMap map
 - **Disruption messages** in English, Dutch, French or German
 - **Rename** saved stops ("Home", "Work") and put them in your own order
@@ -87,11 +88,15 @@ The API key screen and the lock and PIN screens are always kept out of screensho
 - **Times without the live mark** are the timetable: De Lijn has no live position for that trip right now.
 - **Nearby can't find you**: check that location is on, and try outside or near a window. LijnCtrl only reads your location when you open Nearby or tap **Find stops near me**.
 - **A stop you know isn't in Search**: try the number on its sign, or search for the town and pick **All stops in …**. On the Nearby tab, a larger distance can be set under **Settings > Nearby**, or use the map.
+- **A shop or address isn't a stop name**: search for it anyway; it shows under **Places and addresses**, with the stops around it.
+- **The route planner finds nothing**: the planner on the phone only knows De Lijn and one change at most. Switch on **Plan with Transitous** in Settings for trains and longer routes.
 - **No departures soon**: **Full timetable** on the stop page shows when the next ones are, today or on another day.
 
 ## Privacy
 
-**Telemetry-free.** LijnCtrl has no analytics, crash reporting, usage stats or tracking of any kind, and no servers of its own. It only talks to De Lijn's API (api.delijn.be), over HTTPS; every other address is refused. The one exception is the map, below. Your API key is stored encrypted on the phone (and with your app PIN while the app lock is on) and is only sent to De Lijn. Your saved stops stay on the phone. Your location is read only when you ask for nearby stops, sent only to De Lijn to look them up, and never kept.
+**Telemetry-free.** LijnCtrl has no analytics, crash reporting, usage stats or tracking of any kind, and no servers of its own. It only talks to De Lijn's API (api.delijn.be), over HTTPS; every other address is refused. The exceptions are the map and, if you switch it on, Transitous, both below. Your API key is stored encrypted on the phone (and with your app PIN while the app lock is on) and is only sent to De Lijn. Your saved stops stay on the phone. Your location is read only when you ask for nearby stops, sent only to De Lijn to look them up, and never kept.
+
+**The route planner** runs on the phone by default, with De Lijn's data only. If you switch on **Plan with Transitous** in Settings, the start, end and time of each route you plan go to [Transitous](https://transitous.org) (api.transitous.org), a free, open-source community planner, over its own connection that can't reach anything else. Its data sources are listed at [transitous.org/sources](https://transitous.org/sources/).
 
 **The map** in Nearby loads its map tiles from OpenStreetMap (tile.openstreetmap.org), which sees the area you're looking at, the same as any website with a map. Tiles are only loaded while the map is open and are cached on the phone. Everything else still only comes from De Lijn.
 

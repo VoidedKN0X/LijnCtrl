@@ -3,6 +3,7 @@ package com.vknxworks.lijnctrl.ui.nav
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.lifecycle.Lifecycle
 import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import kotlin.reflect.KClass
 
@@ -47,6 +48,26 @@ class Navigator(val nav: NavHostController) {
 
     fun line(entity: String, line: String, direction: String? = null) {
         navigate(LineRoute(entity, line, direction))
+    }
+
+    fun place(latitude: Double, longitude: Double, name: String, detail: String?) {
+        navigate(PlaceRoute(latitude, longitude, name, detail))
+    }
+
+    /** Sets [point] as the destination on the Plan tab and opens it. */
+    fun routeTo(point: com.vknxworks.lijnctrl.data.plan.PlanPoint) {
+        com.vknxworks.lijnctrl.ui.plan.PlanState.routeTo(point)
+        if (com.vknxworks.lijnctrl.ui.plan.PlanState.from == null) {
+            com.vknxworks.lijnctrl.ui.plan.PlanState.from = com.vknxworks.lijnctrl.data.plan.PlanPoint(
+                com.vknxworks.lijnctrl.str(com.vknxworks.lijnctrl.R.string.my_location), 0.0, 0.0, isMyLocation = true,
+            )
+        }
+        if (!settled()) return
+        nav.navigate(PlanRoute) {
+            popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
     }
 
     fun town(number: String, name: String) {

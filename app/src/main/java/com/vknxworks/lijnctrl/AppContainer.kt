@@ -6,6 +6,9 @@ import com.vknxworks.lijnctrl.data.auth.ApiKeyStore
 import com.vknxworks.lijnctrl.data.departures.DepartureRepository
 import com.vknxworks.lijnctrl.data.favourites.FavouritesRepository
 import com.vknxworks.lijnctrl.data.towns.TownRepository
+import com.vknxworks.lijnctrl.data.plan.BuiltInPlanner
+import com.vknxworks.lijnctrl.data.plan.PlanRepository
+import com.vknxworks.lijnctrl.data.plan.TransitousPlanner
 import com.vknxworks.lijnctrl.data.lines.LineRepository
 import com.vknxworks.lijnctrl.data.lock.LockVault
 import com.vknxworks.lijnctrl.data.settings.SettingsRepository
@@ -57,6 +60,7 @@ class AppContainer(val context: Context) {
     val lines = LineRepository(context, api)
     val departures = DepartureRepository(api)
     val towns = TownRepository(api)
+    val planner = PlanRepository(BuiltInPlanner(api, departures, lines), TransitousPlanner())
     val favourites = FavouritesRepository(context, appScope)
 
     /** The app lock is on. */

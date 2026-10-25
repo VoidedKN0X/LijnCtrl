@@ -92,6 +92,16 @@ class DeLijnApi(private val http: OkHttpClient, private val apiKey: () -> String
         return r.copy(stops = r.stops.map { s -> s.copy(coordinate = s.coordinate?.let(::fixSwapped)) })
     }
 
+    /**
+     * Places matching [query] from De Lijn's own geocoder: addresses ("Kerkstraat 14 Hasselt"), points of interest
+     * (shops, schools, stations) and stops. This is what lets a shop or an address find the stops around it.
+     * Coordinates are put right in case they're swapped, as they are in the stop search.
+     */
+    suspend fun searchLocations(query: String, max: Int = 10): LocationSearchResponse {
+        val r: LocationSearchResponse = get(SEARCH, "/zoek/locaties/${seg(query.trim())}", mapOf("maxAantalHits" to max))
+        return r.copy(locations = r.locations.map { l -> l.copy(coordinate = l.coordinate?.let(::fixSwapped)) })
+    }
+
     /** Line directions matching [query]: a number on the bus ("71", "T1") or a place on the route. */
     suspend fun searchLines(query: String, max: Int = 30): LineSearchResponse =
         get(SEARCH, "/zoek/lijnrichtingen/${seg(query.trim())}", mapOf("maxAantalHits" to max))

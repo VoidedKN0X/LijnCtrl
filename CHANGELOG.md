@@ -4,6 +4,27 @@ What changed in each LijnCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## v0.3.0 (2026-10-25)
+
+A route planner, and search that finds shops, addresses and landmarks the way De Lijn's own app does.
+
+### New
+
+- **Route planner: the new Plan tab.** Choose **From** and **To** (your location, a saved stop, any stop, or an address or place), then **Leave now**, **Leave at** or **Arrive by** a date and time, and tap **Plan route**. Each route shows when you leave and arrive, how long it takes, how many changes, and its walks and rides in order. Tap a route for the details: where to walk, where to get on and off (with the platform, when known), how many stops, and how long each ride takes. Stops, lines and trips in a route open their own pages, so you can check live times.
+- **Two planners to choose from**, under **Settings > Route planner**:
+  - **On this phone** (the default): plans with De Lijn's own data only, so nothing else learns where you're going. It finds the stops within walking distance of both ends, direct buses and trams and routes with one change, and times them with the timetable.
+  - **Transitous** (switch on **Plan with Transitous**): a free, open-source community planner with every Belgian operator (De Lijn, NMBS/SNCB, STIB/MIVB, TEC), trains included, longer routes with more changes, and live delays. The start and end of each route you plan are sent to transitous.org. Its data sources are linked under the switch.
+- **Route here**: the new button at the top of stop pages and place pages puts that stop or place in **To** on the Plan tab (with your location as **From** if it was empty) and opens it.
+- **Places and addresses in Search**, like in De Lijn's app. Shops, landmarks and addresses now show in their own section ("Vandenborre Roeselare", "Kerkstraat 14 Hasselt"). Tap one to see the De Lijn stops around it, closest first, looking further out (up to 2 km) when few stops are close by.
+
+### Fixed
+
+- **Stop names in any word order.** Searching "korenmarkt gent" found nothing, because De Lijn's search only matches the words in the order of the stop's name ("Gent Korenmarkt"). When the words as typed find nothing, LijnCtrl now searches each word and shows the stops that contain all of them.
+
+### Privacy
+
+- With the default planner, your routes stay between your phone and De Lijn. Transitous is only contacted when you switch it on, and then only with the start, end and time of the routes you plan, from its own connection that can't reach anything else. It identifies itself as LijnCtrl, as Transitous asks.
+
 ## v0.2.0 (2026-10-25)
 
 More ways to find a stop, departures that no longer go missing, and the features from De Lijn's own app that were missing: lines, full timetables, trip pages and a map.

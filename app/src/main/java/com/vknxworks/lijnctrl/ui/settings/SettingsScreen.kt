@@ -8,7 +8,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Directions
 import androidx.compose.material.icons.outlined.Fingerprint
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Layers
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.NearMe
@@ -90,6 +92,32 @@ fun SettingsScreen() {
                     s.nearbyRadius,
                     icon = Icons.Outlined.NearMe,
                 ) { v -> update { it.copy(nearbyRadius = v) } }
+            }
+
+            Group(stringResource(R.string.route_planner), footer = stringResource(R.string.route_planner_footer)) {
+                GroupSwitch(
+                    stringResource(R.string.use_transitous),
+                    stringResource(R.string.use_transitous_subtitle),
+                    s.transitousRoutes,
+                    icon = Icons.Outlined.Directions,
+                ) { v -> update { it.copy(transitousRoutes = v) } }
+                if (s.transitousRoutes) {
+                    GroupRow(
+                        stringResource(R.string.transitous_sources),
+                        stringResource(R.string.transitous_sources_subtitle),
+                        icon = Icons.Outlined.Info,
+                        showChevron = true,
+                        onClick = {
+                            runCatching {
+                                AppLock.expectReturn()
+                                context.startActivity(
+                                    android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(com.vknxworks.lijnctrl.data.plan.TransitousPlanner.SOURCES_URL))
+                                        .addCategory(android.content.Intent.CATEGORY_BROWSABLE),
+                                )
+                            }
+                        },
+                    )
+                }
             }
 
             PrivacyGroup(s) { t -> update(t) }

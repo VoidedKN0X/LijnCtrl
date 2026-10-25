@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Accessible
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.DepartureBoard
+import androidx.compose.material.icons.outlined.Directions
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -143,6 +144,14 @@ fun StopScreen(entity: String, number: String, initialName: String?) {
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             ScreenTopBar(title) {
+                IconButton(onClick = {
+                    val coord = info?.coordinate
+                    if (coord != null && coord.latitude != 0.0) {
+                        nav.routeTo(com.vknxworks.lijnctrl.data.plan.PlanPoint(title, coord.latitude, coord.longitude, stop = key, detail = info?.municipality))
+                    }
+                }, enabled = info?.coordinate?.latitude?.let { it != 0.0 } == true) {
+                    Icon(Icons.Outlined.Directions, stringResource(R.string.route_here))
+                }
                 IconButton(onClick = {
                     scope.launch { c.favourites.toggle(SavedStop(entity, number, name, info?.municipality)) }
                 }) {
