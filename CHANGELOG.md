@@ -4,6 +4,21 @@ What changed in each LijnCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## v0.6.0 (2026-10-25)
+
+See where your bus or tram is right now.
+
+### New
+
+- **Live buses and trams on the map.** With a GTFS Realtime key (see below), LijnCtrl shows where the vehicle actually is, from De Lijn's live vehicle feed: a circle in the line's colour with its number, and a pointer showing which way it's heading. Positions update every 15 seconds while the map is open, and a chip at the top says how fresh the position is ("Live position · 12 s ago"), that it's still looking, or that De Lijn has no position for that bus right now.
+- **Trip map.** A trip page has a new map button at the top: it shows the whole run with every stop (tap one to open it) and the bus or tram on its way, zooming to it the first time it's found. Tap the button again for the list of stops.
+- **Your bus on the route map.** On the route planner's full-screen map, each De Lijn ride that's on its way or leaving within the next hour and a half shows its bus or tram live, so you can see it coming.
+- **Live buses and trams in Settings**: a new **GTFS Realtime key** entry. Live positions come from a separate, free De Lijn subscription with its own key: on data.delijn.be, subscribe to **GTFS Realtime** and paste its key there. LijnCtrl checks the key with De Lijn before saving it, and stores it encrypted like your main key (sealed with your PIN while the app lock is on). Without it, the maps show a chip that takes you to that screen.
+
+### Changed
+
+- While a map with live vehicles is open, LijnCtrl downloads De Lijn's live feed (about 250 KB) at most once every 12 to 15 seconds, however many vehicles are shown. Nothing is downloaded for live positions when no such map is open, or without the key.
+
 ## v0.5.0 (2026-10-25)
 
 Recent routes in the planner, and a route map that follows you.

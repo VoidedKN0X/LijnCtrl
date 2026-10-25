@@ -1,6 +1,8 @@
 package com.vknxworks.lijnctrl.ui.lines
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.material.icons.automirrored.outlined.List as ListIcon
+import androidx.compose.material.icons.outlined.Map
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -151,6 +153,41 @@ fun TripScreen(entity: String, line: String, direction: String, trip: String, da
         }
     }
     val destination = planned?.destination ?: planned?.placeDestination ?: live?.destination
+
+    // The trip on a map: built from the timetable only, so live updates don't redraw (and re-zoom) the map.
+    var showMap by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    val runsNow = remember(serviceDate) { val today = LocalDate.now(BRUSSELS); serviceDate == today || serviceDate == today.minusDays(1) }
+    val mapData = remember(planned, names, info) {
+        val ordered = planned?.passages.orEmpty().mapNotNull { p ->
+            val number = p.stopNumber ?: return@mapNotNull null
+            val stop = names[number]
+            val coord = stop?.coordinate?.takeIf { it.latitude != 0.0 && it.longitude != 0.0 }
+            Triple(number, stop?.name ?: stop?.longName ?: number, coord?.let { com.vknxworks.lijnctrl.data.plan.LatLon(it.latitude, it.longitude) }) to parseLocalTime(p.scheduled)
+        }
+        val withPos = ordered.filter { it.first.third != null }
+        if (withPos.size < 2) return@remember null
+        val first = withPos.first()
+        val last = withPos.last()
+        val leg = com.vknxworks.lijnctrl.data.plan.JourneyLeg(
+            mode = if (info?.isTram == true) com.vknxworks.lijnctrl.data.plan.LegMode.TRAM else com.vknxworks.lijnctrl.data.plan.LegMode.BUS,
+            fromName = first.first.second,
+            toName = last.first.second,
+            start = first.second ?: Instant.now(),
+            end = last.second ?: Instant.now(),
+            badge = info?.publicNumber ?: line,
+            line = lineKey,
+            trip = trip,
+            fromStop = StopKey(entity, first.first.first),
+            toStop = StopKey(entity, last.first.first),
+            path = withPos.map { it.first.third!! },
+        )
+        val extra = withPos.map { com.vknxworks.lijnctrl.ui.plan.MapStop(it.first.third!!, it.first.second, StopKey(entity, it.first.first)) }
+        val target = com.vknxworks.lijnctrl.data.live.LiveTarget(
+            ordered.mapNotNull { (stop, time) -> time?.let { stop.first to it } }.toMap(),
+            tripNumber = trip,
+        )
+        Triple(com.vknxworks.lijnctrl.data.plan.Journey(listOf(leg), "trip"), extra, target)
+    }
     val listState = rememberLazyListState()
     LaunchedEffect(stops.isNotEmpty()) {
         val i = stops.indexOfFirst { it.number == fromStop }
@@ -160,12 +197,31 @@ fun TripScreen(entity: String, line: String, direction: String, trip: String, da
     Scaffold(
         contentWindowInsets = WindowInsets(0),
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = { ScreenTopBar(destination ?: stringResource(R.string.trip)) },
+        topBar = {
+            ScreenTopBar(destination ?: stringResource(R.string.trip)) {
+                if (mapData != null) {
+                    androidx.compose.material3.IconButton(onClick = { showMap = !showMap }) {
+                        androidx.compose.material3.Icon(
+                            if (showMap) androidx.compose.material.icons.Icons.AutoMirrored.Outlined.ListIcon else androidx.compose.material.icons.Icons.Outlined.Map,
+                            stringResource(if (showMap) R.string.show_list else R.string.show_map),
+                        )
+                    }
+                }
+            }
+        },
     ) { padding ->
         val err = error
         when {
             err != null -> ErrorView(err, Modifier.padding(padding)) { attempt++ }
             planned == null -> LoadingView(Modifier.padding(padding))
+            showMap && mapData != null -> com.vknxworks.lijnctrl.ui.plan.RouteMap(
+                mapData.first,
+                Modifier.padding(padding).fillMaxSize(),
+                interactive = true,
+                extraStops = mapData.second,
+                liveTargets = listOf(if (runsNow) mapData.third else null),
+                focusOnBus = true,
+            )
             else -> LazyColumn(Modifier.padding(padding).fillMaxSize(), state = listState, contentPadding = PaddingValues(bottom = 32.dp)) {
                 item {
                     Row(

@@ -11,8 +11,8 @@ import kotlinx.coroutines.flow.asStateFlow
  * secure hardware, and, while the app lock is on, with the app PIN as well (sealed in [LockVault]). The
  * readable key only lives in memory while the app is unlocked, and is dropped the moment it locks.
  */
-class ApiKeyStore(context: Context, private val vault: LockVault) {
-    private val prefs = context.applicationContext.getSharedPreferences("api_key", Context.MODE_PRIVATE)
+class ApiKeyStore(context: Context, private val vault: LockVault, name: String = "api_key") {
+    private val prefs = context.applicationContext.getSharedPreferences(name, Context.MODE_PRIVATE)
 
     private val _hasKey = MutableStateFlow(prefs.contains(K_STORED))
 

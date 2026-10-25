@@ -57,6 +57,10 @@ class AppContainer(val context: Context) {
 
     val apiKey = ApiKeyStore(context, vault)
     val api = DeLijnApi(http) { apiKey.key.value }
+
+    /** The optional GTFS Realtime key (a separate De Lijn subscription), for live vehicle positions. Stored like [apiKey]. */
+    val gtfsKey = ApiKeyStore(context, vault, "gtfs_key")
+    val live = com.vknxworks.lijnctrl.data.live.LiveVehicles(http) { gtfsKey.key.value }
     val lines = LineRepository(context, api)
     val departures = DepartureRepository(api)
     val towns = TownRepository(api)
@@ -75,17 +79,20 @@ class AppContainer(val context: Context) {
         AppLock.markUnlocked()
         withContext(Dispatchers.Default) { vault.setUp(pin) }
         apiKey.seal()
+        gtfsKey.seal()
     }
 
     /** Turns the app lock off (after the PIN was confirmed): the API key goes back to Keystore-only encryption. */
     suspend fun disableLock() {
         apiKey.unseal()
+        gtfsKey.unseal()
         vault.disable()
     }
 
     /** "Forgot PIN?": the sealed API key can't be read any more, so forget it. Saved stops stay. */
     suspend fun forgetEverything() {
         apiKey.clear()
+        gtfsKey.clear()
         AppLock.markUnlocked()
         vault.disable()
     }
@@ -94,11 +101,13 @@ class AppContainer(val context: Context) {
     fun onLocked() {
         vault.close()
         apiKey.onLocked()
+        gtfsKey.onLocked()
     }
 
     fun onUnlocked() {
         AppLock.markUnlocked()
         apiKey.onUnlocked()
+        gtfsKey.onUnlocked()
     }
 
     init {

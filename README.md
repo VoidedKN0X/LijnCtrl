@@ -20,6 +20,7 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Trip pages**: every stop of a bus or tram run, with live times while it's on the road
 - **Line pages**: both directions stop by stop, where the next vehicles are heading, and the line's disruptions
 - **Route planner** from your location, a stop or an address to anywhere, leaving now, at a time or arriving by a time; planned on the phone with De Lijn's data, or with Transitous for trains and live delays (your choice in Settings), with each route shown on a map (which can follow your location) and your recent routes one tap away
+- **Live buses and trams** on the trip map and the route map, with their line number and heading (needs De Lijn's free GTFS Realtime key)
 - **Search** for stops by name (in any word order) or the number on their sign, lines by number, every stop in a town, and (if you switch it on) shops, addresses and landmarks with the stops around them
 - **Nearby** stops as a list or on an OpenStreetMap map
 - **Disruption messages** in English, Dutch, French or German
@@ -94,7 +95,7 @@ The API key screen and the lock and PIN screens are always kept out of screensho
 
 ## Privacy
 
-**Telemetry-free.** LijnCtrl has no analytics, crash reporting, usage stats or tracking of any kind, and no servers of its own. It only talks to De Lijn's API (api.delijn.be), over HTTPS; every other address is refused. The exceptions are the map and, if you switch them on, Transitous route planning and address search, all below. Your API key is stored encrypted on the phone (and with your app PIN while the app lock is on) and is only sent to De Lijn. Your saved stops and recent routes stay on the phone (recent routes can be switched off in Settings). Your location is read only when you ask for nearby stops, sent only to De Lijn to look them up, and never kept.
+**Telemetry-free.** LijnCtrl has no analytics, crash reporting, usage stats or tracking of any kind, and no servers of its own. It only talks to De Lijn's API (api.delijn.be), over HTTPS; every other address is refused. The exceptions are the map and, if you switch them on, Transitous route planning and address search, all below. Your API key is stored encrypted on the phone (and with your app PIN while the app lock is on) and is only sent to De Lijn. Live vehicle positions come from De Lijn too (its GTFS Realtime feed on api.delijn.be), only while a map with live vehicles is open and only if you've added that key, which is stored encrypted like the main one. Your saved stops and recent routes stay on the phone (recent routes can be switched off in Settings). Your location is read only when you ask for nearby stops, sent only to De Lijn to look them up, and never kept.
 
 **The route planner** runs on the phone by default, with De Lijn's data only. If you switch on **Plan with Transitous** in Settings, the start, end and time of each route you plan go to [Transitous](https://transitous.org) (api.transitous.org), a free, open-source community planner, over its own connection that can't reach anything else. Its data sources are listed at [transitous.org/sources](https://transitous.org/sources/).
 

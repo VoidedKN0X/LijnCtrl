@@ -9,6 +9,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Directions
+import androidx.compose.material.icons.outlined.DirectionsBus
 import androidx.compose.material.icons.outlined.Fingerprint
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Info
@@ -57,6 +58,7 @@ fun SettingsScreen() {
     val c = context.container
     val scope = rememberCoroutineScope()
     val s by c.settings.settings.collectAsStateWithLifecycle()
+    val nav = com.vknxworks.lijnctrl.ui.nav.LocalNavigator.current
     fun update(t: (AppSettings) -> AppSettings) { scope.launch { c.settings.update(t) } }
 
     Scaffold(
@@ -139,6 +141,17 @@ fun SettingsScreen() {
                         },
                     )
                 }
+            }
+
+            val gtfsSaved by c.gtfsKey.hasKey.collectAsStateWithLifecycle()
+            Group(stringResource(R.string.live_vehicles), footer = stringResource(R.string.live_vehicles_footer)) {
+                GroupRow(
+                    stringResource(R.string.gtfs_key),
+                    stringResource(if (gtfsSaved) R.string.gtfs_key_set else R.string.gtfs_key_not_set),
+                    icon = Icons.Outlined.DirectionsBus,
+                    showChevron = true,
+                    onClick = { nav.navigate(com.vknxworks.lijnctrl.ui.nav.GtfsKeyRoute) },
+                )
             }
 
             PrivacyGroup(s) { t -> update(t) }

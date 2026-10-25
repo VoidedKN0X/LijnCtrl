@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,6 +23,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Directions
+import androidx.compose.material.icons.outlined.DirectionsBus
 import androidx.compose.material.icons.outlined.OpenInFull
 import androidx.compose.material.icons.outlined.MyLocation
 import androidx.compose.material.icons.filled.MyLocation
@@ -54,6 +56,11 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
+import com.vknxworks.lijnctrl.container
+import com.vknxworks.lijnctrl.ui.components.friendlyMessage
+import kotlinx.coroutines.delay
 import com.vknxworks.lijnctrl.R
 import com.vknxworks.lijnctrl.data.lines.LineInfo
 import com.vknxworks.lijnctrl.data.location.Locator
@@ -99,13 +106,80 @@ private fun dot(fill: Int, stroke: Int, sizePx: Int, strokePx: Int) = GradientDr
 
 private fun LatLon.geo() = GeoPoint(latitude, longitude)
 
+/** An extra stop to show on the map (the trip page shows every stop of the trip). */
+data class MapStop(val point: LatLon, val name: String, val stop: com.vknxworks.lijnctrl.data.api.StopKey?)
+
+/** What the live-vehicle chip on the map says. */
+private sealed interface LiveState {
+    data object Searching : LiveState
+    data class Found(val count: Int, val newest: java.time.Instant?) : LiveState
+    data object NotFound : LiveState
+    data class Failed(val message: String) : LiveState
+}
+
+/**
+ * A bus or tram on the map: a circle in the line's colour with its number, and a small pointer showing which way
+ * it's heading (when De Lijn sends that).
+ */
+private fun busIcon(context: android.content.Context, label: String, fill: Int, text: Int, bearing: Float?, density: Float): android.graphics.drawable.Drawable {
+    val size = (52 * density).toInt()
+    val bmp = android.graphics.Bitmap.createBitmap(size, size, android.graphics.Bitmap.Config.ARGB_8888)
+    val canvas = android.graphics.Canvas(bmp)
+    val c = size / 2f
+    val r = 16 * density
+    val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    if (bearing != null) {
+        canvas.save()
+        canvas.rotate(bearing, c, c)
+        val path = android.graphics.Path().apply {
+            moveTo(c, c - r - 9 * density)
+            lineTo(c - 7 * density, c - r + 3 * density)
+            lineTo(c + 7 * density, c - r + 3 * density)
+            close()
+        }
+        paint.color = android.graphics.Color.WHITE
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = 3 * density
+        paint.strokeJoin = Paint.Join.ROUND
+        canvas.drawPath(path, paint)
+        paint.style = Paint.Style.FILL
+        paint.color = fill
+        canvas.drawPath(path, paint)
+        canvas.restore()
+    }
+    paint.style = Paint.Style.FILL
+    paint.color = fill
+    canvas.drawCircle(c, c, r, paint)
+    paint.style = Paint.Style.STROKE
+    paint.strokeWidth = 3 * density
+    paint.color = android.graphics.Color.WHITE
+    canvas.drawCircle(c, c, r, paint)
+    paint.style = Paint.Style.FILL
+    paint.color = text
+    paint.typeface = android.graphics.Typeface.DEFAULT_BOLD
+    paint.textAlign = Paint.Align.CENTER
+    paint.textSize = (if (label.length <= 2) 14 else if (label.length == 3) 12 else 10) * density
+    val y = c - (paint.descent() + paint.ascent()) / 2
+    canvas.drawText(label.take(4), c, y, paint)
+    return android.graphics.drawable.BitmapDrawable(context.resources, bmp)
+}
+
 /**
  * A route on an OpenStreetMap map: walks as dotted lines, rides in their line's colour, the start and end, and
  * where you get on and off. With [interactive] off it's a still preview (pan and zoom are off); tap handling is
  * then up to the caller.
  */
 @Composable
-fun RouteMap(journey: Journey, modifier: Modifier = Modifier, interactive: Boolean = true) {
+fun RouteMap(
+    journey: Journey,
+    modifier: Modifier = Modifier,
+    interactive: Boolean = true,
+    extraStops: List<MapStop> = emptyList(),
+    /** What to look for on the road for each ride, in order; by default worked out from the rides' stops and times. */
+    liveTargets: List<com.vknxworks.lijnctrl.data.live.LiveTarget?>? = null,
+    /** Zoom to the vehicle the first time it's found (the trip page). */
+    focusOnBus: Boolean = false,
+) {
     val context = LocalContext.current
     val nav = LocalNavigator.current
     val cs = MaterialTheme.colorScheme
@@ -197,10 +271,78 @@ fun RouteMap(journey: Journey, modifier: Modifier = Modifier, interactive: Boole
     }
 
     val primary = cs.primary
+    // ---------- Live vehicles (needs the GTFS Realtime key) ----------
+    val c = context.container
+    val gtfsKey by c.gtfsKey.key.collectAsStateWithLifecycle()
+    val busMarkers = remember { mutableListOf<Marker>() }
+    var liveState by remember { mutableStateOf<LiveState?>(null) }
+    var focusedBus by remember { mutableStateOf(false) }
+    val rideLegs = remember(journey) { journey.legs.filter { !it.isWalk } }
+    val targets = remember(journey, liveTargets) {
+        val now = java.time.Instant.now()
+        rideLegs.mapIndexed { i, leg ->
+            liveTargets?.getOrNull(i) ?: run {
+                // Rides that haven't ended and start within the next hour and a half.
+                if (leg.end.isBefore(now.minusSeconds(120)) || leg.start.isAfter(now.plusSeconds(90 * 60))) return@run null
+                val stops = buildMap {
+                    leg.fromStop?.let { put(it.number, leg.start) }
+                    leg.toStop?.let { put(it.number, leg.end) }
+                }
+                if (stops.isEmpty()) null else com.vknxworks.lijnctrl.data.live.LiveTarget(stops, leg.trip)
+            }
+        }
+    }
+    val wantsLive = interactive && targets.any { it != null }
+    LaunchedEffect(targets, gtfsKey, lines, dark) {
+        if (!wantsLive || gtfsKey.isNullOrBlank()) {
+            map.overlays.removeAll(busMarkers)
+            busMarkers.clear()
+            liveState = null
+            map.invalidate()
+            return@LaunchedEffect
+        }
+        liveState = LiveState.Searching
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            while (true) {
+                val wanted = targets.withIndex().filter { it.value != null }
+                runCatching { c.live.locate(wanted.map { it.value!! }) }
+                    .onSuccess { fixes ->
+                        map.overlays.removeAll(busMarkers)
+                        busMarkers.clear()
+                        fixes.forEachIndexed { j, fix ->
+                            fix ?: return@forEachIndexed
+                            val leg = rideLegs[wanted[j].index]
+                            val info = legBadgeInfo(leg, lines)
+                            val fill = rideColor(info, primary).toArgb()
+                            val textColor = if (Color(fill).luminance() > 0.5f) android.graphics.Color.BLACK else android.graphics.Color.WHITE
+                            busMarkers += Marker(map).apply {
+                                position = GeoPoint(fix.latitude, fix.longitude)
+                                title = leg.badge
+                                icon = busIcon(context, info?.publicNumber ?: leg.badge ?: "", fill, textColor, fix.bearing, density.density)
+                                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+                                setOnMarkerClickListener { _, _ -> true }
+                            }
+                        }
+                        map.overlays.addAll(busMarkers)
+                        map.invalidate()
+                        val found = fixes.filterNotNull()
+                        liveState = if (found.isEmpty()) LiveState.NotFound else LiveState.Found(found.size, found.mapNotNull { it.reportedAt }.maxOrNull())
+                        if (focusOnBus && !focusedBus && !following && found.isNotEmpty()) {
+                            focusedBus = true
+                            map.controller.animateTo(GeoPoint(found.first().latitude, found.first().longitude), maxOf(map.zoomLevelDouble, 15.0), 600L)
+                        }
+                    }
+                    .onFailure { e -> liveState = LiveState.Failed(e.friendlyMessage()) }
+                delay(com.vknxworks.lijnctrl.data.live.LiveVehicles.REFRESH_MS)
+            }
+        }
+    }
+
     val walkColor = if (dark) Color(0xFFBDBDBD) else Color(0xFF616161)
     val casing = if (dark) Color(0xFF121212) else Color.White
     LaunchedEffect(journey, lines, dark) {
-        map.overlays.removeAll { it is Polyline || it is Marker }
+        map.overlays.removeAll { it is Polyline || (it is Marker && it !in busMarkers) }
+        map.overlays.removeAll(busMarkers)
         val all = mutableListOf<GeoPoint>()
 
         journey.legs.forEach { leg ->
@@ -250,6 +392,25 @@ fun RouteMap(journey: Journey, modifier: Modifier = Modifier, interactive: Boole
             }
         }
 
+        // Every stop of the trip, as small dots (the trip page).
+        val smallDot = dot(android.graphics.Color.WHITE, android.graphics.Color.GRAY, px(10f).toInt(), px(2f).toInt())
+        extraStops.forEach { s ->
+            if (s.point.latitude == 0.0) return@forEach
+            all += s.point.geo()
+            map.overlays.add(
+                Marker(map).apply {
+                    position = s.point.geo()
+                    title = s.name
+                    icon = smallDot
+                    setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+                    setOnMarkerClickListener { _, _ ->
+                        if (interactive && s.stop != null) nav.stop(s.stop.entity, s.stop.number, s.name)
+                        true
+                    }
+                },
+            )
+        }
+
         // Where you get on and off each ride: tap one to open the stop (when it's a De Lijn stop).
         val rides = journey.legs.filter { !it.isWalk && it.path.size >= 2 }
         val stopDot = dot(android.graphics.Color.WHITE, android.graphics.Color.DKGRAY, px(14f).toInt(), px(2.5f).toInt())
@@ -295,6 +456,8 @@ fun RouteMap(journey: Journey, modifier: Modifier = Modifier, interactive: Boole
                 },
             )
         }
+        // Vehicles stay on top of everything else.
+        map.overlays.addAll(busMarkers)
         map.invalidate()
 
         // Fits the whole route on screen, once the map knows its size.
@@ -334,6 +497,45 @@ fun RouteMap(journey: Journey, modifier: Modifier = Modifier, interactive: Boole
                     if (following) Icons.Filled.MyLocation else Icons.Outlined.MyLocation,
                     stringResource(R.string.follow_my_location),
                 )
+            }
+        }
+        // Whether the bus or tram was found live, or how to turn live positions on.
+        if (wantsLive) {
+            val now by com.vknxworks.lijnctrl.ui.components.rememberNow()
+            val state = liveState
+            val text = when {
+                gtfsKey.isNullOrBlank() -> stringResource(R.string.live_vehicles_need_key)
+                state is LiveState.Searching || state == null -> stringResource(R.string.live_vehicle_searching)
+                state is LiveState.NotFound -> stringResource(R.string.live_vehicle_not_found)
+                state is LiveState.Failed -> state.message
+                state is LiveState.Found -> {
+                    val ago = state.newest?.let { ((now.epochSecond - it.epochSecond).coerceAtLeast(0)).toInt() }
+                    if (ago == null) stringResource(R.string.live_vehicle_found)
+                    else if (ago < 60) stringResource(R.string.live_vehicle_seconds_ago, ago)
+                    else stringResource(R.string.live_vehicle_minutes_ago, ago / 60)
+                }
+                else -> ""
+            }
+            Surface(
+                shape = RoundedCornerShape(50),
+                color = cs.surfaceContainerHigh,
+                tonalElevation = 4.dp,
+                shadowElevation = 4.dp,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 8.dp, start = 16.dp, end = 16.dp)
+                    .then(if (gtfsKey.isNullOrBlank()) Modifier.clickable { nav.navigate(com.vknxworks.lijnctrl.ui.nav.GtfsKeyRoute) } else Modifier),
+            ) {
+                Row(Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Outlined.DirectionsBus,
+                        null,
+                        Modifier.size(16.dp),
+                        tint = if (liveState is LiveState.Found) cs.primary else cs.onSurfaceVariant,
+                    )
+                    androidx.compose.foundation.layout.Spacer(Modifier.size(8.dp))
+                    Text(text, style = MaterialTheme.typography.labelLarge, maxLines = 2)
+                }
             }
         }
         // OpenStreetMap's licence asks for this credit on the map.
