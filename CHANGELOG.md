@@ -4,6 +4,16 @@ What changed in each LijnCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## v0.8.0 (2026-10-25)
+
+Alerts, and every bus on a line live.
+
+### New
+
+- **"Your bus is almost here" alert.** Open a trip from your stop (tap a departure) and tap the new bell at the top, then choose 2, 5, 10 or 15 minutes. LijnCtrl watches that bus's live time at your stop in a quiet ongoing notification ("8 min (live)"), and when it's that many minutes away it alerts you with sound and vibration. It also tells you if the bus is cancelled or has already left, and stops by itself after the alert, after three hours, or when you tap **Stop** in the notification. It keeps working while the app is closed or locked. LijnCtrl asks for permission to show notifications the first time.
+- **Disruption alerts.** A new **Settings > Alerts > Disruption alerts** switch (off by default). Every half hour, when there's a network, LijnCtrl checks your saved stops and lines for disruptions and diversions and sends a notification for each new one, in the language you chose for messages. What's already going on when you turn it on isn't sent, so you only hear about new disruptions. Because it has to read your API key while the app is closed, it only works while the app lock is off (the setting says so when the lock is on).
+- **Every bus or tram on a line, live.** Line pages have a new map button: it shows the line's route and stops (tap a stop to open it), and, with a GTFS Realtime key, every vehicle on the road in the chosen direction, moving live with its heading. Switch direction with the chips above the map. The list of vehicles is refreshed every two minutes while the map is open; their positions every few seconds.
+
 ## v0.7.0 (2026-10-25)
 
 A simpler, cleaner LijnCtrl: fewer switches, one planner, setup on one screen, and the things you look at most made easier to read.

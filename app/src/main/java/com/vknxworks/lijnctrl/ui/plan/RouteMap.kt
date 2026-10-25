@@ -179,6 +179,8 @@ fun RouteMap(
     liveTargets: List<com.vknxworks.lijnctrl.data.live.LiveTarget?>? = null,
     /** Zoom to the vehicle the first time it's found (the trip page). */
     focusOnBus: Boolean = false,
+    /** More vehicles to show, drawn like the (first) ride: the line page shows every vehicle on the line. */
+    extraVehicles: List<com.vknxworks.lijnctrl.data.live.LiveTarget> = emptyList(),
 ) {
     val context = LocalContext.current
     val nav = LocalNavigator.current
@@ -278,9 +280,11 @@ fun RouteMap(
     var liveState by remember { mutableStateOf<LiveState?>(null) }
     var focusedBus by remember { mutableStateOf(false) }
     val rideLegs = remember(journey) { journey.legs.filter { !it.isWalk } }
-    val targets = remember(journey, liveTargets) {
+    // Vehicles beyond the journey's own rides (the line page) take the first ride's line and route.
+    fun legFor(ride: Int) = rideLegs.getOrElse(ride) { rideLegs.first() }
+    val targets = remember(journey, liveTargets, extraVehicles) {
         val now = java.time.Instant.now()
-        rideLegs.mapIndexed { i, leg ->
+        rideLegs.mapIndexed<com.vknxworks.lijnctrl.data.plan.JourneyLeg, com.vknxworks.lijnctrl.data.live.LiveTarget?> { i, leg ->
             liveTargets?.getOrNull(i) ?: run {
                 // Rides that haven't ended and start within the next hour and a half.
                 if (leg.end.isBefore(now.minusSeconds(120)) || leg.start.isAfter(now.plusSeconds(90 * 60))) return@run null
@@ -290,7 +294,7 @@ fun RouteMap(
                 }
                 if (stops.isEmpty()) null else com.vknxworks.lijnctrl.data.live.LiveTarget(stops, leg.trip)
             }
-        }
+        } + extraVehicles
     }
     val wantsLive = interactive && targets.any { it != null }
     // One smooth track and one marker per ride being followed (keyed by the ride's position in the journey).
@@ -306,7 +310,7 @@ fun RouteMap(
         map.invalidate()
     }
     fun styleOf(ride: Int): Triple<String, Int, Int> {
-        val leg = rideLegs[ride]
+        val leg = legFor(ride)
         val info = legBadgeInfo(leg, lines)
         val fill = rideColor(info, primary).toArgb()
         val text = if (Color(fill).luminance() > 0.5f) android.graphics.Color.BLACK else android.graphics.Color.WHITE
@@ -314,12 +318,12 @@ fun RouteMap(
     }
     fun applyFix(ride: Int, fix: com.vknxworks.lijnctrl.data.live.LiveFix, nowMs: Long) {
         val track = tracks.getOrPut(ride) {
-            BusTrack(rideLegs[ride].path.filter { it.latitude != 0.0 }.takeIf { it.size >= 2 }?.let { PathGeometry(it) })
+            BusTrack(legFor(ride).path.filter { it.latitude != 0.0 }.takeIf { it.size >= 2 }?.let { PathGeometry(it) })
         }
         track.update(fix, nowMs)
         if (ride !in markerByRide) {
             val m = Marker(map).apply {
-                title = rideLegs[ride].badge
+                title = legFor(ride).badge
                 setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
                 setOnMarkerClickListener { _, _ -> true }
             }

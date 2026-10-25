@@ -3,6 +3,7 @@ package com.vknxworks.lijnctrl.ui.lines
 import androidx.compose.foundation.Canvas
 import androidx.compose.material.icons.automirrored.outlined.List as ListIcon
 import androidx.compose.material.icons.outlined.Map
+import androidx.compose.material.icons.outlined.NotificationAdd
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -194,11 +195,47 @@ fun TripScreen(entity: String, line: String, direction: String, trip: String, da
         if (i > 2) listState.scrollToItem(i - 1)
     }
 
+    // "Alert me": a notification when this bus is a few minutes from your stop.
+    val context = LocalContext.current
+    var askAlert by remember { mutableStateOf(false) }
+    var pendingMinutes by remember { mutableStateOf<Int?>(null) }
+    fun startAlert(minutes: Int) {
+        val stopNumber = fromStop ?: return
+        com.vknxworks.lijnctrl.alerts.BusAlertService.start(
+            context,
+            com.vknxworks.lijnctrl.alerts.BusAlertRequest(
+                entity = entity,
+                stop = stopNumber,
+                stopName = names[stopNumber]?.name ?: stopNumber,
+                line = line,
+                lineLabel = info?.publicNumber ?: line,
+                direction = direction,
+                trip = trip,
+                destination = destination.orEmpty(),
+                minutesBefore = minutes,
+            ),
+        )
+        android.widget.Toast.makeText(context, context.getString(R.string.bus_alert_set_x, minutes), android.widget.Toast.LENGTH_LONG).show()
+    }
+    val notifyPermission = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        val m = pendingMinutes
+        pendingMinutes = null
+        if (granted && m != null) startAlert(m)
+        else if (!granted) android.widget.Toast.makeText(context, context.getString(R.string.notifications_needed), android.widget.Toast.LENGTH_LONG).show()
+    }
+
     Scaffold(
         contentWindowInsets = WindowInsets(0),
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             ScreenTopBar(destination ?: stringResource(R.string.trip)) {
+                if (fromStop != null && runsNow && planned != null) {
+                    androidx.compose.material3.IconButton(onClick = { askAlert = true }) {
+                        androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Outlined.NotificationAdd, stringResource(R.string.alert_me))
+                    }
+                }
                 if (mapData != null) {
                     androidx.compose.material3.IconButton(onClick = { showMap = !showMap }) {
                         androidx.compose.material3.Icon(
@@ -266,6 +303,34 @@ fun TripScreen(entity: String, line: String, direction: String, trip: String, da
                 }
             }
         }
+    }
+    if (askAlert) {
+        val stopName = fromStop?.let { names[it]?.name } ?: fromStop.orEmpty()
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { askAlert = false },
+            title = { Text(stringResource(R.string.alert_me)) },
+            text = {
+                Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.alert_me_body_x, stopName), style = MaterialTheme.typography.bodyMedium)
+                    listOf(2, 5, 10, 15).forEach { m ->
+                        androidx.compose.material3.OutlinedButton(
+                            onClick = {
+                                askAlert = false
+                                if (com.vknxworks.lijnctrl.alerts.Notifications.allowed(context)) startAlert(m)
+                                else {
+                                    pendingMinutes = m
+                                    com.vknxworks.lijnctrl.ui.lock.AppLock.expectReturn()
+                                    notifyPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { Text(stringResource(R.string.x_min_before, m)) }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = { androidx.compose.material3.TextButton(onClick = { askAlert = false }) { Text(stringResource(R.string.cancel)) } },
+        )
     }
 }
 

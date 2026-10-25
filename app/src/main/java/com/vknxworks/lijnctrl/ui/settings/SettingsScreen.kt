@@ -16,6 +16,7 @@ import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Layers
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.NearMe
+import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.Password
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Timer
@@ -130,6 +131,39 @@ fun SettingsScreen() {
                             }
                         },
                     )
+                }
+            }
+
+            // Alerts: disruptions on saved stops and lines (the bus alert is set from a trip page).
+            val notifyPermission = androidx.activity.compose.rememberLauncherForActivityResult(
+                androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+            ) { granted ->
+                if (granted) {
+                    update { it.copy(disruptionAlerts = true) }
+                    com.vknxworks.lijnctrl.alerts.DisruptionAlerts.enable(context)
+                    scope.launch { runCatching { com.vknxworks.lijnctrl.alerts.DisruptionAlerts.check(context, quiet = true) } }
+                }
+            }
+            Group(stringResource(R.string.alerts), footer = stringResource(R.string.alerts_footer)) {
+                GroupSwitch(
+                    stringResource(R.string.disruption_alerts),
+                    stringResource(if (c.lockEnabled) R.string.disruption_alerts_locked else R.string.disruption_alerts_subtitle),
+                    s.disruptionAlerts,
+                    icon = Icons.Outlined.NotificationsActive,
+                ) { v ->
+                    if (v) {
+                        if (com.vknxworks.lijnctrl.alerts.Notifications.allowed(context)) {
+                            update { it.copy(disruptionAlerts = true) }
+                            com.vknxworks.lijnctrl.alerts.DisruptionAlerts.enable(context)
+                            scope.launch { runCatching { com.vknxworks.lijnctrl.alerts.DisruptionAlerts.check(context, quiet = true) } }
+                        } else {
+                            AppLock.expectReturn()
+                            notifyPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                    } else {
+                        update { it.copy(disruptionAlerts = false) }
+                        com.vknxworks.lijnctrl.alerts.DisruptionAlerts.disable(context)
+                    }
                 }
             }
 

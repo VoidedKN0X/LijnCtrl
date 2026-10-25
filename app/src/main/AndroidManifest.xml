@@ -14,6 +14,12 @@
          whether the phone has a strong fingerprint sensor. Without it the fingerprint option never shows. -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 
+    <!-- Alerts: "your bus is almost here" and disruptions on your saved stops and lines. Asked for only when you
+         turn one of them on. The bus alert runs as a visible notification while it watches your bus. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+
     <uses-feature android:name="android.hardware.location" android:required="false" />
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
     <uses-feature android:name="android.hardware.location.network" android:required="false" />
@@ -41,6 +47,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".alerts.BusAlertService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
 
         <!-- No downloadable emoji font: androidx.emoji2 would look one up from a font provider on start.
              Emoji use the phone's own font. -->
