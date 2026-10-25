@@ -336,8 +336,6 @@
     <string name="route_history">Remember recent routes</string>
     <string name="route_history_subtitle">The last 15 from and to places you planned, kept on this phone only. Turning this off forgets them.</string>
     <string name="follow_my_location">Follow my location</string>
-    <string name="show_map">Show on map</string>
-    <string name="show_list">Show stops</string>
     <string name="live_vehicles">Live buses and trams</string>
     <string name="live_vehicles_footer">Shows where your bus or tram is right now on the trip map and the route map, from De Lijn\'s live vehicle feed. This needs a second, free key from De Lijn: the GTFS Realtime subscription.</string>
     <string name="gtfs_key">GTFS Realtime key</string>
