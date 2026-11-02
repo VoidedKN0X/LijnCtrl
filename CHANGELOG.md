@@ -4,6 +4,15 @@ What changed in each LijnCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## v0.15.3 (2026-11-02)
+
+Bottom sheets look right again.
+
+### Fixed
+
+- **Bottom sheets no longer show a stray grey box or outline.** The pick-a-value sheets in Settings had a thin border that was drawn in the wrong place, so a grey rectangle sat partway down the open sheet (across the first options) and a loose rounded outline showed near the top of the screen. Sheets are now a plain surface with rounded top corners and no outline; the dimmed background already sets them apart. These are the sheets for **Show times as**, **Disruption language**, **Nearby distance** and **Lock again**.
+- The stops sheet on the **Nearby** map, dialogs and popup menus were checked and didn't have this problem, so they're unchanged.
+
 ## v0.15.2 (2026-11-02)
 
 Popup menus look right again.

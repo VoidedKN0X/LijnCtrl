@@ -287,7 +287,6 @@ fun <T> ChoiceSheet(
         onDismissRequest = onDismiss,
         containerColor = CtrlColors.Surface,
         shape = RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp),
-        modifier = Modifier.border(1.dp, CtrlColors.Outline, RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp)),
     ) {
         CtrlLabel(title, Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
         LazyColumn(Modifier.navigationBarsPadding(), contentPadding = PaddingValues(bottom = 16.dp)) {
