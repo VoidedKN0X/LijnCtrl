@@ -339,3 +339,40 @@ fun CtrlDivider(modifier: Modifier = Modifier) {
  * bottom content padding, so their last items can scroll clear of the bar.
  */
 val LocalBottomClearance = androidx.compose.runtime.compositionLocalOf { 0.dp }
+
+/**
+ * Popup menu in the Signal style: flat surface, 16dp corners, a 1dp card border and no shadow (Material's
+ * default shadow is drawn inside the popup window and showed as a grey box). Use instead of DropdownMenu.
+ */
+@Composable
+fun CtrlDropdownMenu(
+    expanded: Boolean,
+    onDismissRequest: () -> Unit,
+    modifier: Modifier = Modifier,
+    offset: androidx.compose.ui.unit.DpOffset = androidx.compose.ui.unit.DpOffset(0.dp, 0.dp),
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    androidx.compose.material3.DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = onDismissRequest,
+        modifier = modifier,
+        offset = offset,
+        shape = RoundedCornerShape(16.dp),
+        containerColor = CtrlColors.Surface,
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+        border = CardBorder,
+        content = content,
+    )
+}
+
+/** Item colours for [CtrlDropdownMenu]: palette text, muted icons, the disabled colour when disabled. */
+@Composable
+fun ctrlMenuItemColors(): androidx.compose.material3.MenuItemColors = androidx.compose.material3.MenuDefaults.itemColors(
+    textColor = CtrlColors.OnBackground,
+    leadingIconColor = CtrlColors.Muted,
+    trailingIconColor = CtrlColors.Muted,
+    disabledTextColor = CtrlColors.Inactive,
+    disabledLeadingIconColor = CtrlColors.Inactive,
+    disabledTrailingIconColor = CtrlColors.Inactive,
+)

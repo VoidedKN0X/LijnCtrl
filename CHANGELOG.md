@@ -4,6 +4,18 @@ What changed in each LijnCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## v0.15.2 (2026-11-02)
+
+Popup menus look right again.
+
+### Fixed
+
+- **Popup menus no longer show a grey box.** Menus used Material's default shadow, which was drawn inside the menu's own window and showed up as a grey, square-ish edge around it, most visibly in light mode. They're now flat Signal surfaces, white in light mode and dark grey in dark mode, with 16dp rounded corners, a thin border and no shadow.
+- **Menu items** use the regular text colour with grey icons, and greyed-out text for anything unavailable. **Remove** stays red.
+- Menus changed:
+  - The **⋮ menu on each saved stop** on the Stops tab (Rename, Move up, Move down, Remove from Stops).
+  - The **long-press menu on Go home / Go to work** on the Plan tab (Change place, Add to home screen, Remove).
+
 ## v0.15.1 (2026-10-25)
 
 A clean-up and hardening release: fixes for crashes when closing the app, sturdier alerts and widget, and tighter privacy.

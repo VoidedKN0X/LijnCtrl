@@ -21,7 +21,6 @@ import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -245,29 +244,26 @@ private fun StopCard(
             }
             Box {
                 IconButton(onClick = { menu = true }) { Icon(Icons.Outlined.MoreVert, stringResource(R.string.more), tint = MaterialTheme.colorScheme.onSurfaceVariant) }
-                DropdownMenu(
+                com.vknxworks.lijnctrl.ui.components.CtrlDropdownMenu(
                     expanded = menu,
                     onDismissRequest = { menu = false },
-                    shape = com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Control,
-                    containerColor = com.vknxworks.lijnctrl.ui.theme.CtrlColors.Raised,
-                    border = com.vknxworks.lijnctrl.ui.theme.ControlBorder,
                 ) {
-                    DropdownMenuItem(
+                    DropdownMenuItem(colors = com.vknxworks.lijnctrl.ui.components.ctrlMenuItemColors(),
                         text = { Text(stringResource(R.string.rename)) },
                         leadingIcon = { Icon(Icons.Outlined.Edit, null) },
                         onClick = { menu = false; renaming = true },
                     )
-                    if (index > 0) DropdownMenuItem(
+                    if (index > 0) DropdownMenuItem(colors = com.vknxworks.lijnctrl.ui.components.ctrlMenuItemColors(),
                         text = { Text(stringResource(R.string.move_up)) },
                         leadingIcon = { Icon(Icons.Outlined.ArrowUpward, null) },
                         onClick = { menu = false; scope.launch { c.favourites.move(stop.key, -1) } },
                     )
-                    if (index < count - 1) DropdownMenuItem(
+                    if (index < count - 1) DropdownMenuItem(colors = com.vknxworks.lijnctrl.ui.components.ctrlMenuItemColors(),
                         text = { Text(stringResource(R.string.move_down)) },
                         leadingIcon = { Icon(Icons.Outlined.ArrowDownward, null) },
                         onClick = { menu = false; scope.launch { c.favourites.move(stop.key, 1) } },
                     )
-                    DropdownMenuItem(
+                    DropdownMenuItem(colors = com.vknxworks.lijnctrl.ui.components.ctrlMenuItemColors(),
                         text = { Text(stringResource(R.string.remove_from_stops), color = MaterialTheme.colorScheme.error) },
                         leadingIcon = { Icon(Icons.Outlined.Delete, null, tint = MaterialTheme.colorScheme.error) },
                         onClick = { menu = false; scope.launch { c.favourites.remove(stop.key) } },

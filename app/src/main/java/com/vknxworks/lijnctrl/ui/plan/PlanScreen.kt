@@ -430,13 +430,13 @@ private fun QuickPlace(
                 }
             }
         }
-        androidx.compose.material3.DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-            androidx.compose.material3.DropdownMenuItem(text = { Text(stringResource(R.string.change_place)) }, onClick = { menu = false; onChange() })
+        com.vknxworks.lijnctrl.ui.components.CtrlDropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+            androidx.compose.material3.DropdownMenuItem(colors = com.vknxworks.lijnctrl.ui.components.ctrlMenuItemColors(), text = { Text(stringResource(R.string.change_place)) }, onClick = { menu = false; onChange() })
             if (onPin != null) {
-                androidx.compose.material3.DropdownMenuItem(text = { Text(stringResource(R.string.add_to_home_screen)) }, onClick = { menu = false; onPin() })
+                androidx.compose.material3.DropdownMenuItem(colors = com.vknxworks.lijnctrl.ui.components.ctrlMenuItemColors(), text = { Text(stringResource(R.string.add_to_home_screen)) }, onClick = { menu = false; onPin() })
             }
             if (place != null) {
-                androidx.compose.material3.DropdownMenuItem(
+                androidx.compose.material3.DropdownMenuItem(colors = com.vknxworks.lijnctrl.ui.components.ctrlMenuItemColors(),
                     text = { Text(stringResource(R.string.remove), color = MaterialTheme.colorScheme.error) },
                     onClick = { menu = false; onRemove() },
                 )
