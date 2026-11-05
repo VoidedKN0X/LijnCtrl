@@ -18,3 +18,11 @@
 # osmdroid (OpenStreetMap map in Nearby)
 -keep class org.osmdroid.** { *; }
 -dontwarn org.osmdroid.**
+
+# No debug, verbose or info logging in release builds (LijnCtrl's own code doesn't log; this also silences
+# libraries such as osmdroid, which otherwise logs map and tile details).
+-assumenosideeffects class android.util.Log {
+    public static int v(...);
+    public static int d(...);
+    public static int i(...);
+}

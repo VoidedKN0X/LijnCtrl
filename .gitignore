@@ -11,3 +11,8 @@ captures/
 *.keystore
 !debug.keystore
 *.p12
+
+# Signing keys and machine-specific or secret config: never commit these.
+keystore.properties
+google-services.json
+local.properties

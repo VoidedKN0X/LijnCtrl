@@ -98,13 +98,32 @@ The API key screen and the lock and PIN screens are always kept out of screensho
 - **The Plan tab asks to turn on Transitous**: routes are planned by Transitous, which receives the start and end of the routes you plan, so it's only used once you agree (at setup, on the Plan tab or under **Settings > Route planner**).
 - **No departures soon**: **Full timetable** on the stop page shows when the next ones are, today or on another day.
 
+## Permissions
+
+Every permission LijnCtrl has, and what it's for:
+
+| Permission | What LijnCtrl uses it for |
+| --- | --- |
+| Internet (`INTERNET`) | Departures, stops and disruptions from De Lijn's API, map tiles from OpenStreetMap and, if you turn it on, route planning with Transitous (see [Privacy](#privacy)) |
+| Network state (`ACCESS_NETWORK_STATE`) | Only refreshing the widget and checking for disruptions when the phone is online |
+| Location (`ACCESS_COARSE_LOCATION`, `ACCESS_FINE_LOCATION`) | Stops near you, routes from "My location" and your position on the route map. Only asked for when you first use one of these, and read from Android's own location service |
+| Notifications (`POST_NOTIFICATIONS`) | Bus alerts, disruption alerts and trip guidance; asked for when you turn one of them on |
+| Foreground service (`FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_DATA_SYNC`) | Keeping a bus alert or trip guidance running, with its notification showing, while you're in another app |
+| Run at startup (`RECEIVE_BOOT_COMPLETED`) | Setting the widget refresh and disruption checks up again after the phone restarts (added by Android's WorkManager) |
+| Prevent phone from sleeping (`WAKE_LOCK`) | Keeping the phone awake for the few seconds a widget refresh or disruption check takes (added by WorkManager) |
+| Biometrics (`USE_BIOMETRIC`) | Optional fingerprint unlock for the app lock |
+
+Android also lists a "dynamic receiver" permission (`DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`) that AndroidX adds to every app so only LijnCtrl itself can send it internal broadcasts; it gives the app no access to anything. LijnCtrl has no camera, microphone, contacts, storage or phone permissions, and no background location: your location is only read while the app is open.
+
 ## Privacy
 
 **Telemetry-free.** LijnCtrl has no analytics, crash reporting, usage stats or tracking of any kind, and no servers of its own. It only talks to De Lijn's API (api.delijn.be), over HTTPS; every other address is refused. The exceptions are the maps and, if you turn it on, Transitous for route planning and address search, both below. Your API key is stored encrypted on the phone (and with your app PIN while the app lock is on) and is only sent to De Lijn. Live vehicle positions come from De Lijn too (its GTFS Realtime feed on api.delijn.be), only while a map with live vehicles is open and only if you've added that key, which is stored encrypted like the main one. Alerts are worked out on the phone from De Lijn's data; disruption alerts check De Lijn every half hour only while that switch is on. The departures widget asks De Lijn for its stop's departures every 15 minutes while it's on your home screen, and never while the app lock has LijnCtrl locked. Your saved stops and recent routes stay on the phone (recent routes can be switched off in Settings). Your location is read only when you ask for nearby stops or plan a route from "My location" (including with the Go home / Go to work shortcuts), sent only to De Lijn to look up stops or, for routes, to Transitous, and never kept.
 
 **Route planning and address search** use [Transitous](https://transitous.org) (api.transitous.org), a free, open-source community planner, and only once you turn on **Use Transitous** (at setup, on the Plan tab or in Settings). Then the start, end and time of each route you plan, and the addresses and places you type in Search or in From and To, go to Transitous over its own connection that can't reach anything else. De Lijn's open data can't plan routes or search addresses, which is why. Stops are always searched with De Lijn only. Transitous's data sources are listed at [transitous.org/sources](https://transitous.org/sources/).
 
-**The maps** (Nearby, route and trip maps) load its map tiles from OpenStreetMap (tile.openstreetmap.org), which sees the area you're looking at, the same as any website with a map. Tiles are only loaded while the map is open and are cached on the phone. Everything else still only comes from De Lijn.
+**The maps** (Nearby, route and trip maps) load its map tiles from OpenStreetMap (tile.openstreetmap.org), which sees the area you're looking at, the same as any website with a map. Tiles are only loaded while the map is open and are cached on the phone. Everything else still only comes from De Lijn. The map library knows other tile servers too, but LijnCtrl only ever uses OpenStreetMap's.
+
+**Links:** the De Lijn developer portal (data.delijn.be), Transitous's source list, and the Support, Report a bug, Source code and Licence rows under About open in your browser, only when you tap them. LijnCtrl itself never contacts them.
 
 LijnCtrl isn't made or endorsed by De Lijn. Departures, stops and disruptions come from [De Lijn's open data](https://data.delijn.be/).
 
@@ -130,6 +149,8 @@ Or open the folder in Android Studio and press **Run** with your phone connected
 
 LijnCtrl is free and open source. If it's useful to you, tap **Support LijnCtrl** under **About** on the You page (tap the profile picture) to sponsor development on [GitHub Sponsors](https://github.com/sponsors/VoidedKN0X). Found a problem or have an idea? Tap **Report a bug** in the same section, or [open an issue](https://github.com/VoidedKN0X/LijnCtrl/issues). Starring the repo helps too.
 
+Found a security problem? Please don't open a public issue; see [SECURITY.md](SECURITY.md).
+
 ## The Ctrl series
 
 Native Android apps for self-hosted services and everyday tools, all with the same dark Ctrl / Signal design.
@@ -139,20 +160,31 @@ Native Android apps for self-hosted services and everyday tools, all with the sa
 | [AdCtrl](https://github.com/VoidedKN0X/AdCtrl) | Control your AdGuard Home DNS server |
 | [ArrCtrl](https://github.com/VoidedKN0X/ArrCtrl) | Radarr, Sonarr, Prowlarr, Bazarr, qBittorrent, autobrr and Cleanuparr in one app |
 | [BeamCtrl](https://github.com/VoidedKN0X/BeamCtrl) | TV remote for phones with an IR blaster |
+| [CallCtrl](https://github.com/VoidedKN0X/CallCtrl) | Phone app: dialer, call history and in-call screen |
+| [ChatCtrl](https://github.com/VoidedKN0X/ChatCtrl) | Matrix chat client for matrix.org and self-hosted Synapse |
+| [ClockCtrl](https://github.com/VoidedKN0X/ClockCtrl) | Alarms, timers, stopwatch and world clock |
+| [ContactCtrl](https://github.com/VoidedKN0X/ContactCtrl) | Contacts: browse, edit, import and export |
 | [CraftyCtrl](https://github.com/VoidedKN0X/CraftyCtrl) | Manage Minecraft servers on Crafty Controller |
-| [ElementCtrl](https://github.com/VoidedKN0X/ElementCtrl) | Matrix chat client for matrix.org and self-hosted Synapse |
+| [DateCtrl](https://github.com/VoidedKN0X/DateCtrl) | Calendar for the calendars on your phone and your accounts |
 | [FilesCtrl](https://github.com/VoidedKN0X/FilesCtrl) | File manager with NFS, SMB, SFTP, FTP and WebDAV |
 | [FrigateCtrl](https://github.com/VoidedKN0X/FrigateCtrl) | Watch and review your Frigate NVR cameras |
 | [ImmichCtrl](https://github.com/VoidedKN0X/ImmichCtrl) | Photos and backup for your Immich server |
 | [JellyCtrl](https://github.com/VoidedKN0X/JellyCtrl) | Movies, shows, music and Live TV from Jellyfin |
 | **LijnCtrl** (this app) | Live De Lijn bus and tram departures |
+| [MailCtrl](https://github.com/VoidedKN0X/MailCtrl) | Email for Gmail and Proton Mail |
 | [MemoCtrl](https://github.com/VoidedKN0X/MemoCtrl) | Notes on your Memos server |
 | [NaviCtrl](https://github.com/VoidedKN0X/NaviCtrl) | Music player for Navidrome servers |
 | [PaperCtrl](https://github.com/VoidedKN0X/PaperCtrl) | Scan and browse documents on Paperless-ngx |
 | [PrintCtrl](https://github.com/VoidedKN0X/PrintCtrl) | Bambu Lab printers through Bambuddy, and Spoolman spools |
 | [ProxCtrl](https://github.com/VoidedKN0X/ProxCtrl) | Manage your Proxmox VE server |
+| **RecorderCtrl** (this app) | Private, offline voice recorder |
+| [RideCtrl](https://github.com/VoidedKN0X/RideCtrl) | Offline maintenance, fuel and mod log for your vehicles |
 | [SeerrCtrl](https://github.com/VoidedKN0X/SeerrCtrl) | Request movies and shows on Seerr / Jellyseerr |
+| [SumCtrl](https://github.com/VoidedKN0X/SumCtrl) | Offline calculator, unit converter and work tools |
+| [SynapseCtrl](https://github.com/VoidedKN0X/SynapseCtrl) | Administer your Matrix Synapse server |
+| [TextCtrl](https://github.com/VoidedKN0X/TextCtrl) | Private SMS and MMS messaging |
 | [TrueCtrl](https://github.com/VoidedKN0X/TrueCtrl) | Monitor and manage your TrueNAS server |
+| [WrtCtrl](https://github.com/VoidedKN0X/WrtCtrl) | Manage your OpenWrt router |
 
 ## License
 

@@ -4,6 +4,22 @@ What changed in each LijnCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## v0.15.4 (2026-11-05)
+
+Release builds no longer keep library debug logging, plus a security policy and a full permission list.
+
+### Privacy
+
+- **No debug logging in release builds.** Debug, verbose and info messages from the libraries LijnCtrl uses (such as the map library, which logged map and tile details) are now stripped from the app, so nothing about where you look on the map can end up in the phone's system log. LijnCtrl's own code already logged nothing.
+- Every permission LijnCtrl has was checked against what the app does; all of them are in use, so none were removed. Location is still only asked for when you look for stops near you or plan a route from your location, and is never read in the background.
+
+### Project
+
+- New **SECURITY.md**: how to report a security problem privately, what counts, how the app protects you, and the fingerprint of the key every release is signed with.
+- The build now checks that the Gradle wrapper is an official Gradle release, and fails if any Google Play services, Firebase, ML Kit, Play Core or Tink library ever ends up in the app.
+- `.gitignore` also covers signing-key property files, `local.properties` in any folder and `google-services.json`, so they can't be committed by accident.
+- README: a new **Permissions** section with every permission and what it's for, the links the app opens listed under Privacy, a pointer to SECURITY.md, and the Ctrl series list now has all 28 apps.
+
 ## v0.15.3 (2026-11-02)
 
 Bottom sheets look right again.
