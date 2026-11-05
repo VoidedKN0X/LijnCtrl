@@ -1,5 +1,6 @@
 package com.vknxworks.lijnctrl.alerts
 
+import com.vknxworks.lijnctrl.alerts.Notifications.privateOnLockScreen
 import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -134,6 +135,7 @@ class BusAlertService : Service() {
             .setCategory(NotificationCompat.CATEGORY_PROGRESS)
             .setContentIntent(Notifications.openApp(this))
             .addAction(0, str(R.string.stop_watching), stopIntent(this))
+            .privateOnLockScreen(this, Notifications.WATCH, str(R.string.notify_public_bus))
             .build()
 
     private fun placeholder(): Notification =
@@ -168,6 +170,7 @@ class BusAlertService : Service() {
                 .setPriority(if (loud) NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_LOW)
                 .setCategory(if (loud) NotificationCompat.CATEGORY_ALARM else NotificationCompat.CATEGORY_STATUS)
                 .setContentIntent(Notifications.openApp(this, 1))
+                .privateOnLockScreen(this, if (loud) Notifications.BUS else Notifications.WATCH, str(R.string.notify_public_bus))
                 .build()
             notify(DONE_ID, n)
         }

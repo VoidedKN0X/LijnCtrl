@@ -1,5 +1,6 @@
 package com.vknxworks.lijnctrl.alerts
 
+import com.vknxworks.lijnctrl.alerts.Notifications.privateOnLockScreen
 import android.app.NotificationManager
 import android.content.Context
 import androidx.core.app.NotificationCompat
@@ -97,6 +98,7 @@ object DisruptionAlerts {
                 .setAutoCancel(true)
                 .setGroup("disruptions")
                 .setContentIntent(Notifications.openApp(context, 3))
+                .privateOnLockScreen(context, Notifications.DISRUPTIONS, str(R.string.channel_disruptions))
                 .build()
             nm.notify(id.hashCode(), n)
         }

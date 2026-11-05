@@ -1,5 +1,6 @@
 package com.vknxworks.lijnctrl.alerts
 
+import com.vknxworks.lijnctrl.alerts.Notifications.privateOnLockScreen
 import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -282,6 +283,7 @@ class TripGuideService : Service() {
             .setCategory(NotificationCompat.CATEGORY_NAVIGATION)
             .setContentIntent(Notifications.openApp(this, 5))
             .addAction(0, str(R.string.stop_watching), stopIntent(this))
+            .privateOnLockScreen(this, Notifications.WATCH, str(R.string.notify_public_guide))
             .build()
 
     private fun alert(title: String, text: String) {
@@ -295,6 +297,7 @@ class TripGuideService : Service() {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setContentIntent(Notifications.openApp(this, 6))
+            .privateOnLockScreen(this, Notifications.BUS, str(R.string.notify_public_guide))
             .build()
         notify(ALERT_ID, n)
     }
@@ -310,6 +313,7 @@ class TripGuideService : Service() {
                     .setContentText(text)
                     .setAutoCancel(true)
                     .setContentIntent(Notifications.openApp(this, 7))
+                    .privateOnLockScreen(this, Notifications.WATCH, str(R.string.notify_public_guide))
                     .build(),
             )
         }

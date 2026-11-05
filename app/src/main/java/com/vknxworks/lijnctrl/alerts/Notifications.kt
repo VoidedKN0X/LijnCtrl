@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.vknxworks.lijnctrl.MainActivity
 import com.vknxworks.lijnctrl.R
@@ -42,6 +43,20 @@ object Notifications {
 
     fun allowed(context: Context): Boolean =
         ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+
+    /**
+     * On a locked phone screen only [publicTitle] shows, not which line, stop or destination it's about.
+     * The full notification shows once the phone is unlocked.
+     */
+    fun NotificationCompat.Builder.privateOnLockScreen(context: Context, channel: String, publicTitle: String): NotificationCompat.Builder =
+        setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            .setPublicVersion(
+                NotificationCompat.Builder(context, channel)
+                    .setSmallIcon(R.drawable.ic_notification)
+                    .setColor(context.getColor(R.color.notification_accent))
+                    .setContentTitle(publicTitle)
+                    .build(),
+            )
 
     /** Opens the app (through the app lock, when it's on). */
     fun openApp(context: Context, request: Int = 0): PendingIntent = PendingIntent.getActivity(

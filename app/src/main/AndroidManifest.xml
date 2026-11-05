@@ -62,7 +62,7 @@
              refresh button, never by the launcher (updatePeriodMillis is 0). -->
         <receiver
             android:name=".widget.DepartureWidgetReceiver"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/widget_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />

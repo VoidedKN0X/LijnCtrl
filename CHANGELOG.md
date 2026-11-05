@@ -4,6 +4,15 @@ What changed in each LijnCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## v0.15.5 (2026-11-05)
+
+Alerts no longer show your line, stop or destination on the lock screen, and other apps can't make the widget use up your De Lijn quota.
+
+### Security
+
+- **Alerts are private on the lock screen.** Bus alerts ("Watching your bus" and "Your bus is almost here") showed the line, destination and the stop you're waiting at on a locked phone, and the trip guide showed where you're going. On the lock screen they now only say "Bus alert" or "Trip guide"; disruption alerts only say "Disruptions" instead of naming your saved stop or line. The full notification shows as before once you unlock the phone, and alerts still sound and vibrate the same way.
+- **Other apps can no longer refresh the departures widget.** Any app on the phone could send the widget a refresh, which asks De Lijn for departures and uses up the requests your API key is allowed. Only Android's home screen and LijnCtrl itself can update it now. The widget works exactly as before: it still refreshes every 15 minutes and with its refresh button.
+
 ## v0.15.4 (2026-11-05)
 
 Release builds no longer keep library debug logging, plus a security policy and a full permission list.

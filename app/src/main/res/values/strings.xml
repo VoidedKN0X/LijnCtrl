@@ -369,6 +369,8 @@
     <string name="channel_bus_body">The alert when the bus you\'re watching is a few minutes away</string>
     <string name="channel_disruptions">Disruptions</string>
     <string name="channel_disruptions_body">New disruptions on your saved stops and lines</string>
+    <string name="notify_public_bus">Bus alert</string>
+    <string name="notify_public_guide">Trip guide</string>
     <string name="alert_me">Alert me</string>
     <string name="alert_me_body_x">Get a notification when this bus is this many minutes from %1$s. LijnCtrl watches its live time until then.</string>
     <string name="x_min_before">%1$d minutes before</string>
