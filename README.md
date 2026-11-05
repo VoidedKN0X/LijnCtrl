@@ -88,6 +88,8 @@ Two more switches in the same section work with or without the app lock, and are
 
 The API key screen and the lock and PIN screens are always kept out of screenshots and recordings, whatever these switches say.
 
+**Nothing can be drawn over the lock screen or PIN pad.** While the lock screen, a PIN screen or a confirmation (such as removing your API key or **Forgot PIN?**) is showing, other apps' floating windows such as chat heads are hidden, so they can't cover a button to trick you into tapping it. On Android 14 and newer, apps that aren't real accessibility tools also can't read the lock and PIN screens; screen readers such as TalkBack still work. Floating windows show again as soon as those screens close.
+
 ## Tips and troubleshooting
 
 - **"De Lijn didn't accept your API key"**: check that your subscription to the Open Data product is active on data.delijn.be, then paste the key again under the profile picture › **Change API key**.
@@ -97,6 +99,19 @@ The API key screen and the lock and PIN screens are always kept out of screensho
 - **A shop or address isn't a stop name**: switch on **Search addresses and places** in Settings (or tap **Turn on** in Search), then search for it; it shows under **Places and addresses**, with the stops around it.
 - **The Plan tab asks to turn on Transitous**: routes are planned by Transitous, which receives the start and end of the routes you plan, so it's only used once you agree (at setup, on the Plan tab or under **Settings > Route planner**).
 - **No departures soon**: **Full timetable** on the stop page shows when the next ones are, today or on another day.
+
+## Check a download
+
+Every release is built from this repo by [the build workflow](.github/workflows/build.yml) on GitHub Actions and signed with the same release key. Android refuses an update signed with a different key, and the CtrlF-Droid repo only accepts APKs signed with this one. Its SHA-256 certificate fingerprint is:
+
+```
+FA:BA:C3:F4:A9:95:15:D9:C2:FF:5C:8B:9E:E5:4E:8D:B2:AD:44:EF:87:78:D0:35:CB:E5:0E:C9:33:32:3E:30
+```
+
+Advanced users can compare it with [AppVerifier](https://github.com/soupslurpr/AppVerifier).
+
+- The APK's SHA-256 checksum is at the bottom of each release's notes. Compare it with `sha256sum LijnCtrl-vX.Y.Z.apk` (or `Get-FileHash` on Windows).
+- Each release also has a signed build provenance attestation. With the [GitHub CLI](https://cli.github.com/), `gh attestation verify LijnCtrl-vX.Y.Z.apk -R VoidedKN0X/LijnCtrl` proves the APK was built by this repo's build workflow from the tagged commit, not uploaded by hand.
 
 ## Permissions
 
@@ -112,6 +127,7 @@ Every permission LijnCtrl has, and what it's for:
 | Run at startup (`RECEIVE_BOOT_COMPLETED`) | Setting the widget refresh and disruption checks up again after the phone restarts (added by Android's WorkManager) |
 | Prevent phone from sleeping (`WAKE_LOCK`) | Keeping the phone awake for the few seconds a widget refresh or disruption check takes (added by WorkManager) |
 | Biometrics (`USE_BIOMETRIC`) | Optional fingerprint unlock for the app lock |
+| Hide other apps' floating windows (`HIDE_OVERLAY_WINDOWS`) | Hide other apps' floating windows over the PIN screen, the lock screen and confirmations, so nothing can be drawn over them to trick a tap |
 
 Android also lists a "dynamic receiver" permission (`DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`) that AndroidX adds to every app so only LijnCtrl itself can send it internal broadcasts; it gives the app no access to anything. LijnCtrl has no camera, microphone, contacts, storage or phone permissions, and no background location: your location is only read while the app is open.
 
@@ -144,6 +160,8 @@ You need [Android Studio](https://developer.android.com/studio), or JDK 17 and t
 3. The APK is in `app/build/outputs/apk/debug/`. Copy it to your phone and install it.
 
 Or open the folder in Android Studio and press **Run** with your phone connected.
+
+Every library and Gradle plugin download is checked against the SHA-256 checksums in `gradle/verification-metadata.xml`; the build stops if anything doesn't match. When a dependency or plugin changes, run the **Dependency verification metadata** workflow (Actions tab), check the diff of the file it prints, and commit the new file in the same push. On Windows or macOS, Android's `aapt2` tool is a different download that isn't listed, so add `--dependency-verification=lenient` to local builds there.
 
 ## Support the project
 

@@ -17,6 +17,9 @@
     <!-- Alerts: "your bus is almost here" and disruptions on your saved stops and lines. Asked for only when you
          turn one of them on. The bus alert runs as a visible notification while it watches your bus. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Hides other apps' floating windows while the lock screen, a PIN screen or a confirmation is showing
+         (install-time, no prompt). -->
+    <uses-permission android:name="android.permission.HIDE_OVERLAY_WINDOWS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
@@ -24,9 +27,13 @@
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
     <uses-feature android:name="android.hardware.location.network" android:required="false" />
 
+    <!-- Android 16 and newer: explicit intents from other apps (the launcher, its widget set-up) must match one of
+         the intent filters below; intents without an action are refused. LijnCtrl's own intents (widgets,
+         notifications) aren't affected. -->
     <application
         android:name=".LijnCtrlApp"
         android:allowBackup="false"
+        android:intentMatchingFlags="enforceIntentFilter"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:enableOnBackInvokedCallback="true"
         android:icon="@mipmap/ic_launcher"

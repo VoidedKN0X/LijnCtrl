@@ -386,6 +386,8 @@ fun MetaRow(parts: List<String>, modifier: Modifier = Modifier, color: Color = M
 
 @Composable
 fun ConfirmDialog(title: String, body: String, confirm: String, onDismiss: () -> Unit, onConfirm: () -> Unit) {
+    // A destructive confirmation: other apps' floating windows are hidden while it shows.
+    com.vknxworks.lijnctrl.ui.lock.GuardedScreen()
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
         modifier = CtrlDialogModifier,

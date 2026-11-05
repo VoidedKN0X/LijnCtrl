@@ -437,6 +437,7 @@ private fun PinLockScreen() {
         },
     )
     if (forgetting) {
+        GuardedScreen()
         AlertDialog(
             onDismissRequest = { forgetting = false },
             modifier = com.vknxworks.lijnctrl.ui.theme.CtrlDialogModifier,
@@ -592,6 +593,8 @@ private fun PinPadScreen(
         haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
         onDigit(d)
     }
+    // No other app's floating window over the PIN pad, and no reading it by apps that aren't accessibility tools.
+    GuardedScreen(sensitive = true)
     Surface(Modifier.fillMaxSize().blockTouches(), color = CtrlColors.Background) {
         Column(
             Modifier.fillMaxSize().systemBarsPadding().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp),

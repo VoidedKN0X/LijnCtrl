@@ -4,6 +4,21 @@ What changed in each LijnCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## v0.15.6 (2026-11-05)
+
+Floating windows from other apps can no longer cover the lock screen, PIN screens or confirmations.
+
+### Security
+
+- **No floating windows over the lock screen, PIN screens and confirmations.** While the lock screen (in the app or when setting up a widget), choosing or changing your PIN, turning the lock off, **Forgot PIN?**, or a confirmation such as removing your API key is showing, other apps' floating windows, such as chat heads and screen overlays, are hidden. A malicious app can then no longer lay something over a button to trick you into tapping it. They show again as soon as that screen closes; maps, departures and the rest of the app are never affected. This uses a new permission, "Hide other apps' floating windows", which Android grants at install without asking.
+- **Lock and PIN screens are hidden from apps that misuse accessibility** (Android 14 and newer). Only real accessibility tools, such as TalkBack and other screen readers, can read the lock screen and PIN pad; other apps with accessibility access can't see what's on them. Screen readers work exactly as before.
+- **Stricter handling of requests from other apps** (Android 16 and newer). Other apps can only open LijnCtrl the way it expects: the home-screen icon and setting up the **Next departures** widget keep working, and anything else is refused by Android.
+
+### Project
+
+- **Every library and Gradle plugin download is checked.** The build now refuses any library or plugin whose SHA-256 checksum doesn't match the list in the repo, so a changed or swapped download can't end up in the app.
+- README: a new **Check a download** section (the signing-key fingerprint, the SHA-256 in the release notes and `gh attestation verify`), the new permission in the permissions table, and how to update the checksum list when a dependency changes.
+
 ## Project updates (2026-11-05)
 
 ### Project
