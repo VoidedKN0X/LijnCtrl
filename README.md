@@ -2,7 +2,7 @@
 
 **Live De Lijn departures for your stops.**
 
-[![Latest release](https://img.shields.io/github/v/release/VoidedKN0X/LijnCtrl?label=download)](https://github.com/VoidedKN0X/LijnCtrl/releases/latest) ![Android 13+](https://img.shields.io/badge/Android-13%2B-3DDC84?logo=android&logoColor=white) [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE) ![Telemetry-free](https://img.shields.io/badge/telemetry-none-brightgreen) [![Sponsor](https://img.shields.io/badge/sponsor-GitHub-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/VoidedKN0X)
+[![Latest release](https://img.shields.io/github/v/release/VoidedKN0X/LijnCtrl?label=download)](https://github.com/VoidedKN0X/LijnCtrl/releases/latest) ![Android 15+](https://img.shields.io/badge/Android-15%2B-3DDC84?logo=android&logoColor=white) [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE) ![Telemetry-free](https://img.shields.io/badge/telemetry-none-brightgreen) [![Sponsor](https://img.shields.io/badge/sponsor-GitHub-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/VoidedKN0X)
 
 LijnCtrl is an Android app for De Lijn buses and trams in Flanders, built on De Lijn's open data with your own free API key.
 
@@ -40,7 +40,7 @@ Coming soon.
 
 ## Requirements
 
-- Android 13 or newer, on a 64-bit ARM phone (nearly every phone from the last several years)
+- Android 15 or newer, on a 64-bit ARM phone (nearly every phone from the last several years)
 - A free De Lijn API key (see [Getting started](#getting-started))
 - **Google-free and de-Googled:** no Google Play services, Firebase or other Google services, and the app never contacts Google. It works the same on de-Googled phones (GrapheneOS, CalyxOS, /e/OS, LineageOS without Google apps). Nearby uses Android's own location service.
 
@@ -88,7 +88,7 @@ Two more switches in the same section work with or without the app lock, and are
 
 The API key screen and the lock and PIN screens are always kept out of screenshots and recordings, whatever these switches say.
 
-**Nothing can be drawn over the lock screen or PIN pad.** While the lock screen, a PIN screen or a confirmation (such as removing your API key or **Forgot PIN?**) is showing, other apps' floating windows such as chat heads are hidden, so they can't cover a button to trick you into tapping it. On Android 14 and newer, apps that aren't real accessibility tools also can't read the lock and PIN screens; screen readers such as TalkBack still work. Floating windows show again as soon as those screens close.
+**Nothing can be drawn over the lock screen or PIN pad.** While the lock screen, a PIN screen or a confirmation (such as removing your API key or **Forgot PIN?**) is showing, other apps' floating windows such as chat heads are hidden, so they can't cover a button to trick you into tapping it. Apps that aren't real accessibility tools also can't read the lock and PIN screens; screen readers such as TalkBack still work. Floating windows show again as soon as those screens close.
 
 ## Tips and troubleshooting
 
