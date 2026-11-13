@@ -69,6 +69,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import java.time.Instant
+import androidx.compose.material.icons.filled.NotificationsActive
 import java.time.LocalDate
 
 /** One stop of a trip, as shown on the trip page. */
@@ -212,27 +213,42 @@ fun TripScreen(entity: String, line: String, direction: String, trip: String, da
         if (i > 2) listState.scrollToItem(i - 1)
     }
 
-    // "Alert me": a notification when this bus is a few minutes from your stop.
+    // "Alert me": a notification a few minutes before this bus leaves your stop (live time when there is one).
     val context = LocalContext.current
     var askAlert by remember { mutableStateOf(false) }
     var pendingMinutes by remember { mutableStateOf<Int?>(null) }
-    fun startAlert(minutes: Int) {
-        val stopNumber = fromStop ?: return
-        com.vknxworks.lijnctrl.alerts.BusAlertService.start(
-            context,
-            com.vknxworks.lijnctrl.alerts.BusAlertRequest(
-                entity = entity,
-                stop = stopNumber,
-                stopName = names[stopNumber]?.name ?: stopNumber,
-                line = line,
-                lineLabel = info?.publicNumber ?: line,
-                direction = direction,
-                trip = trip,
-                destination = destination.orEmpty(),
-                minutesBefore = minutes,
-            ),
+    val myStop = stops.firstOrNull { it.number == fromStop }
+    val myTime = myStop?.time
+    fun alertRequest(minutes: Int): com.vknxworks.lijnctrl.alerts.BusAlertRequest? {
+        val stopNumber = fromStop ?: return null
+        return com.vknxworks.lijnctrl.alerts.BusAlertRequest(
+            entity = entity,
+            stop = stopNumber,
+            stopName = names[stopNumber]?.name ?: stopNumber,
+            line = line,
+            lineLabel = info?.publicNumber ?: line,
+            direction = direction,
+            trip = trip,
+            destination = destination.orEmpty(),
+            minutesBefore = minutes,
         )
-        android.widget.Toast.makeText(context, context.getString(R.string.bus_alert_set_x, minutes), android.widget.Toast.LENGTH_LONG).show()
+    }
+    var alertSet by remember(fromStop, trip) {
+        mutableStateOf(alertRequest(0)?.let { com.vknxworks.lijnctrl.alerts.BusAlerts.find(context, it) })
+    }
+    fun startAlert(minutes: Int) {
+        val req = alertRequest(minutes) ?: return
+        val time = myTime ?: return
+        com.vknxworks.lijnctrl.alerts.BusAlerts.set(context, req, time, live = myStop?.predicted != null)
+        alertSet = com.vknxworks.lijnctrl.alerts.BusAlerts.find(context, req)
+        val at = com.vknxworks.lijnctrl.alerts.AlertTiming.alertTime(time, minutes)
+        android.widget.Toast.makeText(context, context.getString(R.string.bus_alert_set_at_x, clockTime(at), minutes), android.widget.Toast.LENGTH_LONG).show()
+    }
+    fun cancelAlert() {
+        val req = alertRequest(0) ?: return
+        com.vknxworks.lijnctrl.alerts.BusAlerts.cancel(context, req)
+        alertSet = null
+        android.widget.Toast.makeText(context, context.getString(R.string.bus_alert_cancelled_toast), android.widget.Toast.LENGTH_SHORT).show()
     }
     val notifyPermission = androidx.activity.compose.rememberLauncherForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
@@ -248,9 +264,12 @@ fun TripScreen(entity: String, line: String, direction: String, trip: String, da
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             ScreenTopBar(destination ?: stringResource(R.string.trip)) {
-                if (fromStop != null && runsNow && planned != null) {
+                if (fromStop != null && runsNow && planned != null && (alertSet != null || myTime?.isAfter(now) == true)) {
                     androidx.compose.material3.IconButton(onClick = { askAlert = true }) {
-                        androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Outlined.NotificationAdd, stringResource(R.string.alert_me))
+                        androidx.compose.material3.Icon(
+                            if (alertSet != null) androidx.compose.material.icons.Icons.Filled.NotificationsActive else androidx.compose.material.icons.Icons.Outlined.NotificationAdd,
+                            stringResource(R.string.alert_me),
+                        )
                     }
                 }
                 if (mapData != null) {
@@ -336,7 +355,22 @@ fun TripScreen(entity: String, line: String, direction: String, trip: String, da
             text = {
                 Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
                     Text(stringResource(R.string.alert_me_body_x, stopName), style = MaterialTheme.typography.bodyMedium)
-                    listOf(2, 5, 10, 15).forEach { m ->
+                    alertSet?.let { a ->
+                        Text(
+                            stringResource(R.string.bus_alert_existing_x, clockTime(com.vknxworks.lijnctrl.alerts.AlertTiming.alertTime(a.departure, a.request.minutesBefore)), a.request.minutesBefore),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        androidx.compose.material3.OutlinedButton(onClick = { askAlert = false; cancelAlert() }, modifier = Modifier.fillMaxWidth()) {
+                            Text(stringResource(R.string.bus_alert_cancel))
+                        }
+                    }
+                    // Only lead times that are still ahead of the bus.
+                    val left = myTime?.let { com.vknxworks.lijnctrl.alerts.AlertTiming.minutesLeft(now, it) } ?: 0
+                    val options = listOf(2, 5, 10, 15, 20, 30).filter { it < left }
+                    if (options.isEmpty()) Text(stringResource(R.string.bus_alert_too_soon), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    else Text(stringResource(R.string.bus_alert_exact_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    options.forEach { m ->
                         androidx.compose.material3.OutlinedButton(
                             onClick = {
                                 askAlert = false

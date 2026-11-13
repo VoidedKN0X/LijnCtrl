@@ -24,7 +24,8 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Live buses and trams** on the trip map, the route map and the line map (every vehicle on the line), with their line number and heading (needs De Lijn's free GTFS Realtime key)
 - **Go home / Go to work** in one tap, also as launcher shortcuts on the app icon (or on your home screen), a **departures board** of every bus leaving near you, and **line filters** so a stop only shows the lines you take
 - **Trip guidance**: follow a planned route with a notification that tells you when to leave, when your bus is coming and when to get off, with live times
-- **Alerts**: a notification when your bus is a few minutes from your stop, and (optionally) when De Lijn reports a new disruption on your saved stops or lines
+- **"Your bus leaves in X minutes" alerts**: from a departure, get a notification 2 to 30 minutes before it leaves your stop, set as far ahead as you like today. Shortly before, LijnCtrl checks the live time and moves the alert with it; the alert shows the line, where it's going, your stop and the minutes left, and tells you if the trip is cancelled. No running notification and no extra permission while it waits
+- **Disruption alerts** (optional) when De Lijn reports a new disruption on your saved stops or lines
 - **Search** for stops by name (in any word order) or the number on their sign, lines by number, every stop in a town, and (if you switch it on) shops, addresses and landmarks with the stops around them
 - **Nearby** stops as a list or on an OpenStreetMap map
 - **Disruptions on the departure board**: a departure hit by a disruption or diversion shows a warning you can tap open for the full message, and trip pages list the disruptions on their line
@@ -80,6 +81,7 @@ Turn it on under the profile picture › **Settings > Privacy and security > App
 - **Change app PIN** asks for your current PIN first, and turning the app lock off asks for the PIN too.
 - **Forgot your PIN?** It can't be recovered, because it encrypts your API key. The lock screen offers to remove the key and turn the lock off; you paste your key again and your saved stops stay.
 - **With the app lock on**, the recent-apps screen always shows a blank card.
+- **Bus alerts while locked:** while an alert is set, a copy of the API key stays in LijnCtrl's memory (never on storage) so the alert can check the live time after the app locks. If Android ends LijnCtrl in the meantime, the alert still goes off, at the last known time.
 
 Two more switches in the same section work with or without the app lock, and are both off until you turn them on:
 
@@ -123,7 +125,7 @@ Every permission LijnCtrl has, and what it's for:
 | Network state (`ACCESS_NETWORK_STATE`) | Only refreshing the widget and checking for disruptions when the phone is online |
 | Location (`ACCESS_COARSE_LOCATION`, `ACCESS_FINE_LOCATION`) | Stops near you, routes from "My location" and your position on the route map. Only asked for when you first use one of these, and read from Android's own location service |
 | Notifications (`POST_NOTIFICATIONS`) | Bus alerts, disruption alerts and trip guidance; asked for when you turn one of them on |
-| Foreground service (`FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_DATA_SYNC`) | Keeping a bus alert or trip guidance running, with its notification showing, while you're in another app |
+| Foreground service (`FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_DATA_SYNC`) | Keeping trip guidance running, with its notification showing, while you're in another app (bus alerts use Android's alarm clock instead and need no permission of their own) |
 | Run at startup (`RECEIVE_BOOT_COMPLETED`) | Setting the widget refresh and disruption checks up again after the phone restarts (added by Android's WorkManager) |
 | Prevent phone from sleeping (`WAKE_LOCK`) | Keeping the phone awake for the few seconds a widget refresh or disruption check takes (added by WorkManager) |
 | Biometrics (`USE_BIOMETRIC`) | Optional fingerprint unlock for the app lock |

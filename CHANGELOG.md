@@ -4,6 +4,22 @@ What changed in each LijnCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## v0.16.0 (2026-11-13)
+
+Bus alerts can now be set long before the bus leaves, and no longer keep a notification running while they wait.
+
+### New
+
+- **"Your bus leaves in X minutes" alerts, set ahead.** On a trip page opened from a stop, tap the bell to get an alert 2, 5, 10, 15, 20 or 30 minutes before the bus or tram leaves your stop (only lead times still ahead are offered). It works for any departure later today, not only buses already on the road.
+- **The alert follows the live time.** Shortly before it's due (15, 5 and 1 minute before), LijnCtrl checks the bus's live time and moves the alert if it's late or early. The alert shows the line, where it's going, your stop and how many minutes are left, and says whether that's the live time or the timetable.
+- **Cancelled trips:** if De Lijn cancels the trip, you get a notification instead of the alert.
+- **See or cancel an alert:** the bell on the trip page shows when an alert is set; tap it to see when it goes off or to cancel it.
+
+### Changed
+
+- **No running notification while an alert waits.** Alerts are woken up by Android's alarm clock instead of a service watching the bus every 30 seconds, which saves battery and works for buses hours away. LijnCtrl asks for no new permission for this; Android may deliver an alert a minute or two late to save battery, and the alert always says how many minutes are really left.
+- **With the app lock on**, an alert set before LijnCtrl locked still checks the live time as long as Android keeps LijnCtrl in memory; otherwise it goes off at the last known time.
+
 ## v0.15.9 (2026-11-13)
 
 A security and housekeeping update. Departures, live buses, route planning and the widget work as before.

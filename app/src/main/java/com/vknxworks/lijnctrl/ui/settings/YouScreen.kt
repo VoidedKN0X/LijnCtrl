@@ -177,6 +177,7 @@ fun YouScreen() {
         ) {
             confirmRemove = false
             c.apiKey.clear()
+            com.vknxworks.lijnctrl.alerts.BusAlerts.forgetKey()
         }
     }
 }

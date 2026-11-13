@@ -102,6 +102,7 @@ class AppContainer(val context: Context) {
     /** "Forgot PIN?": the sealed API key can't be read any more, so forget it. Saved stops stay. */
     suspend fun forgetEverything() {
         apiKey.clear()
+        com.vknxworks.lijnctrl.alerts.BusAlerts.forgetKey()
         gtfsKey.clear()
         AppLock.markUnlocked()
         vault.disable()
@@ -128,6 +129,8 @@ class AppContainer(val context: Context) {
 
     init {
         AppLock.onLocked = { onLocked() }
+        // Bus alerts set before the phone restarted (Android forgets alarms then) get their alarms back.
+        appScope.launch { runCatching { com.vknxworks.lijnctrl.alerts.BusAlerts.rescheduleAll(context) } }
     }
 }
 
