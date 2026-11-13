@@ -5,6 +5,7 @@ import com.vknxworks.lijnctrl.R
 import com.vknxworks.lijnctrl.data.api.ApiException
 import com.vknxworks.lijnctrl.data.api.DeLijnApi
 import com.vknxworks.lijnctrl.data.api.StopKey
+import com.vknxworks.lijnctrl.data.api.textAtMost
 import com.vknxworks.lijnctrl.data.places.PlaceKind
 import com.vknxworks.lijnctrl.data.places.PlaceResult
 import com.vknxworks.lijnctrl.str
@@ -99,8 +100,9 @@ private data class TPlan(
  * start and end of your route are then sent to api.transitous.org. Its own HTTP client can't reach anything else,
  * and it identifies itself as LijnCtrl as Transitous asks.
  */
-class TransitousPlanner {
-    private val http: OkHttpClient = OkHttpClient.Builder()
+class TransitousPlanner(base: OkHttpClient) {
+    // Shares the app's connection pool and threads, but with its own rules: only Transitous, over HTTPS.
+    private val http: OkHttpClient = base.newBuilder()
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(45, TimeUnit.SECONDS)
         .followRedirects(false)
@@ -131,7 +133,7 @@ class TransitousPlanner {
             .addQueryParameter("language", "nl")
             .build()
         val body = http.newCall(Request.Builder().url(url).build()).execute().use { r ->
-            val text = r.body?.string().orEmpty()
+            val text = r.body?.textAtMost().orEmpty()
             when {
                 r.code == 429 -> throw ApiException(429, str(R.string.transitous_busy))
                 !r.isSuccessful -> throw ApiException(r.code, str(R.string.transitous_error_x, r.code))
@@ -153,7 +155,7 @@ class TransitousPlanner {
             .addQueryParameter("numResults", (max + 4).toString())
             .build()
         val body = http.newCall(Request.Builder().url(url).build()).execute().use { r ->
-            val t = r.body?.string().orEmpty()
+            val t = r.body?.textAtMost().orEmpty()
             when {
                 r.code == 429 -> throw ApiException(429, str(R.string.transitous_busy))
                 !r.isSuccessful -> throw ApiException(r.code, str(R.string.transitous_error_x, r.code))

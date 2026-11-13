@@ -55,7 +55,7 @@ class DeLijnApi(private val http: OkHttpClient, private val apiKey: () -> String
             .header("Cache-Control", "no-cache")
             .build()
         http.newCall(request).execute().use { response ->
-            val text = response.body?.string().orEmpty()
+            val text = response.body?.textAtMost().orEmpty()
             if (!response.isSuccessful) throw ApiException(response.code, errorMessage(response.code, text))
             text
         }

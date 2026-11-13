@@ -4,6 +4,22 @@ What changed in each LijnCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## v0.15.9 (2026-11-13)
+
+A security and housekeeping update. Departures, live buses, route planning and the widget work as before.
+
+### Security
+
+- **Answers from servers are size-limited.** An unexpectedly huge answer from De Lijn or Transitous, or a live-bus feed that unpacks to something enormous, is refused with a message instead of filling the phone's memory. Normal answers are far below the limits.
+- **Sturdier live-bus reader:** a damaged live-bus feed can no longer trick the reader into reading past the end of the data.
+- **Your API keys get the strongest hardware the phone has:** on a new install, the key that encrypts your saved API keys is kept in StrongBox, the separate security chip, when your phone has one. Keys you already saved keep working.
+- **Nothing is backed up, also from device-protected storage.**
+- **The build tool download is checked** against its published SHA-256 checksum.
+
+### Performance
+
+- De Lijn and Transitous now share one connection pool, so LijnCtrl keeps fewer connections and threads around.
+
 ## v0.15.8 (2026-11-12)
 
 ### Changed

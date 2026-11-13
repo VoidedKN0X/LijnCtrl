@@ -40,6 +40,7 @@
     <string name="can_t_reach_de_lijn">Can\'t reach De Lijn. Check your connection.</string>
     <string name="de_lijn_took_too_long">De Lijn took too long to answer</string>
     <string name="blocked_request_to_x">Blocked a request to %1$s: LijnCtrl only talks to De Lijn</string>
+    <string name="answer_too_large">The server sent an unexpectedly large answer, so LijnCtrl didn\'t read it</string>
     <string name="network_error">Network error</string>
     <string name="something_went_wrong">Something went wrong</string>
     <string name="server_error">Server error</string>

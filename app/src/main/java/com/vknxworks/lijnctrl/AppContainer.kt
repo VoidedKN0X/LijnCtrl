@@ -30,16 +30,20 @@ class AppContainer(val context: Context) {
      */
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, _ -> })
 
-    /**
-     * Only ever talks to De Lijn's API, over HTTPS: any other host, plain HTTP or a redirect elsewhere is
-     * refused before the request (and the API key in its header) leaves the phone.
-     */
-    val http: OkHttpClient = OkHttpClient.Builder()
+    /** One connection pool and thread pool for the whole app; [http] and Transitous each add their own host rule. */
+    private val baseHttp: OkHttpClient = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .followRedirects(false)
         .followSslRedirects(false)
         .retryOnConnectionFailure(true)
+        .build()
+
+    /**
+     * Only ever talks to De Lijn's API, over HTTPS: any other host, plain HTTP or a redirect elsewhere is
+     * refused before the request (and the API key in its header) leaves the phone.
+     */
+    val http: OkHttpClient = baseHttp.newBuilder()
         .addInterceptor { chain ->
             chain.proceed(
                 chain.request().newBuilder()
@@ -71,7 +75,7 @@ class AppContainer(val context: Context) {
     val disruptions = com.vknxworks.lijnctrl.data.disruptions.DisruptionRepository(api)
     val towns = TownRepository(api)
     /** Route planning and address search; only contacted once the user turns on Transitous. */
-    val transitous = TransitousPlanner()
+    val transitous = TransitousPlanner(baseHttp)
     val favourites = FavouritesRepository(context, appScope)
     val planHistory = com.vknxworks.lijnctrl.data.plan.PlanHistoryRepository(context, appScope)
     val places = com.vknxworks.lijnctrl.data.plan.SavedPlacesRepository(context, appScope)

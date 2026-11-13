@@ -37,7 +37,10 @@ object GtfsRealtime {
     fun parse(raw: ByteArray): RtFeed {
         // De Lijn sends the feed gzipped, sometimes without saying so in the headers: unpack it here then.
         val bytes = if (raw.size > 2 && raw[0] == 0x1f.toByte() && raw[1] == 0x8b.toByte()) {
-            java.util.zip.GZIPInputStream(raw.inputStream()).use { it.readBytes() }
+            // Unpacked with a limit, so a tiny "zip bomb" can't fill the memory.
+            val limit = com.vknxworks.lijnctrl.data.api.MAX_FEED_UNPACKED_BYTES.toInt()
+            java.util.zip.GZIPInputStream(raw.inputStream()).use { it.readNBytes(limit + 1) }
+                .also { if (it.size > limit) throw IllegalArgumentException("feed too large") }
         } else raw
         val firstNonSpace = bytes.firstOrNull { it.toInt().toChar() !in " \n\r\t" }
         return if (firstNonSpace?.toInt()?.toChar() == '{') parseJson(bytes.decodeToString()) else parseProto(bytes)
@@ -71,8 +74,10 @@ object GtfsRealtime {
             return lo or (hi shl 32)
         }
         fun sub(): Reader {
-            val len = varint().toInt()
-            if (len < 0 || pos + len > end) throw IllegalArgumentException("bad length")
+            // Checked as a Long against what's left, so a huge or negative length can't overflow past the check.
+            val l = varint()
+            if (l < 0 || l > (end - pos).toLong()) throw IllegalArgumentException("bad length")
+            val len = l.toInt()
             val r = Reader(buf, pos, pos + len)
             pos += len
             return r

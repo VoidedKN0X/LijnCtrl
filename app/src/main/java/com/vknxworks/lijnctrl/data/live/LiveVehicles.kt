@@ -3,6 +3,7 @@ package com.vknxworks.lijnctrl.data.live
 import com.vknxworks.lijnctrl.R
 import com.vknxworks.lijnctrl.data.api.ApiException
 import com.vknxworks.lijnctrl.data.api.DeLijnApi
+import com.vknxworks.lijnctrl.data.api.bytesAtMost
 import com.vknxworks.lijnctrl.str
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -53,7 +54,7 @@ class LiveVehicles(private val http: OkHttpClient, private val key: () -> String
             .build()
         val req = Request.Builder().url(url).header("Ocp-Apim-Subscription-Key", k).build()
         http.newCall(req).execute().use { r ->
-            val body = r.body?.bytes() ?: ByteArray(0)
+            val body = r.body?.bytesAtMost(com.vknxworks.lijnctrl.data.api.MAX_FEED_BYTES) ?: ByteArray(0)
             when {
                 r.code == 401 || r.code == 403 -> throw ApiException(r.code, str(R.string.gtfs_key_refused))
                 r.code == 429 -> throw ApiException(429, str(R.string.gtfs_busy))
