@@ -15,6 +15,14 @@ Built and checked by CI only: nothing here has been run on a phone yet.
 - **Stop cards that didn't change aren't drawn again.** At each 30-second refresh of the Stops tab, a stop whose departures are exactly the same as before keeps its card as it was.
 - **Slightly quicker start.** The "Go home" and "Go to work" launcher shortcuts are handed to Android in the background instead of while the first screen is being set up.
 
+### Project
+
+These three change how LijnCtrl is built on GitHub, not the app itself.
+
+- **The signing key is no longer available to the build.** Until now the release key and its passwords were present in the same GitHub Actions job that runs Gradle, so any build plugin or library could in principle have read them. The build job now has no secrets at all and produces an unsigned APK. A separate job, which checks out no code and runs no Gradle, signs it with `apksigner`, and then refuses to hand it on unless it is signed by exactly the certificate published in SECURITY.md and README.md and its contents are identical to what the build job made. The key and the signature scheme (v2) are the same as before, so updates install as usual. The release step itself has not run with the new workflow yet; the next release is its first use in this repo (the same workflow already published a release of DateCtrl).
+- **The build checks that the published fingerprint and the enforced one are the same.** If `build.yml`, SECURITY.md and README.md ever disagree about the signing certificate, the build fails.
+- **Builds no longer use a saved Gradle cache, and the Gradle plugin portal is no longer a plugin source.** Other Ctrl apps had builds fail with "Dependency verification failed ... from repository Gradle Central Plugin Repository", and keep failing until the caches were deleted by hand. The cause was found on DateCtrl: when Maven Central can't be reached for a moment, Gradle takes the Kotlin plugin "marker" file from the plugin portal instead, the portal serves a different file under the same name, verification rightly refuses it, and the failed run then saved that state as the cache for every later run. Now every build and the weekly code scan start from a clean Gradle home, and `settings.gradle.kts` lists only Maven Central and Google's Maven for plugins; everything the build needs is there. Dependency verification itself is unchanged and as strict as before. Builds take a minute or two longer.
+
 ## v0.19.0 (2026-11-20)
 
 **This release encrypts some of what the app stores on the phone. An older version cannot read it afterwards, so export or back up anything you need before you update (details below).** Built and checked by CI only: nothing in this release had been run on a phone when it was published.
