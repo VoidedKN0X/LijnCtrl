@@ -10,6 +10,15 @@ To publish a new version: bump `versionCode` and `versionName` in `app/build.gra
 
 - **The weekly code scan no longer fails at random.** CodeQL has to watch the app being compiled, but its build could take the compiled code from Gradle's build cache instead, and then the scan stopped with "CodeQL detected code written in Java/Kotlin but this run didn't build any of it" (and GitHub mailed a failed run). The scan's build now runs with `--no-build-cache`, so the code is always compiled. No app changes, so no new version.
 
+## v0.17.0 (2026-11-20)
+
+### Changed
+
+- **See your bus live as soon as you open a route.** The map at the top of a planned route now shows your bus or tram live straight away (with a GTFS Realtime key), moving along the route with its line number and heading, instead of only on the full-screen map. Before, the route page's map was a still picture without any vehicles.
+- **The map zooms to your bus and your stop.** Once your bus or tram is found, the map zooms so both the vehicle and the stop where you get on are in view, so you can see at a glance how far away it is. When you're already on board, it zooms to the vehicle. This also happens on the full-screen route map, and again for each route you switch to there.
+- **A bigger map while your bus is coming.** When a ride of the route is on its way or leaves within the next hour and a half, the map on the route page is taller (about half as tall again), so the live bus is easier to follow. Tap it for the full-screen map as before.
+- The label on the map says whether the bus was found and how fresh its position is, as on the other maps; without a GTFS Realtime key it says how to add one.
+
 ## v0.16.1 (2026-11-20)
 
 ### Fixed

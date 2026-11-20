@@ -181,6 +181,8 @@ fun RouteMap(
     focusOnBus: Boolean = false,
     /** More vehicles to show, drawn like the (first) ride: the line page shows every vehicle on the line. */
     extraVehicles: List<com.vknxworks.lijnctrl.data.live.LiveTarget> = emptyList(),
+    /** Show buses and trams live; the still preview on a route's page does too, so you see your bus right away. */
+    live: Boolean = interactive,
 ) {
     val context = LocalContext.current
     val nav = LocalNavigator.current
@@ -282,7 +284,8 @@ fun RouteMap(
     val gtfsKey by c.gtfsKey.key.collectAsStateWithLifecycle()
     val busMarkers = remember { mutableListOf<Marker>() }
     var liveState by remember { mutableStateOf<LiveState?>(null) }
-    var focusedBus by remember { mutableStateOf(false) }
+    // Reset per route, so switching routes on the full map zooms to that route's bus.
+    var focusedBus by remember(journey) { mutableStateOf(false) }
     val rideLegs = remember(journey) { journey.legs.filter { !it.isWalk } }
     // Vehicles beyond the journey's own rides (the line page) take the first ride's line and route.
     fun legFor(ride: Int) = rideLegs.getOrElse(ride) { rideLegs.first() }
@@ -300,7 +303,7 @@ fun RouteMap(
             }
         } + extraVehicles
     }
-    val wantsLive = interactive && targets.any { it != null }
+    val wantsLive = live && targets.any { it != null }
     // One smooth track and one marker per ride being followed (keyed by the ride's position in the journey).
     val tracks = remember(journey) { mutableMapOf<Int, BusTrack>() }
     val markerByRide = remember(journey) { mutableMapOf<Int, Marker>() }
@@ -367,12 +370,23 @@ fun RouteMap(
                 }
                 result.onFailure { e -> if (tracks.isEmpty()) liveState = LiveState.Failed(e.friendlyMessage()) }
                 result.onSuccess {
-                    val live = tracks.values.filter { it.hasFix }
-                    liveState = if (live.isEmpty()) LiveState.NotFound else LiveState.Found(live.size, live.mapNotNull { it.reportedAt }.maxOrNull())
-                    if (focusOnBus && !focusedBus && !following && live.isNotEmpty()) {
+                    val seen = tracks.values.filter { it.hasFix }
+                    liveState = if (seen.isEmpty()) LiveState.NotFound else LiveState.Found(seen.size, seen.mapNotNull { it.reportedAt }.maxOrNull())
+                    if (focusOnBus && !focusedBus && !following && seen.isNotEmpty()) {
                         focusedBus = true
-                        val (lat, lon, _) = live.first().position(System.currentTimeMillis())
-                        map.controller.animateTo(GeoPoint(lat, lon), maxOf(map.zoomLevelDouble, 15.0), 600L)
+                        // The first ride with a live vehicle: the one you're on, or the next one you take.
+                        val (ride, track) = tracks.entries.filter { it.value.hasFix }.minBy { it.key }
+                        val (lat, lon, _) = track.position(System.currentTimeMillis())
+                        val bus = GeoPoint(lat, lon)
+                        val leg = legFor(ride)
+                        val boarding = leg.path.firstOrNull()?.takeIf { java.time.Instant.now().isBefore(leg.start) }
+                        if (boarding != null && map.width > 0) {
+                            // Not on board yet: the bus and the stop you get on at, so you see how far away it is.
+                            val box = BoundingBox.fromGeoPointsSafe(listOf(bus, boarding.geo()))
+                            map.zoomToBoundingBox(box, true, px(56f).toInt(), 16.5, 700L)
+                        } else {
+                            map.controller.animateTo(bus, maxOf(map.zoomLevelDouble, 15.0), 600L)
+                        }
                     }
                 }
                 val tracking = tracks.values.any { it.vehicleId != null }
@@ -629,8 +643,14 @@ fun RouteMap(
 @Composable
 fun RouteMapPreview(journey: Journey, onOpen: () -> Unit) {
     val cs = MaterialTheme.colorScheme
-    Box(Modifier.fillMaxWidth().height(200.dp).clip(com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Card).background(cs.surface).border(1.dp, com.vknxworks.lijnctrl.ui.theme.CtrlColors.Outline, com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Card)) {
-        RouteMap(journey, Modifier.fillMaxSize(), interactive = false)
+    // Taller while a ride of this route is on its way or leaving soon, so the live bus is easy to follow.
+    val soon = remember(journey) {
+        val now = java.time.Instant.now()
+        journey.legs.any { !it.isWalk && it.fromStop != null && it.end.isAfter(now) && it.start.isBefore(now.plusSeconds(90 * 60)) }
+    }
+    Box(Modifier.fillMaxWidth().height(if (soon) 300.dp else 200.dp).clip(com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Card).background(cs.surface).border(1.dp, com.vknxworks.lijnctrl.ui.theme.CtrlColors.Outline, com.vknxworks.lijnctrl.ui.theme.CtrlShapes.Card)) {
+        // Still (no panning), but with your bus or tram live, zoomed to it and your stop once it's found.
+        RouteMap(journey, Modifier.fillMaxSize(), interactive = false, live = true, focusOnBus = true)
         // On top of the map, so a tap opens the full map instead of reaching the (still) map.
         Box(Modifier.fillMaxSize().clickable(onClick = onOpen))
         Surface(
@@ -666,7 +686,7 @@ fun RouteMapScreen(index: Int) {
             return@Scaffold
         }
         Column(Modifier.padding(padding).fillMaxSize()) {
-            RouteMap(journey, Modifier.weight(1f).fillMaxWidth())
+            RouteMap(journey, Modifier.weight(1f).fillMaxWidth(), focusOnBus = true)
             Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(top = 8.dp, bottom = 12.dp)) {
                 if (results.size > 1) {
                     val rowState = rememberLazyListState(initialFirstVisibleItemIndex = selected)
