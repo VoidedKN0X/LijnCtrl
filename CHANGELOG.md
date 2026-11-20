@@ -4,9 +4,9 @@ What changed in each LijnCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
-## Unreleased
+## v0.18.0 (2026-11-20)
 
-Not released yet: these changes are on `main` and come with the next version.
+Built and checked by CI only: nothing in this release had been run on a phone when it was published.
 
 ### Changed
 
