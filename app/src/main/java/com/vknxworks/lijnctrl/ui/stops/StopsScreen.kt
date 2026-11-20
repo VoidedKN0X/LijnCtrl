@@ -135,7 +135,9 @@ fun StopsScreen() {
                 if (merged.isNotEmpty()) failed.remove(k)
             }
         }
-        departures = result
+        // A stop whose departures didn't change keeps the list it had, so its card isn't drawn again.
+        val shown = departures
+        departures = result.mapValues { (k, list) -> shown[k]?.takeIf { it == list } ?: list }
         errors = failed
         updated = Instant.now()
         // Disruptions on the departures shown: the stop's own list, plus the line directions of what's shown

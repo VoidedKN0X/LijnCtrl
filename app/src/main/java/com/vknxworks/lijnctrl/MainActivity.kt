@@ -22,6 +22,7 @@ import com.vknxworks.lijnctrl.ui.lock.lockCovering
 import com.vknxworks.lijnctrl.ui.lock.lockLocked
 import com.vknxworks.lijnctrl.ui.nav.AppRoot
 import com.vknxworks.lijnctrl.ui.theme.LijnCtrlTheme
+import kotlinx.coroutines.launch
 
 /** The Ctrl backgrounds (dark #08080A, light #F5F5F1), also behind the status and navigation bars. */
 private const val BAR_DARK = 0xFF08080A.toInt()
@@ -49,8 +50,9 @@ class MainActivity : ComponentActivity() {
         setRecentsScreenshotEnabled(false)
         // A "Go home" / "Go to work" shortcut; picked up once the app's screens are shown.
         if (savedInstanceState == null) com.vknxworks.lijnctrl.ui.nav.LaunchRequests.handle(this, intent)
-        com.vknxworks.lijnctrl.ui.plan.Shortcuts.publish(applicationContext)
         val c = container
+        // The launcher shortcuts are handed to Android in the background, not while the first screen is being set up.
+        c.appScope.launch { com.vknxworks.lijnctrl.ui.plan.Shortcuts.publish(applicationContext) }
         setContent {
             val settings by c.settings.settings.collectAsStateWithLifecycle()
             // Follows the phone's dark/light setting: bars in the background colour, icons light on dark and dark on light.

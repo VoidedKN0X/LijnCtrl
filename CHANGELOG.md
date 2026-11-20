@@ -4,6 +4,17 @@ What changed in each LijnCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## Unreleased
+
+Built and checked by CI only: nothing here has been run on a phone yet.
+
+### Changed
+
+- **The Stops tab fills in faster after opening the app, with fewer downloads.** To top up the live departures, LijnCtrl downloads the whole day's timetable of every saved stop (and tomorrow's late in the evening, yesterday's just after midnight). Those were only kept in memory, so every fresh start of the app downloaded all of them again before the tab was complete. The timetables of your saved stops are now also kept on the phone for 6 hours, so opening the app again within that time shows them without downloading. Live times, delays and cancellations are still asked from De Lijn every 30 seconds as before; only the timetable part is reused. What you might notice: a timetable change De Lijn makes during the day can take up to 6 hours to show after a restart of the app (before, a restart fetched it again; without a restart it was already kept until the app closed).
+- **The kept timetables are encrypted, and only cover saved stops.** They're in one file in LijnCtrl's cache folder (`timetables.bin`), encrypted with AES-256-GCM under the same key as your saved stops. It only holds stops that are on your Stops tab, so it says nothing about other stops you looked at; when you remove a stop, its timetables are removed from the file a few seconds later. If there's no encryption key on the phone, nothing is written at all (the app then works as before, from memory). If the file can't be opened, it's deleted and the timetables are downloaded again. Android may clear it at any time, and "Clear cache" in Android's app settings removes it.
+- **Stop cards that didn't change aren't drawn again.** At each 30-second refresh of the Stops tab, a stop whose departures are exactly the same as before keeps its card as it was.
+- **Slightly quicker start.** The "Go home" and "Go to work" launcher shortcuts are handed to Android in the background instead of while the first screen is being set up.
+
 ## v0.19.0 (2026-11-20)
 
 **This release encrypts some of what the app stores on the phone. An older version cannot read it afterwards, so export or back up anything you need before you update (details below).** Built and checked by CI only: nothing in this release had been run on a phone when it was published.
