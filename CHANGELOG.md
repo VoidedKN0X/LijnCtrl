@@ -4,6 +4,15 @@ What changed in each LijnCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## Unreleased
+
+Not released yet: these changes are on `main` and come with the next version.
+
+### Removed
+
+- **The "Next departures" home-screen widget is gone.** The widget, its set-up screen (choose a stop and lines), its refresh button and its 15-minute background refresh have been removed from LijnCtrl. A widget that's still on your home screen stops working after the update and can be removed. Once after the update, LijnCtrl cancels the widget's background refresh and deletes the small file with the widget's stops and last departures. Without the widget, LijnCtrl no longer asks De Lijn for departures in the background; disruption alerts, bus alerts and trip guidance work as before. The "Go home" and "Go to work" launcher shortcuts stay. LijnCtrl never had a Quick Settings tile.
+- The Jetpack Glance library, which was only used for the widget, is no longer part of the app.
+
 ## Project updates (2026-11-19)
 
 ### Project

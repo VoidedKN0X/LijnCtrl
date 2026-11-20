@@ -28,9 +28,9 @@
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
     <uses-feature android:name="android.hardware.location.network" android:required="false" />
 
-    <!-- Android 16 and newer: explicit intents from other apps (the launcher, its widget set-up) must match one of
-         the intent filters below; intents without an action are refused. LijnCtrl's own intents (widgets,
-         notifications) aren't affected. -->
+    <!-- Android 16 and newer: explicit intents from other apps (the launcher) must match one of the intent
+         filters below; intents without an action are refused. LijnCtrl's own intents (shortcuts, notifications)
+         aren't affected. -->
     <application
         android:name=".LijnCtrlApp"
         android:allowBackup="false"
@@ -71,33 +71,6 @@
             android:name=".alerts.TripGuideService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
-
-        <!-- "Next departures" home-screen widget (Glance). Refreshed by WorkManager every 15 minutes and by its
-             refresh button, never by the launcher (updatePeriodMillis is 0). -->
-        <receiver
-            android:name=".widget.DepartureWidgetReceiver"
-            android:exported="false"
-            android:label="@string/widget_name">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/departure_widget_info" />
-        </receiver>
-        <!-- Picks the widget's stop. Exported because the launcher opens it; it closes at once unless the widget id
-             is one of LijnCtrl's own widgets, and it's behind the app lock like the app. -->
-        <activity
-            android:name=".widget.DepartureWidgetConfigActivity"
-            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|keyboard|navigation|density|uiMode"
-            android:excludeFromRecents="true"
-            android:exported="true"
-            android:taskAffinity=""
-            android:theme="@style/Theme.LijnCtrl">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
-            </intent-filter>
-        </activity>
 
         <!-- AndroidX adds two exported receivers for developer tooling (WorkManager diagnostics and the profile
              installer, both reached over adb). LijnCtrl doesn't need them, so they're removed. -->

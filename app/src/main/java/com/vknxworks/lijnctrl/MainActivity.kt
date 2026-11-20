@@ -47,7 +47,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         // Recents shows a blank card until the settings are read (then "Hide in recent apps" decides).
         setRecentsScreenshotEnabled(false)
-        // A "Go home" / "Go to work" shortcut or a widget tap; picked up once the app's screens are shown.
+        // A "Go home" / "Go to work" shortcut; picked up once the app's screens are shown.
         if (savedInstanceState == null) com.vknxworks.lijnctrl.ui.nav.LaunchRequests.handle(this, intent)
         com.vknxworks.lijnctrl.ui.plan.Shortcuts.publish(applicationContext)
         val c = container

@@ -113,24 +113,35 @@ class AppContainer(val context: Context) {
         vault.close()
         apiKey.onLocked()
         gtfsKey.onLocked()
-        // The departures widgets stop showing your stop while the key is sealed.
-        if (vault.enabled) appScope.launch { runCatching { com.vknxworks.lijnctrl.widget.Widgets.redraw(context) } }
     }
 
     fun onUnlocked() {
         AppLock.markUnlocked()
         apiKey.onUnlocked()
         gtfsKey.onUnlocked()
-        // Unlocked: the departures widgets can show (and fetch) departures again.
-        if (vault.enabled) appScope.launch {
-            runCatching { if (com.vknxworks.lijnctrl.widget.Widgets.placed(context).isNotEmpty()) com.vknxworks.lijnctrl.widget.Widgets.refreshNow(context) }
-        }
     }
 
     init {
         AppLock.onLocked = { onLocked() }
         // Bus alerts set before the phone restarted (Android forgets alarms then) get their alarms back.
         appScope.launch { runCatching { com.vknxworks.lijnctrl.alerts.BusAlerts.rescheduleAll(context) } }
+        appScope.launch(Dispatchers.IO) { runCatching { removeWidgetLeftovers() } }
+    }
+
+    /**
+     * The "Next departures" home-screen widget was removed. Once after the update: its 15-minute background
+     * refresh is cancelled (Android would otherwise keep trying to start a job that no longer exists) and the
+     * file with its stops and last departures is deleted.
+     */
+    private fun removeWidgetLeftovers() {
+        val prefs = context.getSharedPreferences("cleanup", Context.MODE_PRIVATE)
+        if (prefs.getBoolean("widgets_removed", false)) return
+        val work = androidx.work.WorkManager.getInstance(context)
+        work.cancelUniqueWork("departure-widgets")
+        work.cancelUniqueWork("departure-widgets-now")
+        java.io.File(context.filesDir, "widgets.json").delete()
+        java.io.File(context.filesDir, "widgets.json.tmp").delete()
+        prefs.edit().putBoolean("widgets_removed", true).apply()
     }
 }
 

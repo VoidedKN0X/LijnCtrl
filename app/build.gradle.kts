@@ -123,8 +123,6 @@ dependencies {
     // OpenStreetMap map for Nearby (no Google services). Map tiles come from tile.openstreetmap.org.
     implementation(libs.osmdroid)
     implementation(libs.androidx.work.runtime)
-    // Home-screen widget (Jetpack Glance, Apache 2.0; no Google services).
-    implementation(libs.glance.appwidget)
 
     // Unit tests only (not in the app)
     testImplementation(libs.junit)

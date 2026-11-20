@@ -111,7 +111,7 @@ private fun MainScaffold() {
         }
     }
 
-    // Shortcuts and the widget: handled here, once the app is unlocked and has its key.
+    // Launcher shortcuts: handled here, once the app is unlocked and has its key.
     val launch = LaunchRequests.pending
     val context = LocalContext.current
     androidx.compose.runtime.LaunchedEffect(launch) {
@@ -120,10 +120,6 @@ private fun MainScaffold() {
         // The screens' graph has to be set up before anything can be opened.
         navController.currentBackStackEntryFlow.first()
         when (target) {
-            is LaunchTarget.Stop -> {
-                navController.popBackStack(navController.graph.findStartDestination().id, inclusive = false)
-                navController.navigate(StopRoute(target.entity, target.number, target.name)) { launchSingleTop = true }
-            }
             is LaunchTarget.Go -> {
                 com.vknxworks.lijnctrl.ui.plan.Shortcuts.reportUsed(context, target.slot)
                 val place = context.container.places.get(target.slot)

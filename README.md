@@ -13,7 +13,6 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 ## Features
 
 - **Stops tab** with your saved stops and lines; each stop shows its next departures, refreshing live every 30 seconds
-- **Next departures widget** for your home screen: one saved stop (and, if you like, only some lines) with its next five buses and trams, live times, delays and cancellations, refreshed every 15 minutes or with its refresh button, in light or dark
 - **Live times** from the bus or tram's position, with how late or early it is, topped up with the timetable so quiet stops and lines without live data never look empty; cancelled trips are crossed out
 - **Line badges in De Lijn's own colours**, with the number that's on the bus or tram
 - **Stop pages** with the next 30 departures, the lines that call there, and today's disruptions and diversions
@@ -122,12 +121,12 @@ Every permission LijnCtrl has, and what it's for:
 | Permission | What LijnCtrl uses it for |
 | --- | --- |
 | Internet (`INTERNET`) | Departures, stops and disruptions from De Lijn's API, map tiles from OpenStreetMap and, if you turn it on, route planning with Transitous (see [Privacy](#privacy)) |
-| Network state (`ACCESS_NETWORK_STATE`) | Only refreshing the widget and checking for disruptions when the phone is online |
+| Network state (`ACCESS_NETWORK_STATE`) | Only checking for disruptions when the phone is online |
 | Location (`ACCESS_COARSE_LOCATION`, `ACCESS_FINE_LOCATION`) | Stops near you, routes from "My location" and your position on the route map. Only asked for when you first use one of these, and read from Android's own location service |
 | Notifications (`POST_NOTIFICATIONS`) | Bus alerts, disruption alerts and trip guidance; asked for when you turn one of them on |
 | Foreground service (`FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_DATA_SYNC`) | Keeping trip guidance running, with its notification showing, while you're in another app (bus alerts use Android's alarm clock instead and need no permission of their own) |
-| Run at startup (`RECEIVE_BOOT_COMPLETED`) | Setting the widget refresh and disruption checks up again after the phone restarts (added by Android's WorkManager) |
-| Prevent phone from sleeping (`WAKE_LOCK`) | Keeping the phone awake for the few seconds a widget refresh or disruption check takes (added by WorkManager) |
+| Run at startup (`RECEIVE_BOOT_COMPLETED`) | Setting the disruption checks up again after the phone restarts (added by Android's WorkManager) |
+| Prevent phone from sleeping (`WAKE_LOCK`) | Keeping the phone awake for the few seconds a disruption check takes (added by WorkManager) |
 | Biometrics (`USE_BIOMETRIC`) | Optional fingerprint unlock for the app lock |
 | Hide other apps' floating windows (`HIDE_OVERLAY_WINDOWS`) | Hide other apps' floating windows over the PIN screen, the lock screen and confirmations, so nothing can be drawn over them to trick a tap |
 
@@ -135,7 +134,7 @@ Android also lists a "dynamic receiver" permission (`DYNAMIC_RECEIVER_NOT_EXPORT
 
 ## Privacy
 
-**Telemetry-free.** LijnCtrl has no analytics, crash reporting, usage stats or tracking of any kind, and no servers of its own. It only talks to De Lijn's API (api.delijn.be), over HTTPS; every other address is refused. The exceptions are the maps and, if you turn it on, Transitous for route planning and address search, both below. Your API key is stored encrypted on the phone (and with your app PIN while the app lock is on) and is only sent to De Lijn. Live vehicle positions come from De Lijn too (its GTFS Realtime feed on api.delijn.be), only while a map with live vehicles is open and only if you've added that key, which is stored encrypted like the main one. Alerts are worked out on the phone from De Lijn's data; disruption alerts check De Lijn every half hour only while that switch is on. The departures widget asks De Lijn for its stop's departures every 15 minutes while it's on your home screen, and never while the app lock has LijnCtrl locked. Your saved stops and recent routes stay on the phone (recent routes can be switched off in Settings). Your location is read only when you ask for nearby stops or plan a route from "My location" (including with the Go home / Go to work shortcuts), sent only to De Lijn to look up stops or, for routes, to Transitous, and never kept.
+**Telemetry-free.** LijnCtrl has no analytics, crash reporting, usage stats or tracking of any kind, and no servers of its own. It only talks to De Lijn's API (api.delijn.be), over HTTPS; every other address is refused. The exceptions are the maps and, if you turn it on, Transitous for route planning and address search, both below. Your API key is stored encrypted on the phone (and with your app PIN while the app lock is on) and is only sent to De Lijn. Live vehicle positions come from De Lijn too (its GTFS Realtime feed on api.delijn.be), only while a map with live vehicles is open and only if you've added that key, which is stored encrypted like the main one. Alerts are worked out on the phone from De Lijn's data; disruption alerts check De Lijn every half hour only while that switch is on. Your saved stops and recent routes stay on the phone (recent routes can be switched off in Settings). Your location is read only when you ask for nearby stops or plan a route from "My location" (including with the Go home / Go to work shortcuts), sent only to De Lijn to look up stops or, for routes, to Transitous, and never kept.
 
 **Route planning and address search** use [Transitous](https://transitous.org) (api.transitous.org), a free, open-source community planner, and only once you turn on **Use Transitous** (at setup, on the Plan tab or in Settings). Then the start, end and time of each route you plan, and the addresses and places you type in Search or in From and To, go to Transitous over its own connection that can't reach anything else. De Lijn's open data can't plan routes or search addresses, which is why. Stops are always searched with De Lijn only. Transitous's data sources are listed at [transitous.org/sources](https://transitous.org/sources/).
 

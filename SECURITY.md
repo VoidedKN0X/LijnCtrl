@@ -21,7 +21,7 @@ LijnCtrl has no server of its own. It talks to De Lijn's API, OpenStreetMap's ma
 
 - Your De Lijn API keys, your location, saved stops or planned routes going anywhere other than the services above, or to them over plain HTTP
 - Ways around the app lock, such as reading the API key while LijnCtrl is locked, or protected screens showing up in screenshots when they shouldn't
-- Another app on the phone being able to make LijnCtrl do something you didn't ask for (for example through its widget, shortcuts or the widget setup screen), or to read its data
+- Another app on the phone being able to make LijnCtrl do something you didn't ask for (for example through its shortcuts), or to read its data
 - Weaknesses in the app lock PIN
 - Anything that lets someone run code or read files they shouldn't
 
