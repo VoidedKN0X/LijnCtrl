@@ -8,6 +8,17 @@ To publish a new version: bump `versionCode` and `versionName` in `app/build.gra
 
 Not released yet: these changes are on `main` and come with the next version.
 
+### Changed
+
+- **Following your bus uses far less data and battery.** Once your bus or tram is found on a route, trip or line map, LijnCtrl used to ask De Lijn for its position every 3 seconds, although vehicles only report a new position about every 15 seconds, so four out of five answers were the position it already had. It now waits until the next report is due (about once every 15 seconds) and only asks every 3 seconds again when a report is late. The bus still moves smoothly between reports, as before. While a vehicle is still being looked for, the search runs as often as before.
+- **The map isn't redrawn when nothing moved.** The route map used to redraw 12 times a second as long as any vehicle was shown, also while the bus stood still or was waiting for its next report. It now only redraws when a vehicle actually moved or turned.
+- **Faster start.** Reading your saved API key from the phone's secure storage (slow on phones with a StrongBox chip) and setting up the connection to De Lijn no longer happen on the main thread while the app starts; both now run in the background and are ready when the first screen needs them. With the app lock on nothing changes: the key is still only readable after you unlock.
+- **Countdowns pause while the app is in the background.** The "3 min" times on stop, line and trip pages used to keep ticking every 10 seconds after you left the app. They now stop then, and are set right the moment you come back.
+
+### Privacy
+
+- **Nearby sends a slightly less exact position.** "Stops near me" sent your position to De Lijn with every decimal the phone has; it now sends five decimals (about one metre), which finds the same stops.
+
 ### Removed
 
 - **The "Next departures" home-screen widget is gone.** The widget, its set-up screen (choose a stop and lines), its refresh button and its 15-minute background refresh have been removed from LijnCtrl. A widget that's still on your home screen stops working after the update and can be removed. Once after the update, LijnCtrl cancels the widget's background refresh and deletes the small file with the widget's stops and last departures. Without the widget, LijnCtrl no longer asks De Lijn for departures in the background; disruption alerts, bus alerts and trip guidance work as before. The "Go home" and "Go to work" launcher shortcuts stay. LijnCtrl never had a Quick Settings tile.

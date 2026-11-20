@@ -77,8 +77,11 @@ fun AppRoot() {
     val c = LocalContext.current.container
     val hasKey by c.apiKey.hasKey.collectAsStateWithLifecycle()
     val key by c.apiKey.key.collectAsStateWithLifecycle()
+    val keyLoaded by c.apiKey.loaded.collectAsStateWithLifecycle()
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         when {
+            // The saved key is still being read from the phone's secure storage (a moment, right after start).
+            !keyLoaded -> Unit
             // No key yet (or the saved one can't be read any more): set it up first.
             !hasKey || key == null -> ApiKeyScreen(firstRun = true, unreadable = hasKey && key == null, onDone = {}, onCancel = null)
             else -> MainScaffold()

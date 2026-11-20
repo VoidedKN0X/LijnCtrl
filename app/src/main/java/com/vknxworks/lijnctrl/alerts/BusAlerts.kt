@@ -110,7 +110,7 @@ object BusAlerts {
 
     /** Sets (or replaces) the alert for [req], with the departure's current time. Returns what happens next. */
     fun set(context: Context, req: BusAlertRequest, departure: Instant, live: Boolean): AlertTiming.Step {
-        context.container.apiKey.key.value?.let { keyCopy = it }
+        context.container.apiKey.current()?.let { keyCopy = it }
         Notifications.ensureChannels(context)
         val alert = BusAlert(req, departure.epochSecond, live)
         put(context, alert)
@@ -142,7 +142,7 @@ object BusAlerts {
     private suspend fun checkLocked(context: Context, id: String) {
         val alert = all(context).firstOrNull { it.id == id } ?: return
         val req = alert.request
-        val key = context.container.apiKey.key.value ?: keyCopy
+        val key = context.container.apiKey.current() ?: keyCopy
         val now = Instant.now()
         if (key.isNullOrBlank()) {
             // Locked, and the app was ended since the alert was set: no refresh, the last known time stands.

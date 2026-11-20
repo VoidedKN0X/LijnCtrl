@@ -31,51 +31,58 @@ class AppContainer(val context: Context) {
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, _ -> })
 
     /** One connection pool and thread pool for the whole app; [http] and Transitous each add their own host rule. */
-    private val baseHttp: OkHttpClient = OkHttpClient.Builder()
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .followRedirects(false)
-        .followSslRedirects(false)
-        .retryOnConnectionFailure(true)
-        .build()
+    private val baseHttp: OkHttpClient by lazy {
+        OkHttpClient.Builder()
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .followRedirects(false)
+            .followSslRedirects(false)
+            .retryOnConnectionFailure(true)
+            .build()
+    }
 
     /**
      * Only ever talks to De Lijn's API, over HTTPS: any other host, plain HTTP or a redirect elsewhere is
      * refused before the request (and the API key in its header) leaves the phone.
      */
-    val http: OkHttpClient = baseHttp.newBuilder()
-        .addInterceptor { chain ->
-            chain.proceed(
-                chain.request().newBuilder()
-                    .header("User-Agent", "LijnCtrl/${BuildConfig.VERSION_NAME} (Android)")
-                    .build()
-            )
-        }
-        .addNetworkInterceptor(Interceptor { chain ->
-            val url = chain.request().url
-            if (!url.isHttps || url.host != DeLijnApi.HOST) throw IOException(str(R.string.blocked_request_to_x, url.host))
-            chain.proceed(chain.request())
-        })
-        .build()
+    val http: OkHttpClient by lazy {
+        baseHttp.newBuilder()
+            .addInterceptor { chain ->
+                chain.proceed(
+                    chain.request().newBuilder()
+                        .header("User-Agent", "LijnCtrl/${BuildConfig.VERSION_NAME} (Android)")
+                        .build()
+                )
+            }
+            .addNetworkInterceptor(Interceptor { chain ->
+                val url = chain.request().url
+                if (!url.isHttps || url.host != DeLijnApi.HOST) throw IOException(str(R.string.blocked_request_to_x, url.host))
+                chain.proceed(chain.request())
+            })
+            .build()
+    }
 
     val settings = SettingsRepository(context, appScope)
 
     /** The app lock's PIN, fingerprint key and the key that seals the API key while locked. */
     val vault = LockVault(context, "lijnctrl")
 
-    val apiKey = ApiKeyStore(context, vault)
-    val api = DeLijnApi(http) { apiKey.key.value }
+    val apiKey = ApiKeyStore(context, vault, appScope)
+
+    // The HTTP clients and everything built on them are made the first time they're used (and warmed up in the
+    // background at start, see below), not on the main thread while the app is starting.
+    val api: DeLijnApi by lazy { DeLijnApi(http) { apiKey.current() } }
 
     /** The optional GTFS Realtime key (a separate De Lijn subscription), for live vehicle positions. Stored like [apiKey]. */
-    val gtfsKey = ApiKeyStore(context, vault, "gtfs_key")
-    val live = com.vknxworks.lijnctrl.data.live.LiveVehicles(http) { gtfsKey.key.value }
-    val lines = LineRepository(context, api)
-    val departures = DepartureRepository(api)
+    val gtfsKey = ApiKeyStore(context, vault, appScope, "gtfs_key")
+    val live: com.vknxworks.lijnctrl.data.live.LiveVehicles by lazy { com.vknxworks.lijnctrl.data.live.LiveVehicles(http) { gtfsKey.current() } }
+    val lines: LineRepository by lazy { LineRepository(context, api) }
+    val departures: DepartureRepository by lazy { DepartureRepository(api) }
     /** Disruptions and diversions per stop and line direction, cached for a few minutes. */
-    val disruptions = com.vknxworks.lijnctrl.data.disruptions.DisruptionRepository(api)
-    val towns = TownRepository(api)
+    val disruptions: com.vknxworks.lijnctrl.data.disruptions.DisruptionRepository by lazy { com.vknxworks.lijnctrl.data.disruptions.DisruptionRepository(api) }
+    val towns: TownRepository by lazy { TownRepository(api) }
     /** Route planning and address search; only contacted once the user turns on Transitous. */
-    val transitous = TransitousPlanner(baseHttp)
+    val transitous: TransitousPlanner by lazy { TransitousPlanner(baseHttp) }
     val favourites = FavouritesRepository(context, appScope)
     val planHistory = com.vknxworks.lijnctrl.data.plan.PlanHistoryRepository(context, appScope)
     val places = com.vknxworks.lijnctrl.data.plan.SavedPlacesRepository(context, appScope)
@@ -126,6 +133,8 @@ class AppContainer(val context: Context) {
         // Bus alerts set before the phone restarted (Android forgets alarms then) get their alarms back.
         appScope.launch { runCatching { com.vknxworks.lijnctrl.alerts.BusAlerts.rescheduleAll(context) } }
         appScope.launch(Dispatchers.IO) { runCatching { removeWidgetLeftovers() } }
+        // Builds the HTTP client for De Lijn off the main thread, so it's ready when the first screen asks for it.
+        appScope.launch { runCatching { api } }
     }
 
     /**

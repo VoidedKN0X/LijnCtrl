@@ -53,7 +53,10 @@ import androidx.compose.foundation.layout.height
 import com.vknxworks.lijnctrl.ui.theme.CtrlColors
 import com.vknxworks.lijnctrl.ui.theme.CtrlShapes
 import com.vknxworks.lijnctrl.ui.theme.CtrlType
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import com.vknxworks.lijnctrl.R
 import com.vknxworks.lijnctrl.container
 import com.vknxworks.lijnctrl.data.api.BRUSSELS
@@ -89,10 +92,17 @@ fun day(t: Instant): String = DAY.format(t.atZone(BRUSSELS))
 
 /** The current time, updated every [everyMs] while shown, so "3 min" counts down on its own. */
 @Composable
-fun rememberNow(everyMs: Long = 10_000L): State<Instant> = produceState(Instant.now()) {
-    while (true) {
-        delay(everyMs)
-        value = Instant.now()
+fun rememberNow(everyMs: Long = 10_000L): State<Instant> {
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    return produceState(Instant.now(), lifecycle, everyMs) {
+        // Only ticks while the screen is showing; coming back to the app sets the time right at once.
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            value = Instant.now()
+            while (true) {
+                delay(everyMs)
+                value = Instant.now()
+            }
+        }
     }
 }
 

@@ -105,7 +105,10 @@ class DeLijnApi(private val http: OkHttpClient, private val apiKey: () -> String
 
     /** Stops within [radius] metres of a point, nearest first (the API caps it at 50 stops). */
     suspend fun stopsNearby(lat: Double, lon: Double, max: Int = 30, radius: Int = 750): NearbyResponse =
-        get(CORE, "/haltes/indebuurt/$lat,$lon", mapOf("maxAantalHaltes" to max, "radius" to radius))
+        // Five decimals (about a metre) is all a stop search needs; the phone's full-precision position isn't sent.
+        get(CORE, "/haltes/indebuurt/${coordinate(lat)},${coordinate(lon)}", mapOf("maxAantalHaltes" to max, "radius" to radius))
+
+    private fun coordinate(v: Double): String = String.format(java.util.Locale.ROOT, "%.5f", v)
 
     /** The next departures at one stop, with live predictions where De Lijn has them. */
     suspend fun realtime(stop: StopKey, max: Int = 20): ApiStopSchedule =

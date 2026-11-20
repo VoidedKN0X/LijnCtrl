@@ -308,12 +308,15 @@ fun RouteMap(
     val tracks = remember(journey) { mutableMapOf<Int, BusTrack>() }
     val markerByRide = remember(journey) { mutableMapOf<Int, Marker>() }
     val iconBucket = remember(journey) { mutableMapOf<Int, Int>() }
+    // Where each vehicle was last drawn, so the map is only redrawn when one actually moved.
+    val drawnAt = remember(journey) { mutableMapOf<Int, Pair<Double, Double>>() }
     fun clearBuses() {
         map.overlays.removeAll(busMarkers)
         busMarkers.clear()
         markerByRide.clear()
         tracks.clear()
         iconBucket.clear()
+        drawnAt.clear()
         map.invalidate()
     }
     fun styleOf(ride: Int): Triple<String, Int, Int> {
@@ -340,7 +343,8 @@ fun RouteMap(
         }
     }
 
-    // Finding the vehicles: the whole feed now and then; in between, each found vehicle on its own, every few seconds.
+    // Finding the vehicles: the whole feed now and then; in between, each found vehicle on its own, when its next
+    // position report is due (vehicles report about every 15 seconds).
     LaunchedEffect(targets, gtfsKey) {
         clearBuses()
         if (!wantsLive || gtfsKey.isNullOrBlank()) {
@@ -389,10 +393,21 @@ fun RouteMap(
                         }
                     }
                 }
-                val tracking = tracks.values.any { it.vehicleId != null }
+                val followedNow = tracks.values.filter { it.vehicleId != null }
                 delay(
-                    if (tracking && c.live.canFollowFast) com.vknxworks.lijnctrl.data.live.LiveVehicles.FAST_MS
-                    else com.vknxworks.lijnctrl.data.live.LiveVehicles.REFRESH_MS,
+                    if (followedNow.isNotEmpty() && c.live.canFollowFast) {
+                        // Every vehicle found: wait for the next report. Still looking for one: no longer than the
+                        // feed's own interval, so the search goes on as before.
+                        val allFound = followedNow.size >= targets.count { it != null }
+                        com.vknxworks.lijnctrl.data.live.LiveVehicles.followDelayMs(
+                            followedNow.map { it.reportedAt },
+                            System.currentTimeMillis(),
+                            if (allFound) com.vknxworks.lijnctrl.data.live.LiveVehicles.REPORT_MS
+                            else com.vknxworks.lijnctrl.data.live.LiveVehicles.REFRESH_MS,
+                        )
+                    } else {
+                        com.vknxworks.lijnctrl.data.live.LiveVehicles.REFRESH_MS
+                    },
                 )
             }
         }
@@ -409,15 +424,22 @@ fun RouteMap(
                     val m = markerByRide[ride] ?: return@forEach
                     if (!track.hasFix) return@forEach
                     val (lat, lon, heading) = track.position(now)
-                    m.position = GeoPoint(lat, lon)
+                    // A vehicle that hasn't moved (standing still, or waiting for its next report) isn't redrawn:
+                    // 0.0000001 degrees is about a centimetre.
+                    val last = drawnAt[ride]
+                    if (last == null || kotlin.math.abs(last.first - lat) > 1e-7 || kotlin.math.abs(last.second - lon) > 1e-7) {
+                        m.position = GeoPoint(lat, lon)
+                        drawnAt[ride] = lat to lon
+                        moved = true
+                    }
                     // The icon (with its heading pointer) is only redrawn when the heading changes noticeably.
                     val bucket = heading?.let { Math.round(it / 15f) } ?: -1
                     if (iconBucket[ride] != bucket) {
                         iconBucket[ride] = bucket
                         val (label, fill, text) = styleOf(ride)
                         m.icon = busIcon(context, label, fill, text, heading, density.density)
+                        moved = true
                     }
-                    moved = true
                 }
                 if (moved) map.invalidate()
                 delay(80)

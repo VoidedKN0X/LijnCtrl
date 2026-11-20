@@ -101,7 +101,7 @@ class LiveVehicles(private val http: OkHttpClient, private val key: () -> String
      */
     @Volatile private var filterWorks: Boolean? = null
 
-    /** A vehicle can be asked for on its own, so it can be followed every [FAST_MS] without big downloads. */
+    /** A vehicle can be asked for on its own, so it can be followed closely ([followDelayMs]) without big downloads. */
     val canFollowFast: Boolean get() = filterWorks != false
 
     /** The latest position of one vehicle, asked for on its own when De Lijn allows that. */
@@ -164,8 +164,25 @@ class LiveVehicles(private val http: OkHttpClient, private val key: () -> String
         const val MIN_AGE_MS = 12_000L
         /** How often screens ask for the whole feed (to find vehicles, or when one can't be asked for on its own). */
         const val REFRESH_MS = 12_000L
-        /** How often a found vehicle is asked for on its own. Vehicles report about every 15 seconds. */
+        /** The shortest wait between two requests for a found vehicle on its own (when its next report is overdue). */
         const val FAST_MS = 3_000L
+        /** Vehicles report their position about this often. */
+        const val REPORT_MS = 15_000L
+        /** A little time for a new report to reach De Lijn's feed. */
+        private const val REPORT_MARGIN_MS = 1_000L
+
+        /**
+         * How long to wait before asking for the followed vehicles again. Vehicles report about every
+         * [REPORT_MS], so asking sooner only returns the position the app already has: the next request waits
+         * until the oldest of [reportedAt] (when each followed vehicle last reported; null when unknown) is due
+         * to be replaced. A report that's overdue is asked for every [FAST_MS], as before. Never longer than
+         * [maxMs], whatever the phone's clock says.
+         */
+        fun followDelayMs(reportedAt: List<Instant?>, nowMs: Long, maxMs: Long): Long {
+            if (maxMs <= FAST_MS) return FAST_MS
+            val oldest = reportedAt.minOfOrNull { it?.toEpochMilli() ?: 0L } ?: return FAST_MS
+            return (oldest + REPORT_MS + REPORT_MARGIN_MS - nowMs).coerceIn(FAST_MS, maxMs)
+        }
         /** How often the whole feed is checked again while following, in case the bus changed trips. */
         const val RELOCATE_MS = 45_000L
         /** How far a live time may be from what the app expects and still count as the same trip. */

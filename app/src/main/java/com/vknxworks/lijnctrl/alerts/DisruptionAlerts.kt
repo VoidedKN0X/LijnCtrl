@@ -50,7 +50,7 @@ object DisruptionAlerts {
      */
     suspend fun check(context: Context, quiet: Boolean) {
         val c = context.applicationContext.container
-        if (c.apiKey.key.value.isNullOrBlank()) return
+        if (c.apiKey.current().isNullOrBlank()) return
         val language = c.settings.settings.value.messageLanguage.key
         val found = linkedMapOf<String, Pair<String, String>>() // id -> (where, title + text)
         // In a fresh process the saved lists load from disk a moment after start: wait for them briefly.

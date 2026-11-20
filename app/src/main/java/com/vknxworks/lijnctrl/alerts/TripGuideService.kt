@@ -114,7 +114,7 @@ class TripGuideService : Service() {
             runCatching { DeLijnApi.JSON.decodeFromString(ListSerializer(GuideLeg.serializer()), it) }.getOrNull()
         }
         val c = applicationContext.container
-        val key = c.apiKey.key.value
+        val key = c.apiKey.current()
         Notifications.ensureChannels(this)
         // Started with startForegroundService: Android requires the foreground notification first, even when the
         // service stops straight away (otherwise it ends the app). If Android refuses, it just stops.
@@ -125,7 +125,7 @@ class TripGuideService : Service() {
         }
         _running.value = true
         job?.cancel()
-        job = scope.launch { guide(legs, key, c.gtfsKey.key.value) }
+        job = scope.launch { guide(legs, key, c.gtfsKey.current()) }
         return START_NOT_STICKY
     }
 
