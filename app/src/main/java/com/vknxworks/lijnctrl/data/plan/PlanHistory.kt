@@ -1,19 +1,13 @@
 package com.vknxworks.lijnctrl.data.plan
 
-import android.content.Context
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
-import com.vknxworks.lijnctrl.data.api.DeLijnApi
 import com.vknxworks.lijnctrl.data.api.StopKey
-import com.vknxworks.lijnctrl.data.appDataStore
+import com.vknxworks.lijnctrl.data.saved.SavedStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.builtins.ListSerializer
 
 /** One end of a remembered route. "My location" is kept as just that, never as a position. */
 @Serializable
@@ -62,22 +56,14 @@ data class PlanHistoryEntry(val from: SavedPoint, val to: SavedPoint, val planne
     val key: String get() = "${from.identity}>${to.identity}"
 }
 
-/** Routes you planned, newest first. Kept only on this phone, and only while route history is on in Settings. */
-class PlanHistoryRepository(private val context: Context, scope: CoroutineScope) {
-    private val key = stringPreferencesKey("plan_history")
-    private val serializer = ListSerializer(PlanHistoryEntry.serializer())
-
-    private fun decode(raw: String?) = raw?.let { runCatching { DeLijnApi.JSON.decodeFromString(serializer, it) }.getOrNull() } ?: emptyList()
-
-    val entries: StateFlow<List<PlanHistoryEntry>> = context.appDataStore.data
-        .map { decode(it[key]) }
+/** Routes you planned, newest first. Kept only on this phone (in the encrypted saved file), and only while route history is on in Settings. */
+class PlanHistoryRepository(private val store: SavedStore, scope: CoroutineScope) {
+    val entries: StateFlow<List<PlanHistoryEntry>> = store.data
+        .map { it.history }
         .stateIn(scope, SharingStarted.Eagerly, emptyList())
 
     private suspend fun edit(transform: (List<PlanHistoryEntry>) -> List<PlanHistoryEntry>) {
-        context.appDataStore.edit { p ->
-            val next = transform(decode(p[key]))
-            if (next.isEmpty()) p.remove(key) else p[key] = DeLijnApi.JSON.encodeToString(serializer, next)
-        }
+        store.update { d -> d.copy(history = transform(d.history)) }
     }
 
     /** Puts the route at the top (moving it there if it was already in the list), keeping the newest [MAX]. */
@@ -95,28 +81,27 @@ class PlanHistoryRepository(private val context: Context, scope: CoroutineScope)
     }
 }
 
-/** Home and Work, for one-tap routes on the Plan tab. Kept only on this phone. */
-class SavedPlacesRepository(private val context: Context, scope: CoroutineScope) {
+/** Home and Work, for one-tap routes on the Plan tab. Kept only on this phone, in the encrypted saved file. */
+class SavedPlacesRepository(private val store: SavedStore, scope: CoroutineScope) {
     enum class Slot(val key: String) { HOME("place_home"), WORK("place_work") }
 
-    private fun decode(raw: String?): SavedPoint? = raw?.let { runCatching { DeLijnApi.JSON.decodeFromString(SavedPoint.serializer(), it) }.getOrNull() }
-
-    val home: StateFlow<SavedPoint?> = context.appDataStore.data
-        .map { decode(it[stringPreferencesKey(Slot.HOME.key)]) }
+    val home: StateFlow<SavedPoint?> = store.data
+        .map { it.home }
         .stateIn(scope, SharingStarted.Eagerly, null)
 
-    val work: StateFlow<SavedPoint?> = context.appDataStore.data
-        .map { decode(it[stringPreferencesKey(Slot.WORK.key)]) }
+    val work: StateFlow<SavedPoint?> = store.data
+        .map { it.work }
         .stateIn(scope, SharingStarted.Eagerly, null)
 
-    /** Home or Work as saved right now, read from disk (the flows above may not have loaded yet in a fresh start). */
-    suspend fun get(slot: Slot): SavedPoint? = decode(context.appDataStore.data.first()[stringPreferencesKey(slot.key)])
+    /** Home or Work as saved right now (waits for the saved file to be read in a fresh start). */
+    suspend fun get(slot: Slot): SavedPoint? {
+        store.awaitReady()
+        val d = store.data.value
+        return if (slot == Slot.HOME) d.home else d.work
+    }
 
     suspend fun set(slot: Slot, point: PlanPoint?) {
-        context.appDataStore.edit { p ->
-            val k = stringPreferencesKey(slot.key)
-            if (point == null || point.isMyLocation) p.remove(k)
-            else p[k] = DeLijnApi.JSON.encodeToString(SavedPoint.serializer(), SavedPoint.of(point))
-        }
+        val saved = if (point == null || point.isMyLocation) null else SavedPoint.of(point)
+        store.update { d -> if (slot == Slot.HOME) d.copy(home = saved) else d.copy(work = saved) }
     }
 }

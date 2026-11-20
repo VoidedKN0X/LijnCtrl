@@ -3,6 +3,8 @@ package com.vknxworks.lijnctrl.data.lines
 import android.content.Context
 import com.vknxworks.lijnctrl.data.api.DeLijnApi
 import com.vknxworks.lijnctrl.data.api.LineKey
+import com.vknxworks.lijnctrl.data.crypto.DataKeyStore
+import com.vknxworks.lijnctrl.data.crypto.SealedFile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -41,7 +43,7 @@ private data class LineCacheFile(val lines: List<LineInfo> = emptyList(), val co
  * Line numbers, types and colours, fetched in batches and kept on the phone for a week. Departures only say
  * which internal line they belong to, so this is what turns "lijnnummer 7" into a yellow "T1" badge.
  */
-class LineRepository(context: Context, private val api: DeLijnApi) {
+class LineRepository(context: Context, private val api: DeLijnApi, private val keys: DataKeyStore) {
     private val file = File(context.filesDir, "lines.json")
     private val mutex = Mutex()
     private val _lines = MutableStateFlow<Map<String, LineInfo>>(emptyMap())
@@ -64,7 +66,18 @@ class LineRepository(context: Context, private val api: DeLijnApi) {
         withContext(Dispatchers.IO) {
             runCatching {
                 if (file.exists()) {
-                    val cache = DeLijnApi.JSON.decodeFromString(LineCacheFile.serializer(), file.readText())
+                    val bytes = file.readBytes()
+                    val sealed = SealedFile.isSealed(bytes)
+                    // The cache is encrypted at rest. One that can't be opened is only a cache: it's deleted
+                    // and the lines are fetched again.
+                    val plain = if (!sealed) bytes else keys.get(create = false)?.let { key -> runCatching { SealedFile.open(key, bytes) }.getOrNull() }
+                    if (plain == null) {
+                        file.delete()
+                        return@runCatching
+                    }
+                    val cache = DeLijnApi.JSON.decodeFromString(LineCacheFile.serializer(), String(plain, Charsets.UTF_8))
+                    // A cache from before encryption is replaced by its encrypted copy (or stays as it is if that fails).
+                    if (!sealed) keys.get(create = true)?.let { key -> SealedFile.sealInPlace(key, file, File(file.parentFile, "lines.json.seal.tmp")) }
                     _lines.value = cache.lines.associateBy { it.key.toString() }
                     colors = cache.colors
                     colorsAt = cache.colorsAt
@@ -76,7 +89,10 @@ class LineRepository(context: Context, private val api: DeLijnApi) {
     private suspend fun saveToDisk() = withContext(Dispatchers.IO) {
         runCatching {
             val tmp = File(file.parentFile, "lines.json.tmp")
-            tmp.writeText(DeLijnApi.JSON.encodeToString(LineCacheFile.serializer(), LineCacheFile(_lines.value.values.toList(), colors, colorsAt)))
+            val plain = DeLijnApi.JSON.encodeToString(LineCacheFile.serializer(), LineCacheFile(_lines.value.values.toList(), colors, colorsAt)).toByteArray(Charsets.UTF_8)
+            // Encrypted when there's a data key; the ordinary file otherwise, as before.
+            val sealed = keys.get(create = true)?.let { key -> SealedFile.sealChecked(key, plain) }
+            tmp.writeBytes(sealed ?: plain)
             tmp.renameTo(file)
         }
     }

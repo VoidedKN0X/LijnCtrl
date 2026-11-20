@@ -438,4 +438,12 @@
     <string name="add_to_home_screen">Add to home screen</string>
     <string name="shortcut_pin_failed">Your launcher didn\'t accept the shortcut</string>
 
+    <!-- Saved stops and routes are encrypted on the phone and can't be opened -->
+    <string name="unreadable_title">Can\'t open your saved stops</string>
+    <string name="unreadable_body">Your saved stops, lines and routes are stored encrypted on this phone, and the key that opens them is missing from the phone\'s secure storage or no longer matches. Nothing has been deleted or changed. Try again first; restarting the phone can help too.</string>
+    <string name="unreadable_retry">Try again</string>
+    <string name="unreadable_start_empty">Start empty</string>
+    <string name="unreadable_start_empty_title">Start with nothing saved?</string>
+    <string name="unreadable_start_empty_body">Only do this if trying again doesn\'t help. The saved stops, lines and routes that can\'t be opened are kept aside on this phone, not deleted, but LijnCtrl won\'t show them. Your API key and settings are not affected.</string>
+
 </resources>

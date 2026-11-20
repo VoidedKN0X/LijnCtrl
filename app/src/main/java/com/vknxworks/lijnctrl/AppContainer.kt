@@ -64,6 +64,18 @@ class AppContainer(val context: Context) {
 
     val settings = SettingsRepository(context, appScope)
 
+    /**
+     * The key that encrypts the saved file and the line cache at rest; wrapped by its own Keystore key (not the
+     * API keys' one, and nothing to do with the app lock). No PIN or fingerprint, so background checks can use it.
+     */
+    val dataKeys = com.vknxworks.lijnctrl.data.crypto.DataKeyStore(
+        context.filesDir,
+        com.vknxworks.lijnctrl.data.crypto.KeystoreWrapper("lijnctrl_data_at_rest"),
+    )
+
+    /** Saved stops and lines, line filters, recent routes, Home and Work: one encrypted file, read in the background. */
+    val saved: com.vknxworks.lijnctrl.data.saved.SavedStore = com.vknxworks.lijnctrl.data.saved.savedStore(context, appScope, dataKeys)
+
     /** The app lock's PIN, fingerprint key and the key that seals the API key while locked. */
     val vault = LockVault(context, "lijnctrl")
 
@@ -76,16 +88,16 @@ class AppContainer(val context: Context) {
     /** The optional GTFS Realtime key (a separate De Lijn subscription), for live vehicle positions. Stored like [apiKey]. */
     val gtfsKey = ApiKeyStore(context, vault, appScope, "gtfs_key")
     val live: com.vknxworks.lijnctrl.data.live.LiveVehicles by lazy { com.vknxworks.lijnctrl.data.live.LiveVehicles(http) { gtfsKey.current() } }
-    val lines: LineRepository by lazy { LineRepository(context, api) }
+    val lines: LineRepository by lazy { LineRepository(context, api, dataKeys) }
     val departures: DepartureRepository by lazy { DepartureRepository(api) }
     /** Disruptions and diversions per stop and line direction, cached for a few minutes. */
     val disruptions: com.vknxworks.lijnctrl.data.disruptions.DisruptionRepository by lazy { com.vknxworks.lijnctrl.data.disruptions.DisruptionRepository(api) }
     val towns: TownRepository by lazy { TownRepository(api) }
     /** Route planning and address search; only contacted once the user turns on Transitous. */
     val transitous: TransitousPlanner by lazy { TransitousPlanner(baseHttp) }
-    val favourites = FavouritesRepository(context, appScope)
-    val planHistory = com.vknxworks.lijnctrl.data.plan.PlanHistoryRepository(context, appScope)
-    val places = com.vknxworks.lijnctrl.data.plan.SavedPlacesRepository(context, appScope)
+    val favourites = FavouritesRepository(saved, appScope)
+    val planHistory = com.vknxworks.lijnctrl.data.plan.PlanHistoryRepository(saved, appScope)
+    val places = com.vknxworks.lijnctrl.data.plan.SavedPlacesRepository(saved, appScope)
 
     /** The app lock is on. */
     val lockEnabled: Boolean get() = vault.enabled

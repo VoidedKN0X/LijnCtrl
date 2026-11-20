@@ -32,6 +32,7 @@ Problems in De Lijn's API, Transitous or OpenStreetMap themselves should go to t
 - Only HTTPS, and only the phone's built-in certificate authorities: plain HTTP and user-installed certificates are refused.
 - The main HTTP client can only reach api.delijn.be; Transitous has its own client that can only reach api.transitous.org. Redirects are never followed.
 - Your API keys are encrypted with a key in the phone's secure hardware, and also with your app PIN while the app lock is on.
+- Your saved stops and lines, recent routes and Home and Work places are encrypted on the phone with a key that is itself protected by the phone's secure hardware (no PIN needed, so disruption alerts keep working). Settings, bus alerts that are waiting to go off and the map tile cache are not encrypted.
 - Nothing is backed up or copied to a new phone, and there's no analytics, crash reporting or tracking of any kind.
 
 ## How releases are protected

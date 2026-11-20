@@ -4,6 +4,31 @@ What changed in each LijnCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## Unreleased
+
+Built and checked by CI only: nothing here has been run on a phone yet.
+
+### Security
+
+- **What LijnCtrl remembers about where you travel is now encrypted on the phone.** Your saved stops (with the names you gave them, like "Home" and "Work"), your saved lines, the lines you chose to show per stop, your recent routes (from and to, with their positions), your Home and Work places, and the list of disruptions you were already notified about (it names your saved stops and lines) used to sit in the settings file in plain text. They're now kept together in one file, `saved.json` in LijnCtrl's private storage, encrypted with AES-256-GCM. The key is 32 random bytes made on your phone, kept in the file `data.key` next to it, and itself encrypted by a key in the phone's secure hardware (the Android Keystore, in the StrongBox chip when the phone has one) that can't be copied off the phone. It's a separate key from the one that protects your API keys, and it has nothing to do with the app lock: it needs no PIN or fingerprint. What this protects: a copy of LijnCtrl's files taken off the phone no longer shows your stops, routes, home or work. What it doesn't: someone who can use your unlocked phone, or software running inside LijnCtrl itself, sees them as before.
+- **The line cache is encrypted too.** `lines.json` (the numbers and colours of the lines LijnCtrl has shown you, which says something about which lines you look at) is encrypted with the same key. It's only a cache: if it can't be opened it's deleted and fetched again from De Lijn.
+- **Moving to the encrypted file can't lose anything.** At the first start after the update LijnCtrl reads the saved values from the settings file as before, writes them encrypted to a temporary file, reads that file back from storage, decrypts it and compares it with what it wrote, and puts it in place in one step. Only after that are the plain-text values removed from the settings file (your settings themselves stay where they are). If anything goes wrong before that point (no space, the secure hardware not answering, the app being closed), nothing has changed: LijnCtrl keeps using the values in the settings file and tries again at the next start. If the app is closed right after the encrypted file is in place but before the old values are removed, the next start removes them, but only when they still say exactly what the encrypted file says. On a phone where the secure hardware can't make a key at all, nothing moves and everything works as before.
+- **If the key is ever lost, nothing is deleted.** The key lives in the phone's secure hardware, so it doesn't survive copying LijnCtrl's files to another phone. If the encrypted file can't be opened, LijnCtrl shows "Can't open your saved stops" with **Try again**, and writes nothing to that file while it's showing. **Start empty** (only after you confirm) moves the unreadable file aside as `saved.json.unreadable` (and the key file as `data.key.unreadable`) instead of deleting it, and lets you go on with nothing saved; your API key and settings aren't affected.
+- **Background work is unchanged.** Disruption alerts still check your saved stops and lines every half hour with the app closed and the screen locked (once the phone has been unlocked after a restart, as before): the key needs no unlock of its own. Bus alerts and trip guidance don't use the saved file at all.
+- **An older LijnCtrl can't read the encrypted file.** Don't install an older version over this one: it would show no saved stops, lines, routes, Home or Work, because it only looks in the settings file, where they no longer are. (The encrypted file stays on the phone and opens again in this version or a newer one.) LijnCtrl has no export for saved stops, so there is no way to carry them to an older version.
+
+**Not encrypted, on purpose:**
+
+- **Bus alerts that are waiting to go off** (the stop, line and time of a bus you set an alert for). Android's alarm clock wakes LijnCtrl up for them and they have a few seconds to act; they're read at moments when waiting for a key isn't acceptable, and an alert that can't read its own data is a broken alert. They're removed as soon as the alert has gone off.
+- **Settings** (theme, time style, language, Nearby distance, the switches). They hold nothing about where you travel.
+- **The map tile cache** (osmdroid's own files in the cache folder). It's managed by the map library, which reads it directly, and Android can clear it at any time. It does say roughly which areas you looked at on a map.
+- **The API keys and the app lock** were already encrypted and are untouched.
+- The live vehicle feed (GTFS Realtime) is only kept in memory, never in a file, so there's nothing to encrypt.
+
+### Changed
+
+- **No empty Stops tab for a split second at start.** The app now waits for your saved stops to be read before it shows the tabs, instead of briefly showing "no saved stops" first.
+
 ## v0.18.0 (2026-11-20)
 
 Built and checked by CI only: nothing in this release had been run on a phone when it was published.

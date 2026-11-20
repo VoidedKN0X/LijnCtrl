@@ -4,8 +4,6 @@ import com.vknxworks.lijnctrl.alerts.Notifications.privateOnLockScreen
 import android.app.NotificationManager
 import android.content.Context
 import androidx.core.app.NotificationCompat
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -17,9 +15,7 @@ import com.vknxworks.lijnctrl.R
 import com.vknxworks.lijnctrl.container
 import com.vknxworks.lijnctrl.data.api.LineKey
 import com.vknxworks.lijnctrl.data.api.localized
-import com.vknxworks.lijnctrl.data.appDataStore
 import com.vknxworks.lijnctrl.str
-import kotlinx.coroutines.flow.first
 import java.util.concurrent.TimeUnit
 
 /**
@@ -31,7 +27,6 @@ import java.util.concurrent.TimeUnit
  */
 object DisruptionAlerts {
     private const val WORK = "disruption-alerts"
-    private val SEEN = stringSetPreferencesKey("disruptions_seen")
 
     fun enable(context: Context) {
         val request = PeriodicWorkRequestBuilder<DisruptionWorker>(30, TimeUnit.MINUTES)
@@ -53,9 +48,12 @@ object DisruptionAlerts {
         if (c.apiKey.current().isNullOrBlank()) return
         val language = c.settings.settings.value.messageLanguage.key
         val found = linkedMapOf<String, Pair<String, String>>() // id -> (where, title + text)
-        // In a fresh process the saved lists load from disk a moment after start: wait for them briefly.
-        val stops = kotlinx.coroutines.withTimeoutOrNull(3_000) { c.favourites.stops.first { it.isNotEmpty() } } ?: c.favourites.stops.value
-        val lines = kotlinx.coroutines.withTimeoutOrNull(1_000) { c.favourites.lines.first { it.isNotEmpty() } } ?: c.favourites.lines.value
+        // In a fresh process the saved lists are read (and decrypted) a moment after start: wait for them. If they
+        // can't be had (not read in time, or the saved file can't be opened), nothing is checked this time.
+        kotlinx.coroutines.withTimeoutOrNull(10_000) { c.saved.awaitReady() } ?: return
+        if (c.saved.unreadable.value) return
+        val stops = c.saved.data.value.stops
+        val lines = c.saved.data.value.lines
 
         for (stop in stops) {
             val list = runCatching { c.api.stopDisruptions(stop.key) }.getOrDefault(emptyList()) +
@@ -78,11 +76,11 @@ object DisruptionAlerts {
             }
         }
 
-        val store = context.applicationContext.appDataStore
-        val seen = store.data.first()[SEEN].orEmpty()
+        val seen = c.saved.data.value.seen
         val new = found.filterKeys { it !in seen }
         // Only what's still going on is remembered, so the list doesn't grow forever.
-        store.edit { it[SEEN] = found.keys }
+        val now = found.keys.toSet()
+        c.saved.update { it.copy(seen = now) }
         if (quiet || new.isEmpty() || !Notifications.allowed(context)) return
 
         Notifications.ensureChannels(context)

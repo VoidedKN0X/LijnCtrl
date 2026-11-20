@@ -1,18 +1,13 @@
 package com.vknxworks.lijnctrl.data.favourites
 
-import android.content.Context
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
-import com.vknxworks.lijnctrl.data.api.DeLijnApi
 import com.vknxworks.lijnctrl.data.api.StopKey
-import com.vknxworks.lijnctrl.data.appDataStore
+import com.vknxworks.lijnctrl.data.saved.SavedStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.builtins.ListSerializer
 
 /** A stop saved on the Stops tab. */
 @Serializable
@@ -39,61 +34,43 @@ data class SavedLine(
     val key: com.vknxworks.lijnctrl.data.api.LineKey get() = com.vknxworks.lijnctrl.data.api.LineKey(entity, line)
 }
 
-/** Saved stops and lines, in the order you put them. Kept only on this phone. */
-class FavouritesRepository(private val context: Context, scope: CoroutineScope) {
-    private val key = stringPreferencesKey("saved_stops")
-    private val serializer = ListSerializer(SavedStop.serializer())
-
-    val stops: StateFlow<List<SavedStop>> = context.appDataStore.data
-        .map { p -> p[key]?.let { runCatching { DeLijnApi.JSON.decodeFromString(serializer, it) }.getOrNull() } ?: emptyList() }
+/** Saved stops and lines, in the order you put them. Kept only on this phone, in the encrypted saved file ([SavedStore]). */
+class FavouritesRepository(private val store: SavedStore, scope: CoroutineScope) {
+    val stops: StateFlow<List<SavedStop>> = store.data
+        .map { it.stops }
         .stateIn(scope, SharingStarted.Eagerly, emptyList())
 
-    private val linesKey = stringPreferencesKey("saved_lines")
-    private val lineSerializer = ListSerializer(SavedLine.serializer())
-
-    val lines: StateFlow<List<SavedLine>> = context.appDataStore.data
-        .map { p -> p[linesKey]?.let { runCatching { DeLijnApi.JSON.decodeFromString(lineSerializer, it) }.getOrNull() } ?: emptyList() }
+    val lines: StateFlow<List<SavedLine>> = store.data
+        .map { it.lines }
         .stateIn(scope, SharingStarted.Eagerly, emptyList())
 
     suspend fun toggleLine(line: SavedLine) {
-        context.appDataStore.edit { p ->
-            val current = p[linesKey]?.let { runCatching { DeLijnApi.JSON.decodeFromString(lineSerializer, it) }.getOrNull() } ?: emptyList()
-            val next = if (current.any { it.key == line.key }) current.filterNot { it.key == line.key } else current + line
-            p[linesKey] = DeLijnApi.JSON.encodeToString(lineSerializer, next)
+        store.update { d ->
+            val current = d.lines
+            d.copy(lines = if (current.any { it.key == line.key }) current.filterNot { it.key == line.key } else current + line)
         }
     }
 
     // Line filters: per stop, the lines you want to see there (none saved = every line).
-    private val filtersKey = stringPreferencesKey("line_filters")
-    private val filterSerializer = kotlinx.serialization.builtins.MapSerializer(
-        kotlinx.serialization.serializer<String>(),
-        ListSerializer(kotlinx.serialization.serializer<String>()),
-    )
-    private fun decodeFilters(raw: String?): Map<String, Set<String>> =
-        raw?.let { runCatching { DeLijnApi.JSON.decodeFromString(filterSerializer, it) }.getOrNull() }?.mapValues { it.value.toSet() } ?: emptyMap()
 
     /** Stop (as "entity_number") to the lines shown there (as "entity_line"). */
-    val filters: StateFlow<Map<String, Set<String>>> = context.appDataStore.data
-        .map { decodeFilters(it[filtersKey]) }
+    val filters: StateFlow<Map<String, Set<String>>> = store.data
+        .map { d -> d.filters.mapValues { it.value.toSet() } }
         .stateIn(scope, SharingStarted.Eagerly, emptyMap())
 
     /** Shows only [lines] at [stop]; an empty set shows every line again. */
     suspend fun setFilter(stop: StopKey, lines: Set<String>) {
-        context.appDataStore.edit { p ->
-            val next = decodeFilters(p[filtersKey]).toMutableMap()
-            if (lines.isEmpty()) next.remove(stop.toString()) else next[stop.toString()] = lines
-            if (next.isEmpty()) p.remove(filtersKey)
-            else p[filtersKey] = DeLijnApi.JSON.encodeToString(filterSerializer, next.mapValues { it.value.sorted() })
+        store.update { d ->
+            val next = d.filters.toMutableMap()
+            if (lines.isEmpty()) next.remove(stop.toString()) else next[stop.toString()] = lines.sorted()
+            d.copy(filters = next)
         }
     }
 
     fun isSaved(stop: StopKey, list: List<SavedStop> = stops.value) = list.any { it.key == stop }
 
     private suspend fun edit(transform: (List<SavedStop>) -> List<SavedStop>) {
-        context.appDataStore.edit { p ->
-            val current = p[key]?.let { runCatching { DeLijnApi.JSON.decodeFromString(serializer, it) }.getOrNull() } ?: emptyList()
-            p[key] = DeLijnApi.JSON.encodeToString(serializer, transform(current))
-        }
+        store.update { d -> d.copy(stops = transform(d.stops)) }
     }
 
     suspend fun add(stop: SavedStop) = edit { list -> if (list.any { it.key == stop.key }) list else list + stop }

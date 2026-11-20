@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Directions
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.NearMe
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.StarBorder
@@ -29,11 +30,13 @@ import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,9 +56,12 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import com.vknxworks.lijnctrl.R
 import com.vknxworks.lijnctrl.container
+import com.vknxworks.lijnctrl.ui.components.ConfirmDialog
 import com.vknxworks.lijnctrl.ui.components.LocalBottomClearance
+import com.vknxworks.lijnctrl.ui.components.MessageView
 import com.vknxworks.lijnctrl.ui.lines.LineScreen
 import com.vknxworks.lijnctrl.ui.lines.TripScreen
 import com.vknxworks.lijnctrl.ui.nearby.NearbyScreen
@@ -78,13 +84,54 @@ fun AppRoot() {
     val hasKey by c.apiKey.hasKey.collectAsStateWithLifecycle()
     val key by c.apiKey.key.collectAsStateWithLifecycle()
     val keyLoaded by c.apiKey.loaded.collectAsStateWithLifecycle()
+    val savedReady by c.saved.ready.collectAsStateWithLifecycle()
+    val savedUnreadable by c.saved.unreadable.collectAsStateWithLifecycle()
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         when {
             // The saved key is still being read from the phone's secure storage (a moment, right after start).
             !keyLoaded -> Unit
             // No key yet (or the saved one can't be read any more): set it up first.
             !hasKey || key == null -> ApiKeyScreen(firstRun = true, unreadable = hasKey && key == null, onDone = {}, onCancel = null)
+            // The saved stops and routes are still being read and decrypted (a moment, right after start): no
+            // empty Stops tab in the meantime.
+            !savedReady -> Unit
+            savedUnreadable -> UnreadableSaved()
             else -> MainScaffold()
+        }
+    }
+}
+
+/**
+ * The saved stops, lines and routes are encrypted and can't be opened (the key in the phone's secure storage is
+ * gone or changed). Nothing was deleted or changed: say so, offer to try again, and only start empty when asked
+ * to, keeping the unreadable file aside.
+ */
+@Composable
+private fun UnreadableSaved() {
+    val saved = LocalContext.current.container.saved
+    val scope = rememberCoroutineScope()
+    var confirm by remember { mutableStateOf(false) }
+    Box(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
+        MessageView(
+            Icons.Outlined.Lock,
+            stringResource(R.string.unreadable_title),
+            stringResource(R.string.unreadable_body),
+            actionLabel = stringResource(R.string.unreadable_retry),
+            onAction = { saved.retry() },
+        )
+        TextButton(onClick = { confirm = true }, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp)) {
+            Text(stringResource(R.string.unreadable_start_empty), color = CtrlColors.Muted)
+        }
+    }
+    if (confirm) {
+        ConfirmDialog(
+            title = stringResource(R.string.unreadable_start_empty_title),
+            body = stringResource(R.string.unreadable_start_empty_body),
+            confirm = stringResource(R.string.unreadable_start_empty),
+            onDismiss = { confirm = false },
+        ) {
+            confirm = false
+            scope.launch { saved.startEmpty() }
         }
     }
 }
