@@ -10,6 +10,15 @@ To publish a new version: bump `versionCode` and `versionName` in `app/build.gra
 
 - **The weekly code scan no longer fails at random.** CodeQL has to watch the app being compiled, but its build could take the compiled code from Gradle's build cache instead, and then the scan stopped with "CodeQL detected code written in Java/Kotlin but this run didn't build any of it" (and GitHub mailed a failed run). The scan's build now runs with `--no-build-cache`, so the code is always compiled. No app changes, so no new version.
 
+## v0.16.1 (2026-11-20)
+
+### Fixed
+
+- **"Leave at" and "Arrive by" now show routes for the time you picked.** Transitous looks for routes in a 15-minute window and widens it when that window has too few, so the route list could start with connections leaving well before your chosen time, and the ones that actually fit your time ended up at the bottom. Now:
+  - **Leave now / Leave at** only shows routes that leave at (or at most a minute before) your time, soonest first.
+  - **Arrive by** only shows routes that arrive at (or at most a minute after) your time, the latest arrival first, so the route closest to when you need to be there is at the top.
+  - When dropping the routes outside your time leaves fewer than 6, LijnCtrl asks Transitous for the next window (later ones for leave at, earlier ones for arrive by), at most three requests per search, so you still get a full list.
+
 ## v0.16.0 (2026-11-13)
 
 Bus alerts can now be set long before the bus leaves, and no longer keep a notification running while they wait.

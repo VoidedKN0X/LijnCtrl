@@ -92,6 +92,10 @@ private data class TItinerary(val legs: List<TLeg> = emptyList())
 private data class TPlan(
     val itineraries: List<TItinerary> = emptyList(),
     val direct: List<TItinerary> = emptyList(),
+    /** Routes leaving after the last one here. */
+    val nextPageCursor: String? = null,
+    /** Routes leaving before the first one here. */
+    val previousPageCursor: String? = null,
 )
 
 /**
@@ -122,15 +126,41 @@ class TransitousPlanner(base: OkHttpClient) {
         })
         .build()
 
+    /**
+     * Routes from [from] to [to], leaving at or after [time] or, with [arriveBy], arriving at or before it.
+     *
+     * Transitous searches a 15-minute window and, to find enough routes, widens it, so its answer can hold routes
+     * that leave before the time you chose (or arrive after it). Those are dropped here, and when that leaves too
+     * few, the next window is asked for (later ones when leaving at, earlier ones when arriving by). The routes come
+     * back closest to your time first: soonest to leave, or (arriving by) latest to arrive.
+     */
     suspend fun plan(from: PlanPoint, to: PlanPoint, time: Instant, arriveBy: Boolean): List<Journey> = withContext(Dispatchers.IO) {
+        val found = linkedMapOf<String, Journey>()
+        var cursor: String? = null
+        var pages = 0
+        while (pages++ < MAX_PAGES) {
+            val plan = request(from, to, time, arriveBy, cursor)
+            (plan.itineraries + plan.direct).mapNotNull { it.toJourney() }
+                .filter { j -> if (arriveBy) !j.end.isAfter(time.plusSeconds(SLACK_S)) else !j.start.isBefore(time.minusSeconds(SLACK_S)) }
+                .forEach { j -> found.putIfAbsent(j.signature, j) }
+            if (found.size >= WANTED) break
+            cursor = (if (arriveBy) plan.previousPageCursor else plan.nextPageCursor)?.takeIf { it.isNotBlank() } ?: break
+        }
+        val list = found.values.toList()
+        if (arriveBy) list.sortedWith(compareByDescending<Journey> { it.end }.thenByDescending { it.start })
+        else list.sortedWith(compareBy<Journey> { it.start }.thenBy { it.end })
+    }
+
+    private fun request(from: PlanPoint, to: PlanPoint, time: Instant, arriveBy: Boolean, cursor: String?): TPlan {
         val url = "https://$HOST/api/v6/plan".toHttpUrl().newBuilder()
             .addQueryParameter("fromPlace", "${from.latitude},${from.longitude}")
             .addQueryParameter("toPlace", "${to.latitude},${to.longitude}")
             .addQueryParameter("time", time.toString())
             .addQueryParameter("arriveBy", arriveBy.toString())
-            .addQueryParameter("numItineraries", "6")
+            .addQueryParameter("numItineraries", WANTED.toString())
             .addQueryParameter("detailedTransfers", "false")
             .addQueryParameter("language", "nl")
+            .apply { cursor?.let { addQueryParameter("pageCursor", it) } }
             .build()
         val body = http.newCall(Request.Builder().url(url).build()).execute().use { r ->
             val text = r.body?.textAtMost().orEmpty()
@@ -140,8 +170,7 @@ class TransitousPlanner(base: OkHttpClient) {
             }
             text
         }
-        val plan = DeLijnApi.JSON.decodeFromString(TPlan.serializer(), body)
-        (plan.itineraries + plan.direct).mapNotNull { it.toJourney() }.distinctBy { it.signature }
+        return DeLijnApi.JSON.decodeFromString(TPlan.serializer(), body)
     }
 
     /**
@@ -268,6 +297,12 @@ class TransitousPlanner(base: OkHttpClient) {
 
     companion object {
         const val HOST = "api.transitous.org"
+        /** How many routes to show. */
+        private const val WANTED = 6
+        /** At most this many requests per search (each further one looks at the next 15 minutes or more). */
+        private const val MAX_PAGES = 3
+        /** A route leaving a minute before your time (or arriving a minute after) still counts. */
+        private const val SLACK_S = 60L
         const val SOURCE = "transitous"
         const val SOURCES_URL = "https://transitous.org/sources/"
     }
