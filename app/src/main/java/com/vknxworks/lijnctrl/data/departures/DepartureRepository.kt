@@ -16,24 +16,35 @@ import java.time.LocalTime
  * Upcoming departures at a stop: De Lijn's live feed, topped up with the timetable. The live feed alone only
  * covers the next stretch of time and the trips De Lijn tracks, which made quieter stops (and lines without
  * live data, such as Flex and night buses) look empty. Timetables are fetched once per stop and day and kept
- * in memory.
+ * in memory; with a [cache], those of saved stops are also kept on the phone (encrypted) for a few hours, so a
+ * fresh start doesn't fetch them all again.
  */
-class DepartureRepository(private val api: DeLijnApi) {
+class DepartureRepository(private val api: DeLijnApi, private val cache: TimetableCache? = null) {
     private val mutex = Mutex()
     private val timetables = mutableMapOf<Pair<StopKey, LocalDate>, List<Departure>>()
 
     /** The day's timetable at [stop], from memory when it was already fetched. */
     suspend fun timetable(stop: StopKey, date: LocalDate): List<Departure> {
         mutex.withLock { timetables[stop to date] }?.let { return it }
-        val schedule = api.timetable(stop, date)
-        val list = schedule.departuresByStop()[stop.number] ?: schedule.departuresByStop().values.flatten()
-        mutex.withLock {
-            // Keep it small: only today's and tomorrow's timetables are useful.
-            val today = LocalDate.now(BRUSSELS)
-            timetables.keys.removeAll { it.second.isBefore(today.minusDays(1)) }
-            timetables[stop to date] = list
+        // Fetched a few hours ago at most and kept on the phone (saved stops only): no download.
+        val kept = cache?.let { c -> runCatching { c.get(stop, date) }.getOrNull() }
+        if (kept != null) {
+            keep(stop, date, kept)
+            return kept
         }
+        val schedule = api.timetable(stop, date)
+        val byStop = schedule.departuresByStop()
+        val list = byStop[stop.number] ?: byStop.values.flatten()
+        keep(stop, date, list)
+        cache?.let { c -> runCatching { c.put(stop, date, list) } }
         return list
+    }
+
+    private suspend fun keep(stop: StopKey, date: LocalDate, list: List<Departure>) = mutex.withLock {
+        // Keep it small: only today's and tomorrow's timetables are useful.
+        val today = LocalDate.now(BRUSSELS)
+        timetables.keys.removeAll { it.second.isBefore(today.minusDays(1)) }
+        timetables[stop to date] = list
     }
 
     /**

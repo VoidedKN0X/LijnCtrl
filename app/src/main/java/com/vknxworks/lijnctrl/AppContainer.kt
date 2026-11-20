@@ -89,7 +89,11 @@ class AppContainer(val context: Context) {
     val gtfsKey = ApiKeyStore(context, vault, appScope, "gtfs_key")
     val live: com.vknxworks.lijnctrl.data.live.LiveVehicles by lazy { com.vknxworks.lijnctrl.data.live.LiveVehicles(http) { gtfsKey.current() } }
     val lines: LineRepository by lazy { LineRepository(context, api, dataKeys) }
-    val departures: DepartureRepository by lazy { DepartureRepository(api) }
+    /** Day timetables of saved stops, kept encrypted in the cache folder for a few hours (see [com.vknxworks.lijnctrl.data.departures.TimetableCache]). */
+    private val timetableCache: com.vknxworks.lijnctrl.data.departures.TimetableCache by lazy {
+        com.vknxworks.lijnctrl.data.departures.TimetableCache(java.io.File(context.cacheDir, "timetables.bin"), dataKeys, appScope) { stop -> favourites.isSaved(stop) }
+    }
+    val departures: DepartureRepository by lazy { DepartureRepository(api, timetableCache) }
     /** Disruptions and diversions per stop and line direction, cached for a few minutes. */
     val disruptions: com.vknxworks.lijnctrl.data.disruptions.DisruptionRepository by lazy { com.vknxworks.lijnctrl.data.disruptions.DisruptionRepository(api) }
     val towns: TownRepository by lazy { TownRepository(api) }
@@ -145,6 +149,16 @@ class AppContainer(val context: Context) {
         // Bus alerts set before the phone restarted (Android forgets alarms then) get their alarms back.
         appScope.launch { runCatching { com.vknxworks.lijnctrl.alerts.BusAlerts.rescheduleAll(context) } }
         appScope.launch(Dispatchers.IO) { runCatching { removeWidgetLeftovers() } }
+        // The kept timetables only cover saved stops: when the saved stops change, what's no longer saved goes.
+        appScope.launch {
+            var before = favourites.stops.value.map { it.key }.toSet()
+            favourites.stops.collect { list ->
+                val now = list.map { it.key }.toSet()
+                // Only when a stop was removed (never at start, when the saved stops are first read).
+                if (!now.containsAll(before)) runCatching { timetableCache.forgetUnsaved() }
+                before = now
+            }
+        }
         // Builds the HTTP client for De Lijn off the main thread, so it's ready when the first screen asks for it.
         appScope.launch { runCatching { api } }
     }
