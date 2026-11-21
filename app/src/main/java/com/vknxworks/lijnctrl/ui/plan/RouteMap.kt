@@ -289,12 +289,16 @@ fun RouteMap(
     val rideLegs = remember(journey) { journey.legs.filter { !it.isWalk } }
     // Vehicles beyond the journey's own rides (the line page) take the first ride's line and route.
     fun legFor(ride: Int) = rideLegs.getOrElse(ride) { rideLegs.first() }
-    val targets = remember(journey, liveTargets, extraVehicles) {
-        val now = java.time.Instant.now()
+    // Which vehicle to look for, per ride. Straight away: the stops where you get on and off. Then, once the
+    // ride's whole trip has been looked up at your stop, every stop of that trip, because De Lijn's feed only lists
+    // the next few stops of each vehicle (so a bus still far from your stop is found too).
+    val now0 = remember(journey) { java.time.Instant.now() }
+    fun dueSoon(leg: com.vknxworks.lijnctrl.data.plan.JourneyLeg) =
+        !leg.end.isBefore(now0.minusSeconds(120)) && !leg.start.isAfter(now0.plusSeconds(90 * 60))
+    val quickTargets = remember(journey, liveTargets, extraVehicles) {
         rideLegs.mapIndexed<com.vknxworks.lijnctrl.data.plan.JourneyLeg, com.vknxworks.lijnctrl.data.live.LiveTarget?> { i, leg ->
             liveTargets?.getOrNull(i) ?: run {
-                // Rides that haven't ended and start within the next hour and a half.
-                if (leg.end.isBefore(now.minusSeconds(120)) || leg.start.isAfter(now.plusSeconds(90 * 60))) return@run null
+                if (!dueSoon(leg)) return@run null
                 val stops = buildMap {
                     leg.fromStop?.let { put(it.number, leg.start) }
                     leg.toStop?.let { put(it.number, leg.end) }
@@ -302,6 +306,18 @@ fun RouteMap(
                 if (stops.isEmpty()) null else com.vknxworks.lijnctrl.data.live.LiveTarget(stops, leg.trip)
             }
         } + extraVehicles
+    }
+    val targets by androidx.compose.runtime.produceState(quickTargets, quickTargets, live, gtfsKey) {
+        value = quickTargets
+        // Only rides the app worked out itself (not the trip page's or line page's own targets), and only when
+        // live positions are wanted at all.
+        if (!live || gtfsKey.isNullOrBlank() || liveTargets != null) return@produceState
+        val full = rideLegs.mapIndexed { i, leg ->
+            val quick = quickTargets.getOrNull(i)
+            if (quick == null || !dueSoon(leg)) quick
+            else com.vknxworks.lijnctrl.data.live.rideTarget(c, leg) ?: quick
+        } + extraVehicles
+        if (full != quickTargets) value = full
     }
     val wantsLive = live && targets.any { it != null }
     // One smooth track and one marker per ride being followed (keyed by the ride's position in the journey).

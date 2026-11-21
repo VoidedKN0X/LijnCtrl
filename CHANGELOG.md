@@ -4,6 +4,12 @@ What changed in each LijnCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## v0.20.1 (2026-11-21)
+
+### Fixed
+
+- **The live bus is found on the route map again, also while it's still far away.** On a planned route's map (the one at the top of the route and the full-screen one), the label said "No live position for this bus right now" until the bus was only a few stops from you. De Lijn's live feed only lists the next few stops of each bus (about 4, at most 9), and the route map looked for your bus by the stop where you get on, so it couldn't be found before that stop was among them. Now LijnCtrl first looks up the ride's whole trip at your stop (the same line, leaving at the planned time) and looks for the bus by every stop of that trip, with the delay De Lijn reports at your stop. That finds the bus wherever it is on its trip, as the trip page already did. When the trip can't be looked up, it falls back to the old way.
+
 ## v0.20.0 (2026-11-21)
 
 Built and checked by CI only: nothing in this release had been run on a phone when it was published. It is the first release built with the new build tools (Android Gradle Plugin 9, stricter code shrinking), so update over your installed version and check that your data and settings are still there.
