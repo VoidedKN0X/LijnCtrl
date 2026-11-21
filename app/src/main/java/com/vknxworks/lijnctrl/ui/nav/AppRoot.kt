@@ -283,6 +283,7 @@ private fun AppNavHost(navController: NavHostController) {
         composable<LineRoute> { val r = it.toRoute<LineRoute>(); LineScreen(r.entity, r.line, r.direction) }
         composable<TripRoute> { val r = it.toRoute<TripRoute>(); TripScreen(r.entity, r.line, r.direction, r.trip, r.date, r.fromStop) }
         composable<TownRoute> { val r = it.toRoute<TownRoute>(); TownScreen(r.number, r.name) }
+        composable<OtherStopRoute> { val r = it.toRoute<OtherStopRoute>(); com.vknxworks.lijnctrl.ui.stops.OtherStopScreen(r.stopId, r.name) }
         composable<PlaceRoute> { val r = it.toRoute<PlaceRoute>(); PlaceScreen(r.latitude, r.longitude, r.name, r.detail) }
         composable<YouRoute> { YouScreen() }
         composable<SettingsRoute> { SettingsScreen() }

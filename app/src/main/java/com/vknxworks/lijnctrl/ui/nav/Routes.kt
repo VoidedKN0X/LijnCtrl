@@ -33,3 +33,6 @@ import kotlinx.serialization.Serializable
 @Serializable data class JourneyRoute(val index: Int)
 @Serializable data class RouteMapRoute(val index: Int)
 @Serializable data object GtfsKeyRoute
+
+/** Departures at another operator's stop, from Transitous (stop id as its geocoder gives it). */
+@Serializable data class OtherStopRoute(val stopId: String, val name: String)

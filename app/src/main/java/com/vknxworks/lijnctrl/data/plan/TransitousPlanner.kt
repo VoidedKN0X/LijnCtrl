@@ -85,6 +85,37 @@ private data class TMatch(
     val areas: List<TArea> = emptyList(),
 )
 
+/** One departure at a stop (`/api/v6/stoptimes`). */
+@Serializable
+private data class TStopTime(
+    val place: TPlace = TPlace(),
+    val mode: String = "",
+    val realTime: Boolean = false,
+    val headsign: String? = null,
+    val agencyName: String? = null,
+    val routeShortName: String? = null,
+    val displayName: String? = null,
+    val routeColor: String? = null,
+    val routeTextColor: String? = null,
+    val tripId: String? = null,
+    val cancelled: Boolean? = null,
+    val tripCancelled: Boolean? = null,
+    val tripTo: TPlace? = null,
+)
+
+@Serializable
+private data class TStopTimes(val stopTimes: List<TStopTime> = emptyList(), val place: TPlace? = null)
+
+/** A departure at another operator's stop (NMBS/SNCB, STIB/MIVB, TEC…), as Transitous gives it. */
+data class OtherDeparture(
+    val departure: com.vknxworks.lijnctrl.data.api.Departure,
+    /** The line's number and colours, for the badge. */
+    val badge: com.vknxworks.lijnctrl.data.lines.LineInfo?,
+    val operator: String?,
+    val track: String?,
+    val mode: LegMode,
+)
+
 @Serializable
 private data class TItinerary(val legs: List<TLeg> = emptyList())
 
@@ -197,15 +228,79 @@ class TransitousPlanner(base: OkHttpClient) {
             .take(max)
     }
 
+    /**
+     * The next departures at a stop of any operator Transitous has (`/api/v6/stoptimes`, documented in MOTIS's
+     * openapi.yaml): [stopId] is the id its geocoder gave the stop. Live times where the operator publishes them
+     * (Transitous has live data for NMBS/SNCB and TEC; STIB/MIVB is timetable only). Returns the stop's name as
+     * Transitous knows it and the departures, soonest first.
+     */
+    suspend fun stopTimes(stopId: String, count: Int = 40): Pair<String?, List<OtherDeparture>> = withContext(Dispatchers.IO) {
+        val url = "https://$HOST/api/v6/stoptimes".toHttpUrl().newBuilder()
+            .addQueryParameter("stopId", stopId)
+            .addQueryParameter("n", count.toString())
+            .addQueryParameter("language", "nl")
+            .build()
+        val body = http.newCall(Request.Builder().url(url).build()).execute().use { r ->
+            val text = r.body?.textAtMost().orEmpty()
+            when {
+                r.code == 429 -> throw ApiException(429, str(R.string.transitous_busy))
+                !r.isSuccessful -> throw ApiException(r.code, str(R.string.transitous_error_x, r.code))
+            }
+            text
+        }
+        val res = DeLijnApi.JSON.decodeFromString(TStopTimes.serializer(), body)
+        val list = res.stopTimes.mapNotNull { st ->
+            // Only departures: a train or bus that ends here has no departure time.
+            val scheduled = parse(st.place.scheduledDeparture) ?: parse(st.place.departure) ?: return@mapNotNull null
+            val live = parse(st.place.departure)?.takeIf { st.realTime }
+            val number = (st.routeShortName ?: st.displayName)?.takeIf { it.isNotBlank() }
+            val cancelled = st.cancelled == true || st.tripCancelled == true
+            OtherDeparture(
+                departure = com.vknxworks.lijnctrl.data.api.Departure(
+                    id = (st.tripId ?: "") + "@" + scheduled.epochSecond,
+                    stop = null,
+                    line = null,
+                    direction = null,
+                    trip = null,
+                    serviceDate = null,
+                    destination = st.headsign?.takeIf { it.isNotBlank() } ?: st.tripTo?.name.orEmpty(),
+                    vias = emptyList(),
+                    scheduled = scheduled,
+                    predicted = live,
+                    cancelled = cancelled,
+                    live = st.realTime && !cancelled,
+                ),
+                badge = number?.let {
+                    com.vknxworks.lijnctrl.data.lines.LineInfo(
+                        entity = "",
+                        line = "",
+                        publicNumber = it,
+                        foreground = st.routeTextColor?.removePrefix("#")?.takeIf { c -> c.length == 6 },
+                        background = st.routeColor?.removePrefix("#")?.takeIf { c -> c.length == 6 },
+                    )
+                },
+                operator = st.agencyName?.takeIf { it.isNotBlank() },
+                track = st.place.track ?: st.place.scheduledTrack,
+                mode = modeOf(st.mode),
+            )
+        }.sortedBy { it.departure.time }
+        res.place?.name?.takeIf { it.isNotBlank() } to list
+    }
+
     private fun TMatch.toPlace(): PlaceResult? {
         // The town: the area marked as the default, or else the most local one.
         val town = areas.firstOrNull { it.default }?.name ?: areas.maxByOrNull { it.adminLevel }?.name
         val streetLine = listOfNotNull(street, houseNumber).joinToString(" ").takeIf { it.isNotBlank() }
         return when (type.uppercase()) {
             "STOP" -> {
-                // Only De Lijn stops can show departures here; their ids end in the stop number.
-                val stop = if (id?.contains("delijn", ignoreCase = true) == true) deLijnStop(id) else null
-                stop?.let { PlaceResult(name, listOfNotNull(zip, town).joinToString(" ").ifBlank { null }, lat, lon, PlaceKind.STOP, it) }
+                val detail = listOfNotNull(zip, town).joinToString(" ").ifBlank { null }
+                // De Lijn stops open the stop itself (their ids end in the stop number); other operators' stops
+                // (NMBS/SNCB, STIB/MIVB, TEC…) open their departures from Transitous.
+                if (id?.contains("delijn", ignoreCase = true) == true) {
+                    deLijnStop(id)?.let { PlaceResult(name, detail, lat, lon, PlaceKind.STOP, it) }
+                } else if (!id.isNullOrBlank()) {
+                    PlaceResult(name, detail, lat, lon, PlaceKind.STOP, otherStopId = id)
+                } else null
             }
             "ADDRESS" -> PlaceResult(
                 name = streetLine ?: name,

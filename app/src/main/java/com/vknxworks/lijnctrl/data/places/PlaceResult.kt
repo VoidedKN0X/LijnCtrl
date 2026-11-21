@@ -14,4 +14,6 @@ data class PlaceResult(
     val kind: PlaceKind,
     /** Set for De Lijn stops, which open the stop itself. */
     val stop: StopKey? = null,
+    /** Set for other operators' stops (Transitous stop id), which open their departures from Transitous. */
+    val otherStopId: String? = null,
 )

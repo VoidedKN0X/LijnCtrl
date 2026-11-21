@@ -481,4 +481,14 @@
     <string name="import_off">off</string>
     <string name="import_none">none</string>
     <string name="import_unchanged">unchanged</string>
+    <!-- Other operators' stops (Transitous) -->
+    <string name="other_stop_needs_transitous">Needs Transitous</string>
+    <string name="other_stop_needs_transitous_body">Departures of NMBS/SNCB, STIB/MIVB, TEC and other operators come from Transitous. Turn it on to see them; this stop\'s id is then sent to transitous.org.</string>
+    <string name="turn_on">Turn on</string>
+    <string name="other_stop_none_body">Transitous lists no departures here in the coming hours.</string>
+    <string name="other_stop_source">From Transitous (transitous.org), with live times where the operator publishes them: NMBS/SNCB and TEC have live data, STIB/MIVB shows timetable times only.</string>
+    <string name="mode_train">Train</string>
+    <string name="mode_metro">Metro</string>
+    <string name="mode_tram">Tram</string>
+    <string name="mode_bus">Bus</string>
 </resources>

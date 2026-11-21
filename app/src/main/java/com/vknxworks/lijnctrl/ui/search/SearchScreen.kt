@@ -218,7 +218,9 @@ fun SearchScreen() {
                     items(r.places, key = { "place-${it.kind}_${it.latitude}_${it.longitude}_${it.name}" }) { p ->
                         PlaceRow(p) {
                             val stop = p.stop
+                            val other = p.otherStopId
                             if (stop != null) nav.stop(stop.entity, stop.number, p.name)
+                            else if (other != null) nav.navigate(com.vknxworks.lijnctrl.ui.nav.OtherStopRoute(other, p.name))
                             else nav.place(p.latitude, p.longitude, p.name, p.detail)
                         }
                     }
