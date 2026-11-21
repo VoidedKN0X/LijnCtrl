@@ -79,7 +79,7 @@ fun OtherStopScreen(stopId: String, name: String) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             while (true) {
                 load()
-                delay(REFRESH_MS)
+                delay(OTHER_REFRESH_MS)
             }
         }
     }
@@ -153,4 +153,4 @@ private fun modeLabel(mode: LegMode): String? = when (mode) {
     else -> null
 }
 
-private const val REFRESH_MS = 30_000L
+private const val OTHER_REFRESH_MS = 30_000L
