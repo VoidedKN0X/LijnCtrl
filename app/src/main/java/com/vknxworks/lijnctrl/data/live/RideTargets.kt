@@ -18,17 +18,23 @@ import kotlin.math.abs
  * Falls back to just the stops where you get on and off when the trip can't be found (no De Lijn stop, the
  * departure isn't listed, or the trip lookup fails).
  */
-suspend fun rideTarget(c: AppContainer, leg: JourneyLeg): LiveTarget? {
+suspend fun rideTarget(c: AppContainer, leg: JourneyLeg, log: (String) -> Unit = {}): LiveTarget? {
     val basic = buildMap {
         leg.fromStop?.let { put(it.number, leg.start) }
         leg.toStop?.let { put(it.number, leg.end) }
     }.takeIf { it.isNotEmpty() }?.let { LiveTarget(it, leg.trip) }
-    val from = leg.fromStop ?: return basic
+    val from = leg.fromStop ?: return basic.also { log("Ride ${leg.badge}: no De Lijn stop to get on at (operator ${leg.operator ?: "?"})") }
     return runCatching {
         val departures = c.departures.upcoming(from, 30)
         runCatching { c.lines.ensure(departures.mapNotNull { it.line }.toSet()) }
         val planned = leg.scheduledStart ?: leg.start
-        val d = departures.firstOrNull { sameRide(c, it, leg, planned) } ?: return@runCatching basic
+        val d = departures.firstOrNull { sameRide(c, it, leg, planned) } ?: return@runCatching basic.also {
+            val zone = java.time.ZoneId.of("Europe/Brussels")
+            log(
+                "Ride ${leg.badge} at stop ${from.number}: no matching departure for planned ${planned.atZone(zone).toLocalTime()}; " +
+                    "listed: " + departures.take(8).joinToString { x -> "${x.line?.let { l -> c.lines.get(l)?.publicNumber ?: l.line }}@${x.scheduled.atZone(zone).toLocalTime()}" },
+            )
+        }
         val line = d.line ?: return@runCatching basic
         val direction = d.direction ?: return@runCatching basic
         val trip = d.trip ?: return@runCatching basic
@@ -41,8 +47,12 @@ suspend fun rideTarget(c: AppContainer, leg: JourneyLeg): LiveTarget? {
             val t = parseLocalTime(p.realtime) ?: parseLocalTime(p.scheduled)?.plusSeconds(delay) ?: return@mapNotNull null
             n to t
         }.toMap()
+        log("Ride ${leg.badge} at stop ${from.number}: trip $trip of line ${line.line}, ${stops.size} stops, delay ${delay}s")
         if (stops.size < 2) basic else LiveTarget(basic?.stops.orEmpty() + stops, trip)
-    }.getOrDefault(basic)
+    }.getOrElse { e ->
+        log("Ride ${leg.badge}: trip lookup failed: ${e.javaClass.simpleName}: ${e.message}")
+        basic
+    }
 }
 
 /** The departure that is this ride: the same trip when the route knows it, else the same line number around the planned time. */

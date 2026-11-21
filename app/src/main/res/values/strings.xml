@@ -346,7 +346,7 @@
     <string name="gtfs_error_x">De Lijn\'s live feed answered with error %1$d</string>
     <string name="live_vehicles_need_key">Add a GTFS Realtime key in Settings to see buses live</string>
     <string name="live_vehicle_searching">Looking for the bus on the road…</string>
-    <string name="live_vehicle_not_found">No live position for this bus right now</string>
+    <string name="live_vehicle_not_found">No live position for this bus right now · tap for details</string>
     <string name="live_vehicle_found">Live position</string>
     <string name="live_vehicle_seconds_ago">Live position · %1$d s ago</string>
     <string name="live_vehicle_minutes_ago">Live position · %1$d min ago</string>
@@ -446,4 +446,9 @@
     <string name="unreadable_start_empty_title">Start with nothing saved?</string>
     <string name="unreadable_start_empty_body">Only do this if trying again doesn\'t help. The saved stops, lines and routes that can\'t be opened are kept aside on this phone, not deleted, but LijnCtrl won\'t show them. Your API key and settings are not affected.</string>
 
+    <string name="live_check_title">Why no live position?</string>
+    <string name="live_check_running">Checking De Lijn\'s live feed…</string>
+    <string name="live_check_copied">Report copied</string>
+    <string name="copy">Copy</string>
+    <string name="close">Close</string>
 </resources>

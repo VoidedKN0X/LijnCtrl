@@ -4,13 +4,20 @@ What changed in each LijnCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
-## Unreleased
+## v0.20.2 (2026-11-21)
 
-Changes on `main` that aren't in a release yet. They ship with the next version.
+### New
+
+- **"Why no live position?" check on the maps.** When a map says **No live position for this bus right now**, tap that label (on the full-screen route map, the trip map or the line map) for a report of what LijnCtrl looked for and what it found: the ride and its stops, whether its trip was found at your stop, how big and how fresh De Lijn's live feed is, how many vehicles in it have a position, and the closest matching trip and whether its vehicle has a position. **Copy** puts the report on the clipboard so you can send it for help. It never contains your keys.
+
+### Changed
+
+- The route map also writes down each step of looking up your ride's trip (the departure it matched at your stop, or which departures were listed when none matched), so the check above can show where finding the bus goes wrong.
 
 ### Project
 
 - **The checksum list no longer collects old entries.** The hand-started workflow that regenerates `gradle/verification-metadata.xml` used to add the new checksums to the existing file, so entries for library versions that are no longer used stayed in it. It now clears the old entries first and writes only what the build uses, and prints the file's SHA-256 so the copy that gets committed can be checked against the log. Nothing in the app changes.
+
 ## v0.20.1 (2026-11-21)
 
 ### Fixed

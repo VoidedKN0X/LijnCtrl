@@ -132,6 +132,60 @@ class LiveVehicles(private val http: OkHttpClient, private val key: () -> String
      * expects them, the closest times breaking ties. The trip number in the GTFS id (its third part) helps when
      * it matches.
      */
+    /**
+     * A plain-text report of why each target was or wasn't found, for the "why no live position?" check on the
+     * maps: the feed itself, then per target the stops looked for, the best candidate trip and its vehicle.
+     * Never contains the key. Downloads the feed afresh.
+     */
+    suspend fun explain(targets: List<LiveTarget>): String = buildString {
+        val k = key()?.takeIf { it.isNotBlank() }
+        if (k == null) {
+            appendLine("GTFS key: none readable (not set, or the app is locked)")
+            return@buildString
+        }
+        val feed = runCatching { download(k) }.getOrElse { e ->
+            appendLine("Feed download failed: ${e.javaClass.simpleName}: ${e.message}")
+            return@buildString
+        }
+        mutex.withLock { cached = feed; cachedAt = System.currentTimeMillis() }
+        val now = System.currentTimeMillis() / 1000
+        appendLine("Feed: ${feed.trips.size} trips, ${feed.vehicles.size} vehicles with a position, age ${feed.timestamp?.let { now - it } ?: "?"} s")
+        appendLine("Vehicles with trip id: ${feed.vehicles.count { it.tripId != null }}, with vehicle id: ${feed.vehicles.count { it.vehicleId != null }}")
+        feed.trips.firstOrNull { it.stops.size >= 2 }?.let { appendLine("Sample trip: ${it.tripId.take(40)} stops ${it.stops.take(3).joinToString { s -> "${s.stopId}@${s.time?.let { t -> t - now }}s" }}") }
+        val byTrip = feed.vehicles.filter { it.tripId != null }.associateBy { it.tripId }
+        val byVehicle = feed.vehicles.filter { it.vehicleId != null }.associateBy { it.vehicleId }
+        targets.forEachIndexed { i, t ->
+            appendLine()
+            val sample = t.stops.entries.sortedBy { it.value }.take(4).joinToString { "${it.key}@${it.value.epochSecond - now}s" }
+            appendLine("Target ${i + 1}: ${t.stops.size} stops, trip ${t.tripNumber ?: "-"}; first: $sample")
+            // Trips that list any of the target's stops at all, ignoring times.
+            val anyStop = feed.trips.filter { tr -> tr.stops.any { it.stopId in t.stops } }
+            appendLine("Trips listing any of these stops: ${anyStop.size}")
+            var best: RtTrip? = null
+            var bestHits = 0
+            var bestGap = Long.MAX_VALUE
+            for (tr in anyStop) {
+                var hits = 0
+                var gap = Long.MAX_VALUE
+                for (st in tr.stops) {
+                    val want = t.stops[st.stopId] ?: continue
+                    val d = abs((st.time ?: continue) - want.epochSecond)
+                    gap = minOf(gap, d)
+                    if (d <= TOLERANCE_S) hits++
+                }
+                if (hits > bestHits || (hits == bestHits && gap < bestGap)) { best = tr; bestHits = hits; bestGap = gap }
+            }
+            if (best == null) {
+                appendLine("No trip in the feed lists these stops right now")
+            } else {
+                appendLine("Closest trip: ${best.tripId.take(40)}, $bestHits stops within ${TOLERANCE_S / 60} min, nearest time off by $bestGap s")
+                val v = byTrip[best.tripId] ?: best.vehicleId?.let { byVehicle[it] }
+                appendLine(if (v != null) "Its vehicle ${v.vehicleId ?: "?"} has a position" else "Its vehicle (${best.vehicleId ?: "no id"}) has no position in the feed")
+            }
+            appendLine("Result: ${if (match(feed.trips, t) != null) "matched" else "not matched"}")
+        }
+    }
+
     private fun match(trips: List<RtTrip>, t: LiveTarget): RtTrip? {
         if (t.stops.isEmpty()) return null
         var best: RtTrip? = null
