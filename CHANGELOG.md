@@ -8,6 +8,10 @@ To publish a new version: bump `versionCode` and `versionName` in `app/build.gra
 
 Built and checked by CI only: nothing here has been run on a phone yet.
 
+### Fixed
+
+- **Fixed before release: the app would have crashed at start with the new build tools.** LijnCtrl uses WorkManager for its background work, and WorkManager stores its jobs in a small Room database that is created by name when the app starts. The shrinker (R8) in Android Gradle Plugin 9 is stricter than the old one and removed the constructor that needs, which makes the app stop right at launch (a known problem with Room 2.6.1 under Android Gradle Plugin 9). A keep rule for that constructor, the same one newer Room versions ship themselves, is now in `app/proguard-rules.pro`. No released version was affected: the new build tools have not been in any release. Built by CI only; not yet run on a phone.
+
 ### Changed
 
 - **The Stops tab fills in faster after opening the app, with fewer downloads.** To top up the live departures, LijnCtrl downloads the whole day's timetable of every saved stop (and tomorrow's late in the evening, yesterday's just after midnight). Those were only kept in memory, so every fresh start of the app downloaded all of them again before the tab was complete. The timetables of your saved stops are now also kept on the phone for 6 hours, so opening the app again within that time shows them without downloading. Live times, delays and cancellations are still asked from De Lijn every 30 seconds as before; only the timetable part is reused. What you might notice: a timetable change De Lijn makes during the day can take up to 6 hours to show after a restart of the app (before, a restart fetched it again; without a restart it was already kept until the app closed).
