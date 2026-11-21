@@ -491,4 +491,13 @@
     <string name="mode_metro">Metro</string>
     <string name="mode_tram">Tram</string>
     <string name="mode_bus">Bus</string>
+    <!-- Occupancy and service alerts from De Lijn's live feed -->
+    <string name="occupancy_empty">Empty</string>
+    <string name="occupancy_many_seats">Many seats free</string>
+    <string name="occupancy_few_seats">Few seats free</string>
+    <string name="occupancy_standing">Standing room only</string>
+    <string name="occupancy_crushed">Very crowded</string>
+    <string name="occupancy_full">Full</string>
+    <string name="occupancy_not_boarding">Not taking passengers</string>
+    <string name="live_alert_source">De Lijn live feed</string>
 </resources>

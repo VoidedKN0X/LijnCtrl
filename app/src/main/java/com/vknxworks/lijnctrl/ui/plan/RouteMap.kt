@@ -113,7 +113,7 @@ data class MapStop(val point: LatLon, val name: String, val stop: com.vknxworks.
 /** What the live-vehicle chip on the map says. */
 private sealed interface LiveState {
     data object Searching : LiveState
-    data class Found(val count: Int, val newest: java.time.Instant?) : LiveState
+    data class Found(val count: Int, val newest: java.time.Instant?, val occupancy: Int? = null) : LiveState
     data object NotFound : LiveState
     data class Failed(val message: String) : LiveState
 }
@@ -346,7 +346,10 @@ fun RouteMap(
         val text = if (Color(fill).luminance() > 0.5f) android.graphics.Color.BLACK else android.graphics.Color.WHITE
         return Triple(info?.publicNumber ?: leg.badge ?: "", fill, text)
     }
+    // How full each vehicle is, when De Lijn's feed says (shown with a single vehicle).
+    val occupancyByRide = remember(journey) { mutableMapOf<Int, Int?>() }
     fun applyFix(ride: Int, fix: com.vknxworks.lijnctrl.data.live.LiveFix, nowMs: Long) {
+        occupancyByRide[ride] = fix.occupancy
         val track = tracks.getOrPut(ride) {
             BusTrack(legFor(ride).path.filter { it.latitude != 0.0 }.takeIf { it.size >= 2 }?.let { PathGeometry(it) })
         }
@@ -395,7 +398,8 @@ fun RouteMap(
                 result.onFailure { e -> if (tracks.isEmpty()) liveState = LiveState.Failed(e.friendlyMessage()) }
                 result.onSuccess {
                     val seen = tracks.values.filter { it.hasFix }
-                    liveState = if (seen.isEmpty()) LiveState.NotFound else LiveState.Found(seen.size, seen.mapNotNull { it.reportedAt }.maxOrNull())
+                    val occupancy = if (seen.size == 1) tracks.entries.firstOrNull { it.value.hasFix }?.let { occupancyByRide[it.key] } else null
+                    liveState = if (seen.isEmpty()) LiveState.NotFound else LiveState.Found(seen.size, seen.mapNotNull { it.reportedAt }.maxOrNull(), occupancy)
                     if (focusOnBus && !focusedBus && !following && seen.isNotEmpty()) {
                         focusedBus = true
                         // The first ride with a live vehicle: the one you're on, or the next one you take.
@@ -640,9 +644,11 @@ fun RouteMap(
                 state is LiveState.Failed -> state.message
                 state is LiveState.Found -> {
                     val ago = state.newest?.let { ((now.epochSecond - it.epochSecond).coerceAtLeast(0)).toInt() }
-                    if (ago == null) stringResource(R.string.live_vehicle_found)
+                    val base = if (ago == null) stringResource(R.string.live_vehicle_found)
                     else if (ago < 60) stringResource(R.string.live_vehicle_seconds_ago, ago)
                     else stringResource(R.string.live_vehicle_minutes_ago, ago / 60)
+                    val full = com.vknxworks.lijnctrl.ui.components.occupancyLabel(state.occupancy)
+                    if (full != null) "$base · $full" else base
                 }
                 else -> ""
             }

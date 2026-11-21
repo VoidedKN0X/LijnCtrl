@@ -23,9 +23,36 @@ data class RtVehicle(
     val bearing: Float?,
     val speed: Float?,
     val timestamp: Long?,
+    /** GTFS Realtime OccupancyStatus (0 EMPTY … 8 NOT_BOARDABLE), when the feed gives one. */
+    val occupancy: Int? = null,
+    /** How full the vehicle is in % (can be over 100), when the feed gives it. */
+    val occupancyPercent: Int? = null,
 )
 
-data class RtFeed(val timestamp: Long?, val trips: List<RtTrip>, val vehicles: List<RtVehicle>) {
+/** A text in one language (null: not said). */
+data class RtText(val language: String?, val text: String)
+
+/**
+ * A service alert from the feed: what it says (in every language given), what it's about (stops, routes, trips)
+ * and when it applies (epoch seconds; null ends are open).
+ */
+data class RtAlert(
+    val id: String?,
+    val header: List<RtText>,
+    val description: List<RtText>,
+    val stops: Set<String>,
+    val routes: Set<String>,
+    val trips: Set<String>,
+    val periods: List<Pair<Long?, Long?>>,
+    /** GTFS Realtime Effect (1 NO_SERVICE … 11 ACCESSIBILITY_ISSUE), when given. */
+    val effect: Int?,
+) {
+    fun activeAt(epochSecond: Long): Boolean =
+        periods.isEmpty() || periods.any { (a, b) -> (a == null || a <= epochSecond) && (b == null || epochSecond < b) }
+}
+
+data class RtFeed(val timestamp: Long?, val trips: List<RtTrip>, val vehicles: List<RtVehicle>, val alerts: List<RtAlert> = emptyList()) {
+    /** Trips and vehicles (alerts not counted: a one-vehicle answer can still carry every alert). */
     val entityCount: Int get() = trips.size + vehicles.size
 }
 
@@ -108,24 +135,102 @@ object GtfsRealtime {
         var timestamp: Long? = null
         val trips = mutableListOf<RtTrip>()
         val vehicles = mutableListOf<RtVehicle>()
+        val alerts = mutableListOf<RtAlert>()
         r.fields { f, w ->
             when {
                 f == 1 && w == 2 -> r.sub().let { h -> h.fields { hf, hw -> if (hf == 3 && hw == 0) timestamp = h.varint() else h.skip(hw) } }
-                f == 2 && w == 2 -> entity(r.sub(), trips, vehicles)
+                f == 2 && w == 2 -> entity(r.sub(), trips, vehicles, alerts)
                 else -> r.skip(w)
             }
         }
-        return RtFeed(timestamp, trips, vehicles)
+        return RtFeed(timestamp, trips, vehicles, alerts)
     }
 
-    private fun entity(r: Reader, trips: MutableList<RtTrip>, vehicles: MutableList<RtVehicle>) {
+    /** FeedEntity: id (1), trip_update (3), vehicle (4), alert (5). */
+    private fun entity(r: Reader, trips: MutableList<RtTrip>, vehicles: MutableList<RtVehicle>, alerts: MutableList<RtAlert>) {
+        var id: String? = null
+        var alert: Reader? = null
         r.fields { f, w ->
             when {
+                f == 1 && w == 2 -> id = r.string()
                 f == 3 && w == 2 -> tripUpdate(r.sub())?.let(trips::add)
                 f == 4 && w == 2 -> vehiclePosition(r.sub())?.let(vehicles::add)
+                f == 5 && w == 2 -> alert = r.sub()
                 else -> r.skip(w)
             }
         }
+        alert?.let { a -> alert(a, id)?.let(alerts::add) }
+    }
+
+    /** TranslatedString: translation (1) = { text (1), language (2) }. */
+    private fun translated(r: Reader): List<RtText> {
+        val out = mutableListOf<RtText>()
+        r.fields { f, w ->
+            if (f == 1 && w == 2) {
+                val t = r.sub()
+                var text: String? = null
+                var lang: String? = null
+                t.fields { tf, tw ->
+                    when {
+                        tf == 1 && tw == 2 -> text = t.string()
+                        tf == 2 && tw == 2 -> lang = t.string()
+                        else -> t.skip(tw)
+                    }
+                }
+                text?.takeIf { it.isNotBlank() }?.let { out += RtText(lang, it) }
+            } else {
+                r.skip(w)
+            }
+        }
+        return out
+    }
+
+    /**
+     * Alert: active_period (1) and impact_period (3) as TimeRange { start (1), end (2) }, informed_entity (5) as
+     * EntitySelector { route_id (2), trip (4), stop_id (5) }, effect (7), header_text (10), description_text (11).
+     */
+    private fun alert(r: Reader, id: String?): RtAlert? {
+        val header = mutableListOf<RtText>()
+        val description = mutableListOf<RtText>()
+        val stops = mutableSetOf<String>()
+        val routes = mutableSetOf<String>()
+        val trips = mutableSetOf<String>()
+        val periods = mutableListOf<Pair<Long?, Long?>>()
+        var effect: Int? = null
+        r.fields { f, w ->
+            when {
+                (f == 1 || f == 3) && w == 2 -> {
+                    val t = r.sub()
+                    var start: Long? = null
+                    var end: Long? = null
+                    t.fields { tf, tw ->
+                        when {
+                            tf == 1 && tw == 0 -> start = t.varint()
+                            tf == 2 && tw == 0 -> end = t.varint()
+                            else -> t.skip(tw)
+                        }
+                    }
+                    periods += start to end
+                }
+                f == 5 && w == 2 -> {
+                    val e = r.sub()
+                    e.fields { ef, ew ->
+                        when {
+                            ef == 2 && ew == 2 -> routes += e.string()
+                            ef == 4 && ew == 2 -> tripDescriptor(e.sub()).first?.let(trips::add)
+                            ef == 5 && ew == 2 -> stops += e.string()
+                            else -> e.skip(ew)
+                        }
+                    }
+                }
+                f == 7 && w == 0 -> effect = r.varint().toInt()
+                f == 10 && w == 2 -> header += translated(r.sub())
+                f == 11 && w == 2 -> description += translated(r.sub())
+                else -> r.skip(w)
+            }
+        }
+        if (header.isEmpty() && description.isEmpty()) return null
+        return RtAlert(id, header, description, stops, routes, trips, periods, effect)
     }
 
     /** TripDescriptor: trip_id (1), start_date (3). */
@@ -196,8 +301,12 @@ object GtfsRealtime {
         var bearing: Float? = null
         var speed: Float? = null
         var timestamp: Long? = null
+        var occupancy: Int? = null
+        var occupancyPercent: Int? = null
         r.fields { f, w ->
             when {
+                f == 9 && w == 0 -> occupancy = r.varint().toInt()
+                f == 10 && w == 0 -> occupancyPercent = r.varint().toInt()
                 f == 1 && w == 2 -> tripId = tripDescriptor(r.sub()).first
                 f == 2 && w == 2 -> {
                     val p = r.sub()
@@ -220,7 +329,7 @@ object GtfsRealtime {
         val la = lat ?: return null
         val lo = lon ?: return null
         if (la == 0.0 && lo == 0.0) return null
-        return RtVehicle(vehicle, tripId, la, lo, bearing, speed, timestamp)
+        return RtVehicle(vehicle, tripId, la, lo, bearing, speed, timestamp, occupancy, occupancyPercent)
     }
 
     // ---------- JSON (same structure, camelCase names) ----------
@@ -237,6 +346,7 @@ object GtfsRealtime {
         val root = json.parseToJsonElement(text).obj() ?: return RtFeed(null, emptyList(), emptyList())
         val trips = mutableListOf<RtTrip>()
         val vehicles = mutableListOf<RtVehicle>()
+        val alerts = mutableListOf<RtAlert>()
         root["entity"].arr().forEach { e ->
             val o = e.obj() ?: return@forEach
             o["tripUpdate"].obj()?.let { tu ->
@@ -261,9 +371,50 @@ object GtfsRealtime {
                     bearing = p["bearing"].double()?.toFloat(),
                     speed = p["speed"].double()?.toFloat(),
                     timestamp = v["timestamp"].long(),
+                    occupancy = occupancyOf(v["occupancyStatus"]),
+                    occupancyPercent = v["occupancyPercentage"].long()?.toInt(),
+                )
+            }
+            o["alert"].obj()?.let { a ->
+                fun texts(e: JsonElement?) = e.obj()?.get("translation").arr().mapNotNull { t ->
+                    val to = t.obj() ?: return@mapNotNull null
+                    to["text"].str()?.takeIf { it.isNotBlank() }?.let { RtText(to["language"].str(), it) }
+                }
+                val header = texts(a["headerText"])
+                val description = texts(a["descriptionText"])
+                if (header.isEmpty() && description.isEmpty()) return@let
+                val entities = a["informedEntity"].arr().mapNotNull { it.obj() }
+                val periods = (a["activePeriod"].arr() + a["impactPeriod"].arr()).mapNotNull { it.obj() }
+                    .map { it["start"].long() to it["end"].long() }
+                alerts += RtAlert(
+                    id = o["id"].str(),
+                    header = header,
+                    description = description,
+                    stops = entities.mapNotNull { it["stopId"].str() }.toSet(),
+                    routes = entities.mapNotNull { it["routeId"].str() }.toSet(),
+                    trips = entities.mapNotNull { it["trip"].obj()?.get("tripId").str() }.toSet(),
+                    periods = periods,
+                    effect = a["effect"]?.let { e -> (e as? JsonPrimitive)?.let { it.longOrNull?.toInt() ?: EFFECTS.indexOf(it.content).takeIf { i -> i > 0 } } },
                 )
             }
         }
-        return RtFeed(root["header"].obj()?.get("timestamp").long(), trips, vehicles)
+        return RtFeed(root["header"].obj()?.get("timestamp").long(), trips, vehicles, alerts)
+    }
+
+    /** OccupancyStatus by name (JSON) in the order of its numbers. */
+    private val OCCUPANCY = listOf(
+        "EMPTY", "MANY_SEATS_AVAILABLE", "FEW_SEATS_AVAILABLE", "STANDING_ROOM_ONLY", "CRUSHED_STANDING_ROOM_ONLY",
+        "FULL", "NOT_ACCEPTING_PASSENGERS", "NO_DATA_AVAILABLE", "NOT_BOARDABLE",
+    )
+
+    /** Effect by name (JSON); index = number (0 is unused). */
+    private val EFFECTS = listOf(
+        "", "NO_SERVICE", "REDUCED_SERVICE", "SIGNIFICANT_DELAYS", "DETOUR", "ADDITIONAL_SERVICE", "MODIFIED_SERVICE",
+        "OTHER_EFFECT", "UNKNOWN_EFFECT", "STOP_MOVED", "NO_EFFECT", "ACCESSIBILITY_ISSUE",
+    )
+
+    private fun occupancyOf(e: JsonElement?): Int? {
+        val p = e as? JsonPrimitive ?: return null
+        return p.longOrNull?.toInt() ?: OCCUPANCY.indexOf(p.content).takeIf { it >= 0 }
     }
 }

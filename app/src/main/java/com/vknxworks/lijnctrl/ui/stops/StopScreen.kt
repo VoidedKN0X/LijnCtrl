@@ -128,6 +128,12 @@ fun StopScreen(entity: String, number: String, initialName: String?) {
         info?.let { c.favourites.refreshName(key, it.name, it.municipality) }
     }
 
+    // Service alerts for this stop in De Lijn's live (GTFS Realtime) feed: once per visit, only with that key.
+    var liveAlerts by remember { mutableStateOf<List<com.vknxworks.lijnctrl.data.live.RtAlert>>(emptyList()) }
+    LaunchedEffect(key) {
+        if (c.live.hasKey) liveAlerts = runCatching { c.live.alertsAt(number) }.getOrDefault(emptyList())
+    }
+
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(key) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
@@ -219,6 +225,11 @@ fun StopScreen(entity: String, number: String, initialName: String?) {
                 val localized = disruptions.map { it.localized(settings.messageLanguage.key) }
                 if (localized.isNotEmpty()) {
                     items(localized) { d -> DisruptionCard(d, lines, Modifier.padding(horizontal = Gutter, vertical = 6.dp)) }
+                }
+                if (liveAlerts.isNotEmpty()) {
+                    items(liveAlerts) { a ->
+                        com.vknxworks.lijnctrl.ui.components.LiveAlertCard(a, settings.messageLanguage, Modifier.padding(horizontal = Gutter, vertical = 6.dp))
+                    }
                 }
                 item { Spacer(Modifier.height(8.dp)) }
                 val list = departures?.let { all -> if (filter.isEmpty()) all else all.filter { it.line?.toString() in filter } }

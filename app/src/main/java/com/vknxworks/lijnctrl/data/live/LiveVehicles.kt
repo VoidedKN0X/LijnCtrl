@@ -30,6 +30,8 @@ data class LiveFix(
     val speed: Float?,
     /** When the vehicle reported this position. */
     val reportedAt: Instant?,
+    /** How full it is (GTFS Realtime OccupancyStatus), when De Lijn's feed says. */
+    val occupancy: Int? = null,
 )
 
 /**
@@ -89,11 +91,21 @@ class LiveVehicles(private val http: OkHttpClient, private val key: () -> String
         return targets.map { t ->
             val trip = match(feed.trips, t) ?: return@map null
             val v = byTrip[trip.tripId] ?: trip.vehicleId?.let { byVehicle[it] } ?: return@map null
-            LiveFix(v.vehicleId ?: trip.vehicleId, v.latitude, v.longitude, v.bearing, v.speed, v.timestamp?.let(Instant::ofEpochSecond))
+            LiveFix(v.vehicleId ?: trip.vehicleId, v.latitude, v.longitude, v.bearing, v.speed, v.timestamp?.let(Instant::ofEpochSecond), v.occupancy)
         }
     }
 
     suspend fun locate(target: LiveTarget): LiveFix? = locate(listOf(target)).first()
+
+    /**
+     * Service alerts in the live feed that apply now and name [stopNumber] (the feed's stop ids are De Lijn stop
+     * numbers). Empty without a key, or when the feed carries no alerts for it.
+     */
+    suspend fun alertsAt(stopNumber: String): List<RtAlert> {
+        val feed = feed() ?: return emptyList()
+        val now = System.currentTimeMillis() / 1000
+        return feed.alerts.filter { stopNumber in it.stops && it.activeAt(now) }.distinctBy { it.id ?: it.header.firstOrNull()?.text }
+    }
 
     /**
      * Whether De Lijn answers a request for one vehicle with just that vehicle (a few hundred bytes) rather than
@@ -124,7 +136,7 @@ class LiveVehicles(private val http: OkHttpClient, private val key: () -> String
 
     private fun find(feed: RtFeed, vehicleId: String): LiveFix? =
         feed.vehicles.firstOrNull { it.vehicleId == vehicleId }?.let {
-            LiveFix(it.vehicleId, it.latitude, it.longitude, it.bearing, it.speed, it.timestamp?.let(Instant::ofEpochSecond))
+            LiveFix(it.vehicleId, it.latitude, it.longitude, it.bearing, it.speed, it.timestamp?.let(Instant::ofEpochSecond), it.occupancy)
         }
 
     /**
@@ -151,6 +163,7 @@ class LiveVehicles(private val http: OkHttpClient, private val key: () -> String
         val now = System.currentTimeMillis() / 1000
         appendLine("Feed: ${feed.trips.size} trips, ${feed.vehicles.size} vehicles with a position, age ${feed.timestamp?.let { now - it } ?: "?"} s")
         appendLine("Vehicles with trip id: ${feed.vehicles.count { it.tripId != null }}, with vehicle id: ${feed.vehicles.count { it.vehicleId != null }}")
+        appendLine("Vehicles with occupancy: ${feed.vehicles.count { it.occupancy != null || it.occupancyPercent != null }}, service alerts: ${feed.alerts.size} (${feed.alerts.count { it.stops.isNotEmpty() }} naming stops)")
         feed.trips.firstOrNull { it.stops.size >= 2 }?.let { appendLine("Sample trip: ${it.tripId.take(40)} stops ${it.stops.take(3).joinToString { s -> "${s.stopId}@${s.time?.let { t -> t - now }}s" }}") }
         val byTrip = feed.vehicles.filter { it.tripId != null }.associateBy { it.tripId }
         val byVehicle = feed.vehicles.filter { it.vehicleId != null }.associateBy { it.vehicleId }
