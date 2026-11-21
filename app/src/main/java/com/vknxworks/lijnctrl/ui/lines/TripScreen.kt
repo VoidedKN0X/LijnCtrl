@@ -1,5 +1,6 @@
 package com.vknxworks.lijnctrl.ui.lines
 
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.foundation.Canvas
 import androidx.compose.material.icons.automirrored.outlined.List as ListIcon
 import androidx.compose.material.icons.outlined.Map
