@@ -190,7 +190,7 @@ class TransitousPlanner(base: OkHttpClient) {
             .addQueryParameter("arriveBy", arriveBy.toString())
             .addQueryParameter("numItineraries", WANTED.toString())
             .addQueryParameter("detailedTransfers", "false")
-            .addQueryParameter("language", "nl")
+            .addQueryParameter("language", phoneLanguage())
             .apply { cursor?.let { addQueryParameter("pageCursor", it) } }
             .build()
         val body = http.newCall(Request.Builder().url(url).build()).execute().use { r ->
@@ -238,7 +238,7 @@ class TransitousPlanner(base: OkHttpClient) {
         val url = "https://$HOST/api/v6/stoptimes".toHttpUrl().newBuilder()
             .addQueryParameter("stopId", stopId)
             .addQueryParameter("n", count.toString())
-            .addQueryParameter("language", "nl")
+            .addQueryParameter("language", phoneLanguage())
             .build()
         val body = http.newCall(Request.Builder().url(url).build()).execute().use { r ->
             val text = r.body?.textAtMost().orEmpty()
@@ -400,5 +400,9 @@ class TransitousPlanner(base: OkHttpClient) {
         private const val SLACK_S = 60L
         const val SOURCE = "transitous"
         const val SOURCES_URL = "https://transitous.org/sources/"
+
+        /** The language Transitous should answer in (stop and line names, alerts): the phone's if en/nl/fr/de, else English. */
+        fun phoneLanguage(): String = java.util.Locale.getDefault().language.takeIf { it in LANGUAGES } ?: "en"
+        private val LANGUAGES = setOf("en", "nl", "fr", "de")
     }
 }

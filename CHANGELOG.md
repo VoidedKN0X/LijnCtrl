@@ -4,6 +4,15 @@ What changed in each LijnCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## Unreleased
+
+### Fixed
+
+- **Disruption messages follow your phone's language until you pick one.** The language for De Lijn's disruption messages used to start at English. If you never chose one in Settings, it now follows the phone: Dutch, French or German phones get messages in that language, any other language gets English. A language you chose yourself stays as it is. A settings export only carries the language when you chose it, so importing it on another phone doesn't override that phone's language.
+- **Transitous answers in your language.** Route planning and other-operator departures asked Transitous for Dutch whatever your phone's language. They now ask for English, Dutch, French or German to match the phone (English for any other language), so names and notices that Transitous translates come in your language.
+- **Quotes back in the alerts footer.** In English, "your bus is almost here" in the footer of the alerts settings lost its quote marks (Android drops unescaped quotes). They show again.
+- **Month names follow a language change straight away.** Dates like "3 Dec" on departures and disruptions kept the language the app was started in after you changed the phone's or the app's language; they now switch with it.
+
 ## v0.22.0 (2026-11-21)
 
 Built and checked by CI only: nothing in this release had been run on a phone when it was published.

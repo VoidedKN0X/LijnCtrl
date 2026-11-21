@@ -42,6 +42,17 @@ enum class MessageLanguage(val key: String, val label: String) {
     DUTCH("nederlands", "Nederlands"),
     FRENCH("frans", "Français"),
     GERMAN("duits", "Deutsch"),
+    ;
+
+    companion object {
+        /** The phone's language when De Lijn writes messages in it (en/nl/fr/de), else English. */
+        fun forPhone(): MessageLanguage = when (java.util.Locale.getDefault().language) {
+            "nl" -> DUTCH
+            "fr" -> FRENCH
+            "de" -> GERMAN
+            else -> ENGLISH
+        }
+    }
 }
 
 /** How far the Nearby tab looks for stops. */
@@ -53,7 +64,10 @@ data class AppSettings(
     val theme: ThemeChoice = ThemeChoice.SYSTEM,
     val dynamicColor: Boolean = false,
     val timeStyle: TimeStyle = TimeStyle.MINUTES,
-    val messageLanguage: MessageLanguage = MessageLanguage.ENGLISH,
+    /** Language for disruption messages: the user's choice, or the phone's language until they pick one. */
+    val messageLanguage: MessageLanguage = MessageLanguage.forPhone(),
+    /** True once the user picked [messageLanguage] themselves; until then it follows the phone's language. */
+    val messageLanguageChosen: Boolean = false,
     /** Distance for Nearby, the list and the map's "Search this area". */
     val nearbyRadius: NearbyRadius = NearbyRadius.M1000,
     /**
@@ -98,7 +112,8 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         theme = enumOr(this[K.theme], ThemeChoice.SYSTEM),
         dynamicColor = this[K.dynamic] ?: false,
         timeStyle = enumOr(this[K.timeStyle], TimeStyle.MINUTES),
-        messageLanguage = enumOr(this[K.language], MessageLanguage.ENGLISH),
+        messageLanguage = chosenLanguage() ?: MessageLanguage.forPhone(),
+        messageLanguageChosen = chosenLanguage() != null,
         nearbyRadius = enumOr(this[K.radius], NearbyRadius.M1000),
         useTransitous = this[K.useTransitous] ?: ((this[K.oldTransitous] ?: false) || (this[K.oldAddressSearch] ?: false)),
         planHistory = this[K.planHistory] ?: true,
@@ -114,7 +129,8 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
             p[K.theme] = s.theme.name
             p[K.dynamic] = s.dynamicColor
             p[K.timeStyle] = s.timeStyle.name
-            p[K.language] = s.messageLanguage.name
+            // Only a language the user picked is stored, so an unpicked one keeps following the phone.
+            if (s.messageLanguageChosen) p[K.language] = s.messageLanguage.name else p.remove(K.language)
             p[K.radius] = s.nearbyRadius.name
             p[K.useTransitous] = s.useTransitous
             p.remove(K.oldTransitous)
@@ -126,6 +142,9 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
             p[K.hideRecents] = s.hideRecents
         }
     }
+
+    private fun Preferences.chosenLanguage(): MessageLanguage? =
+        this[K.language]?.let { n -> MessageLanguage.entries.firstOrNull { it.name == n } }
 
     private inline fun <reified E : Enum<E>> enumOr(name: String?, default: E): E =
         name?.let { n -> enumValues<E>().firstOrNull { it.name == n } } ?: default

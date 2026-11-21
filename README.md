@@ -29,10 +29,10 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Departures of other Belgian operators:** with Transitous on, Search also finds NMBS/SNCB stations and STIB/MIVB and TEC stops; opening one shows its next departures with line, destination, operator and platform, live for NMBS/SNCB and TEC (STIB/MIVB timetable only), from Transitous's open API without any extra key
 - **Nearby** stops as a list or on an OpenStreetMap map
 - **Disruptions on the departure board**: a departure hit by a disruption or diversion shows a warning you can tap open for the full message, and trip pages list the disruptions on their line
-- **Disruption messages** in English, Dutch, French or German
+- **Disruption messages** in English, Dutch, French or German: your phone's language until you pick one in Settings
 - **Export and import** your saved stops and lines, line filters, Home and Work and settings to a file (never your API keys, PIN or app lock and privacy switches); an import shows what it replaces and asks first
 - **Rename** saved stops ("Home", "Work") and put them in your own order
-- **English, Dutch, French and German**, following your phone's language (no language setting in the app; disruption messages keep their own setting)
+- **English, Dutch, French and German**, following your phone's language (no language setting in the app; disruption messages have their own setting, which follows the phone until you change it)
 - **Minutes to go or clock times**, always in Belgian time
 - **App lock** with its own PIN and optional fingerprint unlock; your API key stays encrypted with the PIN while the app is locked
 - **Hide in screenshots** and **Hide in recent apps**, two separate switches, both off by default

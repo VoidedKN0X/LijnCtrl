@@ -79,7 +79,7 @@ fun SettingsScreen() {
                     MessageLanguage.entries.map { it to it.label },
                     s.messageLanguage,
                     icon = Icons.Outlined.Translate,
-                ) { v -> update { it.copy(messageLanguage = v) } }
+                ) { v -> update { it.copy(messageLanguage = v, messageLanguageChosen = true) } }
             }
 
             Group(stringResource(R.string.tab_nearby), footer = stringResource(R.string.nearby_settings_footer)) {

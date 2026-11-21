@@ -74,8 +74,9 @@ import java.time.format.DateTimeFormatter
 
 private val CLOCK: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 private val CLOCK_SECONDS: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss")
-private val DAY: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMM")
-private val DAY_TIME: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMM HH:mm")
+// Month names: built on each use so they follow the phone's current language (a change of language keeps the process).
+private val DAY: DateTimeFormatter get() = DateTimeFormatter.ofPattern("d MMM", java.util.Locale.getDefault())
+private val DAY_TIME: DateTimeFormatter get() = DateTimeFormatter.ofPattern("d MMM HH:mm", java.util.Locale.getDefault())
 
 /** Belgian clock time, e.g. "14:32". De Lijn's times are Belgian, so they're shown that way wherever you are. */
 fun clockTime(t: Instant): String = CLOCK.format(t.atZone(BRUSSELS))

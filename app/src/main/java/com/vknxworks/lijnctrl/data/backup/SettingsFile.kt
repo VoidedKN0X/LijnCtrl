@@ -73,7 +73,8 @@ object SettingsFile {
             settings = ExportedSettings(
                 theme = settings.theme.name,
                 timeStyle = settings.timeStyle.name,
-                messageLanguage = settings.messageLanguage.name,
+                // Left out while it still follows the phone, so importing on another phone does the same there.
+                messageLanguage = settings.messageLanguage.name.takeIf { settings.messageLanguageChosen },
                 nearbyRadius = settings.nearbyRadius.name,
                 useTransitous = settings.useTransitous,
                 planHistory = settings.planHistory,
@@ -107,10 +108,16 @@ object SettingsFile {
     )
 
     /** The settings with the export's preferences; anything missing or unknown keeps its current value. */
-    fun applyTo(s: AppSettings, e: ExportedSettings): AppSettings = s.copy(
+    fun applyTo(s: AppSettings, e: ExportedSettings): AppSettings {
+        val language = MessageLanguage.entries.firstOrNull { it.name == e.messageLanguage }
+        return applyTo(s, e, language)
+    }
+
+    private fun applyTo(s: AppSettings, e: ExportedSettings, language: MessageLanguage?): AppSettings = s.copy(
         theme = ThemeChoice.entries.firstOrNull { it.name == e.theme } ?: s.theme,
         timeStyle = TimeStyle.entries.firstOrNull { it.name == e.timeStyle } ?: s.timeStyle,
-        messageLanguage = MessageLanguage.entries.firstOrNull { it.name == e.messageLanguage } ?: s.messageLanguage,
+        messageLanguage = language ?: s.messageLanguage,
+        messageLanguageChosen = language != null || s.messageLanguageChosen,
         nearbyRadius = NearbyRadius.entries.firstOrNull { it.name == e.nearbyRadius } ?: s.nearbyRadius,
         useTransitous = e.useTransitous ?: s.useTransitous,
         planHistory = e.planHistory ?: s.planHistory,

@@ -359,7 +359,7 @@
     <string name="gtfs_key_optional">GTFS Realtime key (optional)</string>
     <string name="stops_near_you">Stops near you</string>
     <string name="alerts">Alerts</string>
-    <string name="alerts_footer">For "your bus is almost here", open a trip from your stop and tap the bell at the top: LijnCtrl watches that bus\'s live time and alerts you a few minutes before it arrives.</string>
+    <string name="alerts_footer">For \"your bus is almost here\", open a trip from your stop and tap the bell at the top: LijnCtrl watches that bus\'s live time and alerts you a few minutes before it arrives.</string>
     <string name="disruption_alerts">Disruption alerts</string>
     <string name="disruption_alerts_subtitle">A notification when De Lijn reports a disruption on your saved stops or lines (checked every half hour)</string>
     <string name="disruption_alerts_locked">Needs the app lock off: with it on, your key is sealed with your PIN and can\'t be read while the app is closed</string>
