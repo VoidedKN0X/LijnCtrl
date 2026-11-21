@@ -461,4 +461,24 @@
     <string name="share_cancelled">cancelled</string>
     <string name="walk_in_mapsctrl">Walk there with MapsCtrl</string>
     <string name="no_map_app">No map app to open this in. Install MapsCtrl for walking directions.</string>
+    <!-- Export and import of saved stops and settings -->
+    <string name="export_title">Export and import</string>
+    <string name="export_footer">A file with your saved stops and lines, line filters, Home and Work, and settings (look, times, message language, Nearby distance, Transitous and recent routes on or off). Never your API keys, PIN or app lock and privacy switches, and not your recent routes.</string>
+    <string name="export_save">Export to a file</string>
+    <string name="export_save_sub">Saved stops, lines and settings</string>
+    <string name="export_saved">Exported</string>
+    <string name="export_failed">Couldn\'t write the file</string>
+    <string name="import_open">Import from a file</string>
+    <string name="import_open_sub">Replaces your saved stops, lines, Home and Work, after you confirm</string>
+    <string name="import_not_valid">That isn\'t a LijnCtrl export</string>
+    <string name="import_too_new">This file was made by a newer LijnCtrl. Update the app first.</string>
+    <string name="import_confirm_title">Import this file?</string>
+    <string name="import_confirm_body">Made on %1$s.\n\nSaved stops: %2$d (replaces your %3$d)\nSaved lines: %4$d (replaces your %5$d)\nHome and Work: %6$s\nTransitous: %7$s\n\nYour line filters and settings are replaced too. Your keys, PIN, app lock and privacy switches stay as they are.</string>
+    <string name="import_confirm">Import</string>
+    <string name="import_done">Imported</string>
+    <string name="import_failed">Couldn\'t import: your saved stops can\'t be changed right now</string>
+    <string name="import_on">on</string>
+    <string name="import_off">off</string>
+    <string name="import_none">none</string>
+    <string name="import_unchanged">unchanged</string>
 </resources>

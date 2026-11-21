@@ -171,6 +171,8 @@ fun SettingsScreen() {
                 )
             }
 
+            ExportGroup()
+
             PrivacyGroup(s) { t -> update(t) }
         }
     }

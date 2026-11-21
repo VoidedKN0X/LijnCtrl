@@ -29,6 +29,7 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Nearby** stops as a list or on an OpenStreetMap map
 - **Disruptions on the departure board**: a departure hit by a disruption or diversion shows a warning you can tap open for the full message, and trip pages list the disruptions on their line
 - **Disruption messages** in English, Dutch, French or German
+- **Export and import** your saved stops and lines, line filters, Home and Work and settings to a file (never your API keys, PIN or app lock and privacy switches); an import shows what it replaces and asks first
 - **Rename** saved stops ("Home", "Work") and put them in your own order
 - **Minutes to go or clock times**, always in Belgian time
 - **App lock** with its own PIN and optional fingerprint unlock; your API key stays encrypted with the PIN while the app is locked
