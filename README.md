@@ -22,7 +22,7 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Route planner** from your location, a stop or an address to anywhere, leaving now, at a time or arriving by a time; planned by Transitous with every Belgian operator, trains included, and live delays, with each route shown on a map (which can follow your location) and your recent routes one tap away
 - **Live buses and trams** on the trip map, the route map and the line map (every vehicle on the line), with their line number and heading (needs De Lijn's free GTFS Realtime key)
 - **Go home / Go to work** in one tap, also as launcher shortcuts on the app icon (or on your home screen), a **departures board** of every bus leaving near you, and **line filters** so a stop only shows the lines you take
-- **Trip guidance**: follow a planned route with a notification that tells you when to leave, when your bus is coming and when to get off, with live times
+- **Trip guidance**: follow a planned route with a notification that tells you when to leave, when your bus is coming and when to get off, with live times. On Android 16 and newer the notification is a **Live Update**: it sits in the status bar chip and at the top of the lock screen, counts down to your next step and shows the journey's legs as a progress bar
 - **"Your bus leaves in X minutes" alerts**: from a departure, get a notification 2 to 30 minutes before it leaves your stop, set as far ahead as you like today. Shortly before, LijnCtrl checks the live time and moves the alert with it; the alert shows the line, where it's going, your stop and the minutes left, and tells you if the trip is cancelled. No running notification and no extra permission while it waits
 - **Disruption alerts** (optional) when De Lijn reports a new disruption on your saved stops or lines
 - **Search** for stops by name (in any word order) or the number on their sign, lines by number, every stop in a town, and (if you switch it on) shops, addresses and landmarks with the stops around them
@@ -127,6 +127,7 @@ Every permission LijnCtrl has, and what it's for:
 | Foreground service (`FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_DATA_SYNC`) | Keeping trip guidance running, with its notification showing, while you're in another app (bus alerts use Android's alarm clock instead and need no permission of their own) |
 | Run at startup (`RECEIVE_BOOT_COMPLETED`) | Setting the disruption checks up again after the phone restarts (added by Android's WorkManager) |
 | Prevent phone from sleeping (`WAKE_LOCK`) | Keeping the phone awake for the few seconds a disruption check takes (added by WorkManager) |
+| Live Updates (`POST_PROMOTED_NOTIFICATIONS`) | Android 16 and newer: lets the trip guidance notification ask to be shown as a Live Update (status bar chip, top of the lock screen). Granted at install, no prompt; you can turn Live Updates off for LijnCtrl in Android's notification settings |
 | Biometrics (`USE_BIOMETRIC`) | Optional fingerprint unlock for the app lock |
 | Hide other apps' floating windows (`HIDE_OVERLAY_WINDOWS`) | Hide other apps' floating windows over the PIN screen, the lock screen and confirmations, so nothing can be drawn over them to trick a tap |
 

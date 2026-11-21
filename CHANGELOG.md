@@ -4,6 +4,14 @@ What changed in each LijnCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## Unreleased
+
+Built and checked by CI only: nothing here has been run on a phone yet.
+
+### New
+
+- **Trip guidance as an Android 16 Live Update.** On Android 16 and newer, the ongoing "trip guidance" notification now asks Android to show it as a Live Update: it gets a chip in the status bar and stays at the top of the lock screen and the notification shade. The chip counts down to your next step (leave, board, get off) when that's at least two minutes away, and the notification shows your whole journey as a progress bar with one part per leg (walks in grey, rides in the accent colour), moving along as time passes and following the live times of your rides. The text (what's next and in how many minutes) and the Stop button are as before. On Android 15 the notification looks as it did. Android, the phone maker or you (Android's notification settings for LijnCtrl) can turn Live Updates off; the notification is then an ordinary ongoing one. This needs the new install-time permission `POST_PROMOTED_NOTIFICATIONS` (no prompt), listed in the README.
+
 ## v0.20.2 (2026-11-21)
 
 ### New

@@ -7,4 +7,6 @@
     <color name="ic_bg">#FF121418</color>
     <!-- Launcher shortcut icons (Go home / Go to work): the Ctrl accent fill. -->
     <color name="shortcut_bg">#FFB48CFF</color>
+    <!-- Walking parts of the trip progress bar in the Live Update notification. -->
+    <color name="notification_walk">#FF8A8A93</color>
 </resources>

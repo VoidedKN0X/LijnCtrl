@@ -8,6 +8,7 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
@@ -188,7 +189,7 @@ class TripGuideService : Service() {
                 val mins = Math.floorDiv(m.at.epochSecond - now.epochSecond + 59, 60L).toInt()
                 str(R.string.guide_next_x, m.title, mins)
             } ?: str(R.string.guide_almost_there_x, destination)
-            notify(ONGOING_ID, ongoing(destination, status))
+            notify(ONGOING_ID, ongoing(destination, status, progress(legs, depLive, arrLive, now), next?.at))
 
             val soon = next != null && next.at.epochSecond - now.epochSecond < 240
             delay(if (soon) 15_000 else 30_000)
@@ -270,13 +271,55 @@ class TripGuideService : Service() {
         else -> R.string.guide_bus_x
     }
 
-    private fun ongoing(destination: String, status: String): Notification =
-        NotificationCompat.Builder(this, Notifications.WATCH)
+    /** The journey as a bar: one part per leg (minutes, with live times where known) and how far along it is now. */
+    private class GuideProgress(val parts: List<Pair<Boolean, Int>>, val done: Int)
+
+    private fun progress(legs: List<GuideLeg>, depLive: Map<Int, Instant>, arrLive: Map<Int, Instant>, now: Instant): GuideProgress? {
+        if (legs.isEmpty()) return null
+        val starts = legs.mapIndexed { i, l -> depLive[i]?.epochSecond ?: l.start }
+        val ends = legs.mapIndexed { i, l -> arrLive[i]?.epochSecond ?: l.end }
+        val begin = starts.first()
+        // Each leg runs until the next one starts (waiting at a stop counts with the leg before it).
+        var from = begin
+        val parts = legs.indices.map { i ->
+            val end = maxOf(from, if (i < legs.lastIndex) maxOf(starts[i + 1], ends[i]) else ends[i])
+            val minutes = ((end - from) / 60L).toInt().coerceAtLeast(1)
+            from = end
+            legs[i].walk to minutes
+        }
+        val total = parts.sumOf { it.second }
+        val done = ((now.epochSecond - begin) / 60L).toInt().coerceIn(0, total)
+        return GuideProgress(parts, done)
+    }
+
+    /**
+     * The ongoing trip notification. On Android 16 and newer it asks to be shown as a Live Update (in the status
+     * bar chip and at the top of the lock screen and shade, counting down to the next step) with a progress bar
+     * of the journey's legs; older Android versions show it as before. Android or the user may decline the Live
+     * Update: it is then an ordinary ongoing notification.
+     */
+    private fun ongoing(destination: String, status: String, progress: GuideProgress? = null, nextAt: Instant? = null): Notification {
+        val style: NotificationCompat.Style = if (progress != null && Build.VERSION.SDK_INT >= 36) {
+            val accent = getColor(R.color.notification_accent)
+            val walk = getColor(R.color.notification_walk)
+            NotificationCompat.ProgressStyle()
+                .setProgressSegments(progress.parts.map { (isWalk, minutes) -> NotificationCompat.ProgressStyle.Segment(minutes).setColor(if (isWalk) walk else accent) })
+                .setStyledByProgress(true)
+                .setProgress(progress.done)
+        } else {
+            NotificationCompat.BigTextStyle().bigText(status)
+        }
+        // The chip counts down to the next step when that's at least two minutes away (Android's own rule).
+        val countdown = nextAt != null && nextAt.isAfter(Instant.now().plusSeconds(120))
+        return NotificationCompat.Builder(this, Notifications.WATCH)
             .setSmallIcon(R.drawable.ic_notification)
             .setColor(this.getColor(R.color.notification_accent))
             .setContentTitle(str(R.string.guide_title_x, destination))
             .setContentText(status)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(status))
+            .setStyle(style)
+            .setRequestPromotedOngoing(true)
+            .setShowWhen(countdown)
+            .apply { if (countdown) setWhen(nextAt!!.toEpochMilli()) }
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setSilent(true)
@@ -285,6 +328,7 @@ class TripGuideService : Service() {
             .addAction(0, str(R.string.stop_watching), stopIntent(this))
             .privateOnLockScreen(this, Notifications.WATCH, str(R.string.notify_public_guide))
             .build()
+    }
 
     private fun alert(title: String, text: String) {
         val n = NotificationCompat.Builder(this, Notifications.BUS)

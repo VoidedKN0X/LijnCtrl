@@ -21,6 +21,10 @@
     <!-- Hides other apps' floating windows while the lock screen, a PIN screen or a confirmation is showing
          (install-time, no prompt). -->
     <uses-permission android:name="android.permission.HIDE_OVERLAY_WINDOWS" />
+    <!-- Android 16+: lets the trip guide's ongoing notification ask to be shown as a Live Update (status bar chip,
+         top of the lock screen). Install-time, no prompt; you can turn Live Updates off for LijnCtrl in Android's
+         notification settings. -->
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
