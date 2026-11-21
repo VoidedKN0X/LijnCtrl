@@ -17,9 +17,9 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Line badges in De Lijn's own colours**, with the number that's on the bus or tram
 - **Stop pages** with the next 30 departures, the lines that call there, and today's disruptions and diversions
 - **Full timetable** for any stop, today or the next six days, per hour and per line
-- **Trip pages**: every stop of a bus or tram run, with live times while it's on the road
+- **Trip pages**: every stop of a bus or tram run, with live times while it's on the road, and a **Share** button that sends the departure (line, destination, your stop and its time, live or timetable) to any app
 - **Line pages**: both directions stop by stop, where the next vehicles are heading, and the line's disruptions
-- **Route planner** from your location, a stop or an address to anywhere, leaving now, at a time or arriving by a time; planned by Transitous with every Belgian operator, trains included, and live delays, with each route shown on a map (which can follow your location) and your recent routes one tap away
+- **Route planner** from your location, a stop or an address to anywhere, leaving now, at a time or arriving by a time; planned by Transitous with every Belgian operator, trains included, and live delays, with each route shown on a map (which can follow your location) and your recent routes one tap away. Each walk in a route can be handed to **MapsCtrl** (or another map app) for walking directions
 - **Live buses and trams** on the trip map, the route map and the line map (every vehicle on the line), with their line number and heading (needs De Lijn's free GTFS Realtime key)
 - **Go home / Go to work** in one tap, also as launcher shortcuts on the app icon (or on your home screen), a **departures board** of every bus leaving near you, and **line filters** so a stop only shows the lines you take
 - **Trip guidance**: follow a planned route with a notification that tells you when to leave, when your bus is coming and when to get off, with live times. On Android 16 and newer the notification is a **Live Update**: it sits in the status bar chip and at the top of the lock screen, counts down to your next step and shows the journey's legs as a progress bar

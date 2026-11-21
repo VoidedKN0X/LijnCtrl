@@ -451,4 +451,14 @@
     <string name="live_check_copied">Report copied</string>
     <string name="copy">Copy</string>
     <string name="close">Close</string>
+    <!-- Sharing a departure, and walks in MapsCtrl -->
+    <string name="share_departure">Share departure</string>
+    <string name="share_line_to">Line %1$s to %2$s</string>
+    <string name="share_departure_text">%1$s, from %2$s at %3$s (%4$s)</string>
+    <string name="share_on_day">%1$s at %2$s</string>
+    <string name="share_live">live time</string>
+    <string name="share_timetable">timetable time</string>
+    <string name="share_cancelled">cancelled</string>
+    <string name="walk_in_mapsctrl">Walk there with MapsCtrl</string>
+    <string name="no_map_app">No map app to open this in. Install MapsCtrl for walking directions.</string>
 </resources>

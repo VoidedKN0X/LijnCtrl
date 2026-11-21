@@ -73,6 +73,25 @@ import androidx.compose.material.icons.filled.NotificationsActive
 import java.time.LocalDate
 
 /** One stop of a trip, as shown on the trip page. */
+/**
+ * The text a shared departure gets: line, destination, stop and time (in Belgian time), whether that's a live time,
+ * and the date when it isn't today. Written in the phone's language.
+ */
+private fun shareText(context: android.content.Context, lineLabel: String, destination: String?, stop: TripStop?): String {
+    val to = destination?.takeIf { it.isNotBlank() } ?: context.getString(R.string.unknown_destination)
+    val head = context.getString(R.string.share_line_to, lineLabel, to)
+    val time = stop?.time ?: return head
+    val day = time.atZone(BRUSSELS).toLocalDate()
+    val whenText = if (day == LocalDate.now(BRUSSELS)) clockTime(time)
+    else context.getString(R.string.share_on_day, java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.MEDIUM).format(day), clockTime(time))
+    val status = when {
+        stop.cancelled -> context.getString(R.string.share_cancelled)
+        stop.predicted != null -> context.getString(R.string.share_live)
+        else -> context.getString(R.string.share_timetable)
+    }
+    return context.getString(R.string.share_departure_text, head, stop.name, whenText, status)
+}
+
 private data class TripStop(
     val number: String,
     val name: String,
@@ -270,6 +289,16 @@ fun TripScreen(entity: String, line: String, direction: String, trip: String, da
                             if (alertSet != null) androidx.compose.material.icons.Icons.Filled.NotificationsActive else androidx.compose.material.icons.Icons.Outlined.NotificationAdd,
                             stringResource(R.string.alert_me),
                         )
+                    }
+                }
+                if (planned != null) {
+                    androidx.compose.material3.IconButton(onClick = {
+                        val lineLabel = info?.publicNumber ?: line
+                        val stop = myStop ?: stops.firstOrNull { it.time != null }
+                        val text = shareText(context, lineLabel, destination, stop)
+                        com.vknxworks.lijnctrl.ui.components.Handoff.shareText(context, text, context.getString(R.string.share_departure))
+                    }) {
+                        androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Outlined.Share, stringResource(R.string.share_departure))
                     }
                 }
                 if (mapData != null) {

@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.DirectionsWalk
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Directions
+import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.Navigation
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -104,6 +105,9 @@ private fun JourneyDetail(j: Journey, index: Int, modifier: Modifier) {
 
 @Composable
 private fun WalkLeg(leg: JourneyLeg) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    // Where the walk ends, so MapsCtrl can give walking directions to it.
+    val end = leg.path.lastOrNull()?.takeIf { it.latitude != 0.0 || it.longitude != 0.0 }
     Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         Icon(Icons.AutoMirrored.Outlined.DirectionsWalk, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.width(12.dp))
@@ -114,7 +118,15 @@ private fun WalkLeg(leg: JourneyLeg) {
             ).joinToString(" · "),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
         )
+        if (end != null) {
+            androidx.compose.material3.IconButton(onClick = {
+                com.vknxworks.lijnctrl.ui.components.Handoff.walkInMapsCtrl(context, end.latitude, end.longitude, leg.toName)
+            }) {
+                Icon(Icons.Outlined.Map, stringResource(R.string.walk_in_mapsctrl), tint = MaterialTheme.colorScheme.onSurface)
+            }
+        }
     }
 }
 
