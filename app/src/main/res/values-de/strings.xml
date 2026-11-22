@@ -171,8 +171,11 @@
     <string name="lock_too_many">Zu viele Versuche. Versuche es in %1$d s erneut</string>
     <string name="lock_forgot">PIN vergessen?</string>
     <string name="lock_forgot_title">PIN vergessen?</string>
-    <string name="lock_forgot_body">Die PIN kann nicht wiederhergestellt werden, weil sie deinen API-Schlüssel verschlüsselt. LijnCtrl entfernt den Schlüssel und schaltet die App-Sperre aus; du musst deinen Schlüssel erneut einfügen. Deine gespeicherten Haltestellen und Einstellungen bleiben.</string>
+    <string name="lock_forgot_body">Die PIN kann nicht wiederhergestellt werden, weil sie deinen API-Schlüssel verschlüsselt. LijnCtrl entfernt den Schlüssel und schaltet die App-Sperre aus; du musst deinen Schlüssel erneut einfügen. Deine gespeicherten Haltestellen und Einstellungen bleiben. Wenn dein Smartphone eine Displaysperre hat, bestätigst du zuerst damit.</string>
     <string name="lock_forgot_confirm">Schlüssel entfernen und zurücksetzen</string>
+    <string name="lock_reset_prompt_title">App-Sperre von LijnCtrl zurücksetzen</string>
+    <string name="lock_reset_prompt_subtitle">Bestätige mit der Displaysperre deines Smartphones, dass du es bist</string>
+    <string name="lock_reset_prompt_failed">Displaysperre konnte nicht angezeigt werden</string>
     <string name="lock_choose_pin">App-PIN wählen</string>
     <string name="lock_change_pin">App-PIN ändern</string>
     <string name="lock_change_intro">Mindestens %1$d Ziffern, anders als die PIN deines Smartphones.</string>

@@ -4,6 +4,20 @@ What changed in each LijnCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## Unreleased
+
+### Security
+
+- **"Forgot PIN?" now asks for your phone's screen lock first.** Resetting the app lock (which removes your API key and turns the lock off) used to need only a tap on the confirmation, so anyone holding your unlocked phone could get past LijnCtrl's lock that way. Now, after you confirm, the phone's own screen lock (PIN, pattern, password or a fingerprint) is asked for, and only then is the lock reset. Cancelling it changes nothing. If your phone has no screen lock, it works as before (the confirmation alone).
+
+### Fixed
+
+- **No more repeated disruption alerts.** When De Lijn's API was busy or slow for one of your saved stops or lines during the half-hourly check, LijnCtrl forgot the disruptions it had already told you about there, and announced them again as new at the next good check. If the whole API was down (or your key had expired), it forgot all of them and could re-post up to five old disruptions at once. Now a stop or line whose answer didn't come keeps what you were already told, and a check where nothing answered changes nothing.
+- **Disruption alerts in the language you picked.** The background check read the "Messages in" language before your settings were loaded when it started on its own, so after the phone had closed LijnCtrl it could use the phone's language instead of the one you chose for De Lijn's messages. It now reads your saved choice first.
+- **No crash on another operator's stop page.** Two departures without a trip number in the same minute (or a loop trip calling twice at the same moment) got the same internal id on the Transitous stop page, which makes the list crash. Repeats now get their own id; every departure still shows.
+- **Smoother live maps.** Finding your bus or tram in De Lijn's live feed compares every trip running in Flanders; that ran every 12 seconds on the thread that draws the screen on the route, trip and line maps, and could make the map stutter. It now runs in the background, and so does finding the live service alerts for a stop.
+- **The line map stops its timer in the background.** With the map on a line's page open, LijnCtrl kept working out which buses to show (every 2 seconds while waiting for live data, every 2 minutes after) even with the app in the background. It now pauses while the app isn't on screen, like the other refreshes.
+
 ## v0.22.2 (2026-11-22)
 
 Built and checked by CI only: nothing in this release had been run on a phone when it was published.

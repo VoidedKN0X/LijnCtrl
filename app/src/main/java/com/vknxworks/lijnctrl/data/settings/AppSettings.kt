@@ -11,6 +11,7 @@ import com.vknxworks.lijnctrl.data.appDataStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
@@ -107,6 +108,12 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
     val settings: StateFlow<AppSettings> = context.appDataStore.data
         .map { it.toSettings() }
         .stateIn(scope, SharingStarted.Eagerly, AppSettings())
+
+    /**
+     * The saved settings, read from disk if need be. For work that runs without the app on screen (a fresh
+     * process): [settings] starts as the defaults until the file has been read, so its value can't be trusted there.
+     */
+    suspend fun current(): AppSettings = context.appDataStore.data.first().toSettings()
 
     private fun Preferences.toSettings() = AppSettings(
         theme = enumOr(this[K.theme], ThemeChoice.SYSTEM),

@@ -107,6 +107,17 @@ private data class TStopTime(
 private data class TStopTimes(val stopTimes: List<TStopTime> = emptyList(), val place: TPlace? = null)
 
 /** A departure at another operator's stop (NMBS/SNCB, STIB/MIVB, TEC…), as Transitous gives it. */
+/** [ids] with every repeat made unique ("id#2", "id#3", …); the first of each stays as it was. */
+internal fun uniqueIds(ids: List<String>): List<String> {
+    val used = HashSet<String>()
+    return ids.map { id ->
+        var candidate = id
+        var n = 1
+        while (!used.add(candidate)) candidate = "$id#${++n}"
+        candidate
+    }
+}
+
 data class OtherDeparture(
     val departure: com.vknxworks.lijnctrl.data.api.Departure,
     /** The line's number and colours, for the badge. */
@@ -284,7 +295,11 @@ class TransitousPlanner(base: OkHttpClient) {
                 mode = modeOf(st.mode),
             )
         }.sortedBy { it.departure.time }
-        res.place?.name?.takeIf { it.isNotBlank() } to list
+        // The id keys the list on screen and must be unique: a departure without a trip id, or a loop trip calling
+        // twice in the same second, would otherwise repeat one (and a repeated key crashes the list).
+        val ids = uniqueIds(list.map { it.departure.id })
+        val unique = list.mapIndexed { i, o -> if (o.departure.id == ids[i]) o else o.copy(departure = o.departure.copy(id = ids[i])) }
+        res.place?.name?.takeIf { it.isNotBlank() } to unique
     }
 
     private fun TMatch.toPlace(): PlaceResult? {

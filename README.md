@@ -81,7 +81,7 @@ Turn it on under the profile picture › **Settings > Privacy and security > App
 - **Wrong PINs:** after 5 tries you wait 30 seconds, doubling up to 15 minutes. Restarting the app or the phone, or changing the clock, doesn't skip the wait.
 - **Lock again:** as soon as you leave the app (the default), after 1, 5 or 15 minutes or 1 hour away, or only when the app restarts. Opening a link, the location settings or the location permission question don't count as leaving, unless you stay away for more than 5 minutes.
 - **Change app PIN** asks for your current PIN first, and turning the app lock off asks for the PIN too.
-- **Forgot your PIN?** It can't be recovered, because it encrypts your API key. The lock screen offers to remove the key and turn the lock off; you paste your key again and your saved stops stay.
+- **Forgot your PIN?** It can't be recovered, because it encrypts your API key. The lock screen offers to remove the key and turn the lock off; you paste your key again and your saved stops stay. If your phone has a screen lock, you confirm the reset with it (or a fingerprint) first, so someone holding your unlocked phone can't just reset LijnCtrl's lock; without a screen lock the confirmation dialog is all there is.
 - **With the app lock on**, the recent-apps screen always shows a blank card.
 - **Bus alerts while locked:** while an alert is set, a copy of the API key stays in LijnCtrl's memory (never on storage) so the alert can check the live time after the app locks. If Android ends LijnCtrl in the meantime, the alert still goes off, at the last known time.
 

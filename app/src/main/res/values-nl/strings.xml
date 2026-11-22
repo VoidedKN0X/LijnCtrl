@@ -168,8 +168,11 @@
     <string name="lock_too_many">Te veel pogingen. Probeer opnieuw over %1$d s</string>
     <string name="lock_forgot">Pincode vergeten?</string>
     <string name="lock_forgot_title">Pincode vergeten?</string>
-    <string name="lock_forgot_body">De pincode kan niet teruggehaald worden, omdat ze je API-sleutel versleutelt. LijnCtrl verwijdert de sleutel en zet de app-vergrendeling uit; je moet je sleutel daarna opnieuw plakken. Je bewaarde haltes en instellingen blijven.</string>
+    <string name="lock_forgot_body">De pincode kan niet teruggehaald worden, omdat ze je API-sleutel versleutelt. LijnCtrl verwijdert de sleutel en zet de app-vergrendeling uit; je moet je sleutel daarna opnieuw plakken. Je bewaarde haltes en instellingen blijven. Heeft je telefoon een schermvergrendeling, dan bevestig je eerst daarmee.</string>
     <string name="lock_forgot_confirm">Sleutel verwijderen en opnieuw beginnen</string>
+    <string name="lock_reset_prompt_title">App-vergrendeling van LijnCtrl resetten</string>
+    <string name="lock_reset_prompt_subtitle">Bevestig met de schermvergrendeling van je telefoon dat jij het bent</string>
+    <string name="lock_reset_prompt_failed">De schermvergrendeling kon niet getoond worden</string>
     <string name="lock_choose_pin">Kies een app-pincode</string>
     <string name="lock_change_pin">App-pincode wijzigen</string>
     <string name="lock_change_intro">Minstens %1$d cijfers, anders dan de pincode van je telefoon.</string>

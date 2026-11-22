@@ -180,22 +180,25 @@ fun LineScreen(entity: String, line: String, initialDirection: String?) {
     var mapTargets by remember { mutableStateOf<List<com.vknxworks.lijnctrl.data.live.LiveTarget>>(emptyList()) }
     LaunchedEffect(showMap, direction) {
         if (!showMap) return@LaunchedEffect
-        while (true) {
-            val trips = live?.trips
-            if (trips == null) {
-                delay(2_000)
-                continue
+        // Only while the screen is showing, like the other refreshes.
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            while (true) {
+                val trips = live?.trips
+                if (trips == null) {
+                    delay(2_000)
+                    continue
+                }
+                val nowI = Instant.now()
+                mapTargets = trips.mapNotNull { t ->
+                    val stopsAhead = t.passages.mapNotNull { p ->
+                        val n = p.stopNumber ?: return@mapNotNull null
+                        val time = parseLocalTime(p.realtime) ?: parseLocalTime(p.scheduled) ?: return@mapNotNull null
+                        if (time.isBefore(nowI.minusSeconds(300))) null else n to time
+                    }.toMap()
+                    if (stopsAhead.isEmpty()) null else com.vknxworks.lijnctrl.data.live.LiveTarget(stopsAhead, t.trip)
+                }
+                delay(120_000)
             }
-            val nowI = Instant.now()
-            mapTargets = trips.mapNotNull { t ->
-                val stopsAhead = t.passages.mapNotNull { p ->
-                    val n = p.stopNumber ?: return@mapNotNull null
-                    val time = parseLocalTime(p.realtime) ?: parseLocalTime(p.scheduled) ?: return@mapNotNull null
-                    if (time.isBefore(nowI.minusSeconds(300))) null else n to time
-                }.toMap()
-                if (stopsAhead.isEmpty()) null else com.vknxworks.lijnctrl.data.live.LiveTarget(stopsAhead, t.trip)
-            }
-            delay(120_000)
         }
     }
 

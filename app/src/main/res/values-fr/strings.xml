@@ -171,8 +171,11 @@
     <string name="lock_too_many">Trop de tentatives. Réessayez dans %1$d s</string>
     <string name="lock_forgot">Code PIN oublié ?</string>
     <string name="lock_forgot_title">Vous avez oublié votre code PIN ?</string>
-    <string name="lock_forgot_body">Le code PIN ne peut pas être récupéré, car il chiffre votre clé API. LijnCtrl supprimera la clé et désactivera le verrouillage ; vous devrez coller à nouveau votre clé. Vos arrêts enregistrés et paramètres restent.</string>
+    <string name="lock_forgot_body">Le code PIN ne peut pas être récupéré, car il chiffre votre clé API. LijnCtrl supprimera la clé et désactivera le verrouillage ; vous devrez coller à nouveau votre clé. Vos arrêts enregistrés et paramètres restent. Si votre téléphone a un verrouillage d’écran, vous le confirmerez d’abord avec celui-ci.</string>
     <string name="lock_forgot_confirm">Supprimer la clé et réinitialiser</string>
+    <string name="lock_reset_prompt_title">Réinitialiser le verrouillage de LijnCtrl</string>
+    <string name="lock_reset_prompt_subtitle">Utilisez le verrouillage d’écran de votre téléphone pour confirmer votre identité</string>
+    <string name="lock_reset_prompt_failed">Impossible d’afficher le verrouillage d’écran</string>
     <string name="lock_choose_pin">Choisissez un code PIN pour l\'application</string>
     <string name="lock_change_pin">Modifier le code PIN de l\'application</string>
     <string name="lock_change_intro">Au moins %1$d chiffres, différent du code PIN de votre téléphone.</string>

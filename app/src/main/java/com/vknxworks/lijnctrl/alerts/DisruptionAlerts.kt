@@ -39,6 +39,21 @@ object DisruptionAlerts {
         WorkManager.getInstance(context).cancelUniqueWork(WORK)
     }
 
+    internal fun stopSource(stop: String) = "s:$stop:"
+    internal fun lineSource(line: String) = "l:$line:"
+
+    /**
+     * What to remember after a look: everything [found], plus what was already remembered for the stops and lines
+     * whose request failed this time ([failed], as [stopSource]/[lineSource] prefixes), so a disruption that is
+     * still going on isn't announced again after one bad answer. Null when no request worked at all (API down, key
+     * expired): then nothing is changed.
+     */
+    internal fun nextSeen(previous: Set<String>, found: Set<String>, failed: Set<String>, anySucceeded: Boolean): Set<String>? {
+        if (!anySucceeded) return null
+        val kept = previous.filter { id -> failed.any { id.startsWith(it) } }
+        return found + kept
+    }
+
     /**
      * Looks once. The first look after turning alerts on only remembers what's already going on ([quiet]), so you
      * aren't flooded with old news; after that, each new disruption is one notification.
@@ -46,7 +61,8 @@ object DisruptionAlerts {
     suspend fun check(context: Context, quiet: Boolean) {
         val c = context.applicationContext.container
         if (c.apiKey.current().isNullOrBlank()) return
-        val language = c.settings.settings.value.messageLanguage.key
+        // Read from disk: in a fresh process the settings in memory are still the defaults for a moment.
+        val language = c.settings.current().messageLanguage.key
         val found = linkedMapOf<String, Pair<String, String>>() // id -> (where, title + text)
         // In a fresh process the saved lists are read (and decrypted) a moment after start: wait for them. If they
         // can't be had (not read in time, or the saved file can't be opened), nothing is checked this time.
@@ -54,22 +70,31 @@ object DisruptionAlerts {
         if (c.saved.unreadable.value) return
         val stops = c.saved.data.value.stops
         val lines = c.saved.data.value.lines
+        // Stops and lines whose answer didn't fully come (busy API, timeout): what was already told about them is kept.
+        val failed = mutableSetOf<String>()
+        var anySucceeded = false
+        suspend fun <T> ask(source: String, request: suspend () -> List<T>): List<T> =
+            runCatching { request() }
+                .onSuccess { anySucceeded = true }
+                .onFailure { e -> if (e is kotlin.coroutines.cancellation.CancellationException) throw e; failed += source }
+                .getOrDefault(emptyList())
 
         for (stop in stops) {
-            val list = runCatching { c.api.stopDisruptions(stop.key) }.getOrDefault(emptyList()) +
-                runCatching { c.api.stopDiversions(stop.key) }.getOrDefault(emptyList())
+            val source = stopSource(stop.key.toString())
+            val list = ask(source) { c.api.stopDisruptions(stop.key) } + ask(source) { c.api.stopDiversions(stop.key) }
             list.forEach { d ->
                 val l = d.localized(language)
-                found.getOrPut("s:${stop.key}:${(l.title + l.text).hashCode()}") { stop.title to listOf(l.title, l.text).filter { it.isNotBlank() }.joinToString("\n") }
+                found.getOrPut("$source${(l.title + l.text).hashCode()}") { stop.title to listOf(l.title, l.text).filter { it.isNotBlank() }.joinToString("\n") }
             }
         }
         for (saved in lines) {
             val key = LineKey(saved.entity, saved.line)
-            val directions = runCatching { c.api.lineDirections(key) }.getOrDefault(emptyList()).mapNotNull { it.direction }.distinct()
+            val source = lineSource(key.toString())
+            val directions = ask(source) { c.api.lineDirections(key) }.mapNotNull { it.direction }.distinct()
             directions.forEach { dir ->
-                runCatching { c.api.lineDisruptions(key, dir) }.getOrDefault(emptyList()).forEach { d ->
+                ask(source) { c.api.lineDisruptions(key, dir) }.forEach { d ->
                     val l = d.localized(language)
-                    found.getOrPut("l:$key:${(l.title + l.text).hashCode()}") {
+                    found.getOrPut("$source${(l.title + l.text).hashCode()}") {
                         str(R.string.line_x, saved.publicNumber) to listOf(l.title, l.text).filter { it.isNotBlank() }.joinToString("\n")
                     }
                 }
@@ -77,10 +102,10 @@ object DisruptionAlerts {
         }
 
         val seen = c.saved.data.value.seen
+        val next = nextSeen(seen, found.keys, failed, anySucceeded || (stops.isEmpty() && lines.isEmpty())) ?: return
         val new = found.filterKeys { it !in seen }
         // Only what's still going on is remembered, so the list doesn't grow forever.
-        val now = found.keys.toSet()
-        c.saved.update { it.copy(seen = now) }
+        if (next != seen) c.saved.update { it.copy(seen = next) }
         if (quiet || new.isEmpty() || !Notifications.allowed(context)) return
 
         Notifications.ensureChannels(context)

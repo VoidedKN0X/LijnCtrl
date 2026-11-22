@@ -86,12 +86,15 @@ class LiveVehicles(private val http: OkHttpClient, private val key: () -> String
     /** Finds the vehicles running [targets] (null where none is found), from one download of the feed. */
     suspend fun locate(targets: List<LiveTarget>): List<LiveFix?> {
         val feed = feed() ?: return targets.map { null }
-        val byTrip = feed.vehicles.filter { it.tripId != null }.associateBy { it.tripId }
-        val byVehicle = feed.vehicles.filter { it.vehicleId != null }.associateBy { it.vehicleId }
-        return targets.map { t ->
-            val trip = match(feed.trips, t) ?: return@map null
-            val v = byTrip[trip.tripId] ?: trip.vehicleId?.let { byVehicle[it] } ?: return@map null
-            LiveFix(v.vehicleId ?: trip.vehicleId, v.latitude, v.longitude, v.bearing, v.speed, v.timestamp?.let(Instant::ofEpochSecond), v.occupancy)
+        // Matching runs over every trip in Flanders: on a background thread, never on the caller's (often the main one).
+        return withContext(Dispatchers.Default) {
+            val byTrip = feed.vehicles.filter { it.tripId != null }.associateBy { it.tripId }
+            val byVehicle = feed.vehicles.filter { it.vehicleId != null }.associateBy { it.vehicleId }
+            targets.map { t ->
+                val trip = match(feed.trips, t) ?: return@map null
+                val v = byTrip[trip.tripId] ?: trip.vehicleId?.let { byVehicle[it] } ?: return@map null
+                LiveFix(v.vehicleId ?: trip.vehicleId, v.latitude, v.longitude, v.bearing, v.speed, v.timestamp?.let(Instant::ofEpochSecond), v.occupancy)
+            }
         }
     }
 
@@ -104,7 +107,9 @@ class LiveVehicles(private val http: OkHttpClient, private val key: () -> String
     suspend fun alertsAt(stopNumber: String): List<RtAlert> {
         val feed = feed() ?: return emptyList()
         val now = System.currentTimeMillis() / 1000
-        return feed.alerts.filter { stopNumber in it.stops && it.activeAt(now) }.distinctBy { it.id ?: it.header.firstOrNull()?.text }
+        return withContext(Dispatchers.Default) {
+            feed.alerts.filter { stopNumber in it.stops && it.activeAt(now) }.distinctBy { it.id ?: it.header.firstOrNull()?.text }
+        }
     }
 
     /**
