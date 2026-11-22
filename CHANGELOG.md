@@ -4,6 +4,14 @@ What changed in each LijnCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## Unreleased
+
+### Removed
+
+- **The "Why no live position?" check is gone.** On a route map, tapping the live status ("Looking for your bus…", "No live position" or an error) no longer opens a report of what LijnCtrl looked for in De Lijn's live feed and why it didn't match, with its Copy button. The code that built that report (a fresh download of the feed just for it, and the notes taken while looking up each ride's trip) is gone too. Live positions themselves work exactly as before: the bus is still looked up, followed and shown the same way, and the status still says whether it was found.
+- **Log lines are stripped from the release build.** The release build already removed debug, verbose and info log lines; it now also removes warning, error and other log lines, so nothing LijnCtrl or a library (such as the map) writes to Android's log ends up in the app you install. LijnCtrl's own code doesn't log at all.
+- Nothing else changes.
+
 ## v0.22.1 (2026-11-21)
 
 Built and checked by CI only: nothing in this release had been run on a phone when it was published.

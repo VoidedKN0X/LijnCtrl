@@ -4,7 +4,6 @@ import android.graphics.DashPathEffect
 import android.graphics.Paint
 import android.graphics.drawable.GradientDrawable
 import androidx.compose.foundation.background
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -308,9 +307,6 @@ fun RouteMap(
             }
         } + extraVehicles
     }
-    // What the trip lookups found, for the "why no live position?" report.
-    val lookupLog = remember(journey) { androidx.compose.runtime.mutableStateListOf<String>() }
-    var showReport by remember { mutableStateOf(false) }
     val targets by androidx.compose.runtime.produceState(quickTargets, quickTargets, live, gtfsKey) {
         value = quickTargets
         // Only rides the app worked out itself (not the trip page's or line page's own targets), and only when
@@ -319,7 +315,7 @@ fun RouteMap(
         val full = rideLegs.mapIndexed { i, leg ->
             val quick = quickTargets.getOrNull(i)
             if (quick == null || !dueSoon(leg)) quick
-            else com.vknxworks.lijnctrl.data.live.rideTarget(c, leg) { line -> lookupLog += line } ?: quick
+            else com.vknxworks.lijnctrl.data.live.rideTarget(c, leg) ?: quick
         } + extraVehicles
         if (full != quickTargets) value = full
     }
@@ -662,8 +658,6 @@ fun RouteMap(
                     .then(
                         when {
                             gtfsKey.isNullOrBlank() -> Modifier.clickable { nav.navigate(com.vknxworks.lijnctrl.ui.nav.GtfsKeyRoute) }
-                            // Not found (or an error): tap for a report of what was looked for and why it didn't match.
-                            interactive && liveState !is LiveState.Found -> Modifier.clickable { showReport = true }
                             else -> Modifier
                         },
                     ),
@@ -679,46 +673,6 @@ fun RouteMap(
                     Text(text, style = MaterialTheme.typography.labelLarge, maxLines = 2)
                 }
             }
-        }
-        if (showReport) {
-            var report by remember { mutableStateOf<String?>(null) }
-            LaunchedEffect(Unit) {
-                val now = java.time.ZonedDateTime.now(java.time.ZoneId.of("Europe/Brussels"))
-                val body = runCatching { c.live.explain(targets.filterNotNull()) }.getOrElse { "Report failed: ${it.message}" }
-                report = buildString {
-                    appendLine("LijnCtrl ${com.vknxworks.lijnctrl.BuildConfig.VERSION_NAME} live check, ${now.toLocalDate()} ${now.toLocalTime().withNano(0)}")
-                    journey.legs.filter { !it.isWalk }.forEach { l ->
-                        appendLine("Ride ${l.badge ?: "?"} (${l.operator ?: "?"}): ${l.fromName} [${l.fromStop?.number ?: "no stop"}] ${clockTime(l.start)} -> ${l.toName} [${l.toStop?.number ?: "no stop"}] ${clockTime(l.end)}, trip ${l.trip ?: "-"}")
-                    }
-                    lookupLog.forEach { appendLine(it) }
-                    appendLine()
-                    append(body)
-                }
-            }
-            androidx.compose.material3.AlertDialog(
-                onDismissRequest = { showReport = false },
-                title = { Text(stringResource(R.string.live_check_title)) },
-                text = {
-                    val r = report
-                    if (r == null) Text(stringResource(R.string.live_check_running))
-                    else Text(
-                        r,
-                        style = com.vknxworks.lijnctrl.ui.theme.CtrlType.DataSmall,
-                        modifier = Modifier.height(380.dp).verticalScroll(androidx.compose.foundation.rememberScrollState()),
-                    )
-                },
-                confirmButton = {
-                    androidx.compose.material3.TextButton(
-                        enabled = report != null,
-                        onClick = {
-                            val cm = context.getSystemService(android.content.ClipboardManager::class.java)
-                            cm?.setPrimaryClip(android.content.ClipData.newPlainText("LijnCtrl live check", report))
-                            android.widget.Toast.makeText(context, context.getString(R.string.live_check_copied), android.widget.Toast.LENGTH_SHORT).show()
-                        },
-                    ) { Text(stringResource(R.string.copy)) }
-                },
-                dismissButton = { androidx.compose.material3.TextButton(onClick = { showReport = false }) { Text(stringResource(R.string.close)) } },
-            )
         }
         // OpenStreetMap's licence asks for this credit on the map.
         Text(

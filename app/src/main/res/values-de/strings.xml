@@ -415,9 +415,6 @@
     <string name="unreadable_start_empty">Leer beginnen</string>
     <string name="unreadable_start_empty_title">Ohne gespeicherte Daten beginnen?</string>
     <string name="unreadable_start_empty_body">Tu das nur, wenn erneutes Versuchen nicht hilft. Die nicht lesbaren Haltestellen, Linien und Routen werden auf diesem Smartphone beiseitegelegt, nicht gelöscht, aber LijnCtrl zeigt sie nicht an. Dein API-Schlüssel und deine Einstellungen sind nicht betroffen.</string>
-    <string name="live_check_title">Warum keine Live-Position?</string>
-    <string name="live_check_running">Live-Feed von De Lijn wird geprüft…</string>
-    <string name="live_check_copied">Bericht kopiert</string>
     <string name="copy">Kopieren</string>
     <string name="close">Schließen</string>
     <string name="share_departure">Abfahrt teilen</string>

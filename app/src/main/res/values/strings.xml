@@ -446,9 +446,6 @@
     <string name="unreadable_start_empty_title">Start with nothing saved?</string>
     <string name="unreadable_start_empty_body">Only do this if trying again doesn\'t help. The saved stops, lines and routes that can\'t be opened are kept aside on this phone, not deleted, but LijnCtrl won\'t show them. Your API key and settings are not affected.</string>
 
-    <string name="live_check_title">Why no live position?</string>
-    <string name="live_check_running">Checking De Lijn\'s live feed…</string>
-    <string name="live_check_copied">Report copied</string>
     <string name="copy">Copy</string>
     <string name="close">Close</string>
     <!-- Sharing a departure, and walks in MapsCtrl -->

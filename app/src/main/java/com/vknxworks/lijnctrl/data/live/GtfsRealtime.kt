@@ -25,8 +25,6 @@ data class RtVehicle(
     val timestamp: Long?,
     /** GTFS Realtime OccupancyStatus (0 EMPTY … 8 NOT_BOARDABLE), when the feed gives one. */
     val occupancy: Int? = null,
-    /** How full the vehicle is in % (can be over 100), when the feed gives it. */
-    val occupancyPercent: Int? = null,
 )
 
 /** A text in one language (null: not said). */
@@ -302,11 +300,9 @@ object GtfsRealtime {
         var speed: Float? = null
         var timestamp: Long? = null
         var occupancy: Int? = null
-        var occupancyPercent: Int? = null
         r.fields { f, w ->
             when {
                 f == 9 && w == 0 -> occupancy = r.varint().toInt()
-                f == 10 && w == 0 -> occupancyPercent = r.varint().toInt()
                 f == 1 && w == 2 -> tripId = tripDescriptor(r.sub()).first
                 f == 2 && w == 2 -> {
                     val p = r.sub()
@@ -329,7 +325,7 @@ object GtfsRealtime {
         val la = lat ?: return null
         val lo = lon ?: return null
         if (la == 0.0 && lo == 0.0) return null
-        return RtVehicle(vehicle, tripId, la, lo, bearing, speed, timestamp, occupancy, occupancyPercent)
+        return RtVehicle(vehicle, tripId, la, lo, bearing, speed, timestamp, occupancy)
     }
 
     // ---------- JSON (same structure, camelCase names) ----------
@@ -372,7 +368,6 @@ object GtfsRealtime {
                     speed = p["speed"].double()?.toFloat(),
                     timestamp = v["timestamp"].long(),
                     occupancy = occupancyOf(v["occupancyStatus"]),
-                    occupancyPercent = v["occupancyPercentage"].long()?.toInt(),
                 )
             }
             o["alert"].obj()?.let { a ->

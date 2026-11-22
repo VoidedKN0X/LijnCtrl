@@ -410,9 +410,6 @@
     <string name="unreadable_start_empty">Leeg beginnen</string>
     <string name="unreadable_start_empty_title">Beginnen zonder iets bewaard?</string>
     <string name="unreadable_start_empty_body">Doe dit alleen als opnieuw proberen niet helpt. De bewaarde haltes, lijnen en routes die niet open kunnen, worden apart gezet op deze telefoon, niet verwijderd, maar LijnCtrl toont ze niet. Je API-sleutel en instellingen blijven zoals ze zijn.</string>
-    <string name="live_check_title">Waarom geen live positie?</string>
-    <string name="live_check_running">De live feed van De Lijn nakijken…</string>
-    <string name="live_check_copied">Verslag gekopieerd</string>
     <string name="copy">Kopiëren</string>
     <string name="close">Sluiten</string>
     <string name="share_departure">Vertrek delen</string>

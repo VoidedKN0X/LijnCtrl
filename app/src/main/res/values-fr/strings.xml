@@ -415,9 +415,6 @@
     <string name="unreadable_start_empty">Repartir de zéro</string>
     <string name="unreadable_start_empty_title">Repartir sans rien d\'enregistré ?</string>
     <string name="unreadable_start_empty_body">Ne le faites que si réessayer ne suffit pas. Les arrêts, lignes et itinéraires qui ne peuvent pas être ouverts sont mis de côté sur ce téléphone, pas supprimés, mais LijnCtrl ne les affichera pas. Votre clé API et vos paramètres ne sont pas concernés.</string>
-    <string name="live_check_title">Pourquoi pas de position en direct ?</string>
-    <string name="live_check_running">Vérification du flux en direct de De Lijn…</string>
-    <string name="live_check_copied">Rapport copié</string>
     <string name="copy">Copier</string>
     <string name="close">Fermer</string>
     <string name="share_departure">Partager le départ</string>
