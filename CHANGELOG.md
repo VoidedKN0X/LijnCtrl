@@ -4,6 +4,16 @@ What changed in each LijnCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## v0.22.4 (2026-11-24)
+
+Built and checked by CI only: nothing in this release had been run on a phone when it was published.
+
+### Fixed
+
+- **"Leave now" finds routes again.** Planning a route with **Leave now** could end with no routes at all, while **Leave at** a chosen time worked. Two causes are fixed:
+  - "Now" was sent to Transitous with milliseconds (for example 17:38:12.345), while a chosen time is always whole minutes. The time is now always sent in whole seconds.
+  - Routes leaving before your time are left out (since 0.16.1), with one minute of leeway. When you leave now, the request takes a moment to reach Transitous and your phone's clock can be a little off, so a route whose first walk starts just "before now" could be dropped. Leaving now now allows three minutes of leeway; a chosen **Leave at** time keeps one minute.
+
 ## v0.22.3 (2026-11-22)
 
 Built and checked by CI only: nothing in this release had been run on a phone when it was published.

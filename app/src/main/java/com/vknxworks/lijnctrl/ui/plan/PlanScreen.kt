@@ -131,7 +131,7 @@ fun PlanScreen() {
                     return@launch
                 }
                 val time = if (s.mode == TimeMode.NOW) Instant.now() else s.time ?: Instant.now()
-                s.results = c.transitous.plan(a, b, time, s.mode == TimeMode.ARRIVE_BY)
+                s.results = c.transitous.plan(a, b, time, s.mode == TimeMode.ARRIVE_BY, leaveNow = s.mode == TimeMode.NOW)
                 // Remembers from and to as you chose them ("my location" stays "my location", not where you were).
                 if (settings.planHistory) runCatching { c.planHistory.add(from, to) }
             } catch (e: kotlin.coroutines.cancellation.CancellationException) {

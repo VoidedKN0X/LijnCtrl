@@ -176,14 +176,20 @@ class TransitousPlanner(base: OkHttpClient) {
      * few, the next window is asked for (later ones when leaving at, earlier ones when arriving by). The routes come
      * back closest to your time first: soonest to leave, or (arriving by) latest to arrive.
      */
-    suspend fun plan(from: PlanPoint, to: PlanPoint, time: Instant, arriveBy: Boolean): List<Journey> = withContext(Dispatchers.IO) {
+    suspend fun plan(from: PlanPoint, to: PlanPoint, at: Instant, arriveBy: Boolean, leaveNow: Boolean = false): List<Journey> = withContext(Dispatchers.IO) {
+        // Whole seconds: Transitous's server reads the time as an RFC 3339 time in seconds, and "now" from the phone
+        // carries milliseconds ("17:38:12.345Z"), which it may not accept.
+        val time = at.truncatedTo(java.time.temporal.ChronoUnit.SECONDS)
+        // Leaving now: the request takes a moment to reach the server and the phone's clock can be a little off, so
+        // a route whose first walk starts a minute or two "before now" is still one you can take.
+        val slack = if (leaveNow) NOW_SLACK_S else SLACK_S
         val found = linkedMapOf<String, Journey>()
         var cursor: String? = null
         var pages = 0
         while (pages++ < MAX_PAGES) {
             val plan = request(from, to, time, arriveBy, cursor)
             (plan.itineraries + plan.direct).mapNotNull { it.toJourney() }
-                .filter { j -> if (arriveBy) !j.end.isAfter(time.plusSeconds(SLACK_S)) else !j.start.isBefore(time.minusSeconds(SLACK_S)) }
+                .filter { j -> if (arriveBy) !j.end.isAfter(time.plusSeconds(slack)) else !j.start.isBefore(time.minusSeconds(slack)) }
                 .forEach { j -> found.putIfAbsent(j.signature, j) }
             if (found.size >= WANTED) break
             cursor = (if (arriveBy) plan.previousPageCursor else plan.nextPageCursor)?.takeIf { it.isNotBlank() } ?: break
@@ -413,6 +419,7 @@ class TransitousPlanner(base: OkHttpClient) {
         private const val MAX_PAGES = 3
         /** A route leaving a minute before your time (or arriving a minute after) still counts. */
         private const val SLACK_S = 60L
+        private const val NOW_SLACK_S = 180L
         const val SOURCE = "transitous"
         const val SOURCES_URL = "https://transitous.org/sources/"
 
